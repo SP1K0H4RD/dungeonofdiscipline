@@ -11,7 +11,9 @@ import {
   Palette,
   Package,
   Gift,
-  Sword
+  Sword,
+  Settings,
+  RefreshCw
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -191,13 +193,15 @@ function LootboxCard({ lootbox, ownedCount, canAfford, onBuy, onOpen }: LootboxC
 }
 
 export function Shop() {
-  const { gameState, buyShopItem, buyLootbox, openLootbox, LOOTBOX_TYPES } = useGame();
+  const { gameState, buyShopItem, buyLootbox, openLootbox, recoverEnergy, LOOTBOX_TYPES } = useGame();
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [openingLootbox, setOpeningLootbox] = useState<string | null>(null);
   const [openedItems, setOpenedItems] = useState<Item[]>([]);
   const [openedSpecialAttack, setOpenedSpecialAttack] = useState<SpecialAttack | null>(null);
   const [showOpenedItems, setShowOpenedItems] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [recovering, setRecovering] = useState(false);
 
   // Merge saved shop items with extended items
   const shopItems = extendedShopItems.map(item => {
@@ -242,6 +246,15 @@ export function Shop() {
     return owned?.quantity || 0;
   };
 
+  const handleRecoverEnergy = () => {
+    setRecovering(true);
+    setTimeout(() => {
+      recoverEnergy();
+      setRecovering(false);
+      setShowSettings(false);
+    }, 1000);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -255,18 +268,29 @@ export function Shop() {
           <p className="text-gray-400">Gaste suas moedas em itens e lootboxes</p>
         </div>
         
-        <motion.div 
-          className="flex items-center gap-3 bg-yellow-500/10 px-4 py-2 rounded-lg border border-yellow-500/30"
-          whileHover={{ scale: 1.05 }}
-        >
-          <Coins className="w-6 h-6 text-yellow-500" />
-          <div>
-            <p className="text-xs text-gray-400">Suas Moedas</p>
-            <p className="text-xl font-mono font-bold text-yellow-400">
-              {gameState.economy.coins}
-            </p>
-          </div>
-        </motion.div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSettings(true)}
+            className="text-gray-400 hover:text-white hover:bg-white/10"
+          >
+            <Settings className="w-6 h-6" />
+          </Button>
+
+          <motion.div 
+            className="flex items-center gap-3 bg-yellow-500/10 px-4 py-2 rounded-lg border border-yellow-500/30"
+            whileHover={{ scale: 1.05 }}
+          >
+            <Coins className="w-6 h-6 text-yellow-500" />
+            <div>
+              <p className="text-xs text-gray-400">Suas Moedas</p>
+              <p className="text-xl font-mono font-bold text-yellow-400">
+                {gameState.economy.coins}
+              </p>
+            </div>
+          </motion.div>
+        </div>
       </div>
 
       {/* Lootboxes Section */}
@@ -464,6 +488,54 @@ export function Shop() {
           </div>
         </div>
       </motion.div>
+
+      {/* Settings Modal */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Configurações
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-400" />
+                  <span className="font-medium">Energia Atual</span>
+                </div>
+                <span className="font-mono font-bold">
+                  {gameState.character.energy} / {gameState.character.maxEnergy}
+                </span>
+              </div>
+              
+              <Button
+                onClick={handleRecoverEnergy}
+                disabled={recovering || gameState.character.energy === gameState.character.maxEnergy}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {recovering ? (
+                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Recuperar Energia
+              </Button>
+              {gameState.character.energy === gameState.character.maxEnergy && (
+                <p className="text-[10px] text-center text-gray-500 mt-2">
+                  Sua energia já está no máximo!
+                </p>
+              )}
+            </div>
+            
+            <p className="text-xs text-gray-500 text-center">
+              Dungeon of Discipline v1.0.0
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

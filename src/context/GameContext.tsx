@@ -55,6 +55,9 @@ interface GameContextType {
   resetMaps: () => void;
   spawnEnemyForNode: (mapId: MapId, nodeId: string) => void;
   
+  // Energy System
+  recoverEnergy: () => void;
+  
   // Reset
   resetProgress: () => void;
   

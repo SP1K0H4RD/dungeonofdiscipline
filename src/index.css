@@ -162,6 +162,11 @@
   .boss-hp-fill {
     background: linear-gradient(90deg, #7f1d1d 0%, #ef4444 50%, #dc2626 100%);
   }
+
+  /* Energy Bar */
+  .energy-bar-fill {
+    background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  }
   
   /* Button Styles */
   .btn-primary {

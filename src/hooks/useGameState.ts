@@ -603,6 +603,11 @@ export function useGameState() {
       
       return {
         ...prev,
+        character: {
+          ...prev.character,
+          // Deduct 1 energy here (only once per user click)
+          energy: Math.max(0, prev.character.energy - 1),
+        },
         currentMapId: mapId,
         currentNodeId: nodeId,
       };
@@ -1404,8 +1409,6 @@ export function useGameState() {
         ...prev,
         character: {
           ...prev.character,
-          // Consume 1 energy for battle
-          energy: Math.max(0, prev.character.energy - 1),
           stats: {
             ...prev.character.stats,
             dungeonsAttempted: prev.character.stats.dungeonsAttempted + 1,
@@ -2259,6 +2262,17 @@ export function useGameState() {
     completeMapNode,
     resetMaps,
     spawnEnemyForNode,
+    // Energy System
+    recoverEnergy: () => {
+      setGameState(prev => ({
+        ...prev,
+        character: {
+          ...prev.character,
+          energy: prev.character.maxEnergy,
+        },
+      }));
+      addDebugLog('Energia totalmente recuperada!');
+    },
     // Reset
     resetProgress,
     // Lootbox

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 interface ProgressBarProps {
   value: number;
   max: number;
-  type?: 'hp' | 'xp' | 'boss' | 'default';
+  type?: 'hp' | 'xp' | 'boss' | 'energy' | 'default';
   size?: 'sm' | 'md' | 'lg';
   showValue?: boolean;
   label?: string;
@@ -32,6 +32,7 @@ export function ProgressBar({
     hp: 'hp-bar-fill',
     xp: 'xp-bar-fill',
     boss: 'boss-hp-fill',
+    energy: 'energy-bar-fill',
     default: 'bg-gradient-purple',
   };
   
@@ -39,6 +40,7 @@ export function ProgressBar({
     hp: percentage < 30 ? 'text-red-400' : percentage < 60 ? 'text-yellow-400' : 'text-green-400',
     xp: 'text-purple-400',
     boss: 'text-red-400',
+    energy: 'text-yellow-400',
     default: 'text-purple-400',
   };
 

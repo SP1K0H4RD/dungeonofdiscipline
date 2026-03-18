@@ -385,6 +385,31 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               />
             </div>
 
+            {/* Energy Bar */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className={cn(
+                  'w-5 h-5',
+                  character.energy === 0 ? 'text-red-500' : 'text-yellow-400'
+                )} />
+                <span className="text-sm font-medium text-gray-300">Energia</span>
+                {character.energy === 0 && <span className="text-xs text-red-400 font-bold">ESGOTADA!</span>}
+                <span className="text-xs text-gray-500 ml-auto">
+                  {character.energy} / {character.maxEnergy}
+                </span>
+              </div>
+              <ProgressBar
+                value={character.energy}
+                max={character.maxEnergy}
+                type="xp" // Use XP type for blue/purple energy color
+                size="md"
+                showValue={false}
+              />
+              <p className="text-[10px] text-gray-500 mt-1">
+                Gasta 1 de energia por batalha. Complete missões para recuperar.
+              </p>
+            </div>
+
             {/* Equipment */}
             <div className="pt-4">
               <p className="text-sm font-medium text-gray-400 mb-3">Equipamento</p>

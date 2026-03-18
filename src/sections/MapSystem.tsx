@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Map, Lock, Check, Crown, ChevronLeft, ChevronRight, Skull, Swords } from 'lucide-react';
+import { Map, Lock, Check, Crown, ChevronLeft, ChevronRight, Skull, Swords, AlertTriangle, Zap, Heart } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ProgressBar } from '@/components/ProgressBar';
 import type { MapId, MapNode } from '@/types/game';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface MapSystemProps {
   onEnterCombat: (mapId: MapId, nodeId: string) => void;
@@ -62,14 +69,22 @@ const difficultyLabels: Record<string, string> = {
 
 export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
   const { gameState } = useGame();
-  const { maps } = gameState;
+  const { maps, character } = gameState;
   const [selectedMapId, setSelectedMapId] = useState<MapId>('map1');
+  const [showEnergyWarning, setShowEnergyWarning] = useState(false);
 
   const currentMap = maps[selectedMapId];
   const theme = mapThemes[selectedMapId];
 
   const handleStageClick = (node: MapNode) => {
     if (!node.isUnlocked) return;
+    
+    // Check for energy
+    if (character.energy <= 0) {
+      setShowEnergyWarning(true);
+      return;
+    }
+    
     // Enter combat immediately when clicking a stage
     onEnterCombat(selectedMapId, node.id);
   };
@@ -135,6 +150,55 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
           </div>
           
           <div className="w-20" />
+        </div>
+
+        {/* Status Bars - Added below header */}
+        <div className="max-w-md mx-auto mt-4 px-2 grid grid-cols-2 gap-4 border-t border-[#2d2d44]/50 pt-3">
+          {/* HP Bar */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Heart className={cn(
+                  "w-3.5 h-3.5",
+                  (character.hp / character.maxHp) < 0.25 ? "text-red-500 animate-pulse" : "text-red-400"
+                )} />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Vida</span>
+              </div>
+              <span className="text-[10px] font-mono text-gray-500">
+                {character.hp}/{character.maxHp}
+              </span>
+            </div>
+            <ProgressBar
+              value={character.hp}
+              max={character.maxHp}
+              type="hp"
+              size="sm"
+              showValue={false}
+            />
+          </div>
+
+          {/* Energy Bar */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Zap className={cn(
+                  "w-3.5 h-3.5",
+                  character.energy === 0 ? "text-red-500" : "text-yellow-400"
+                )} />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Energia</span>
+              </div>
+              <span className="text-[10px] font-mono text-gray-500">
+                {character.energy}/{character.maxEnergy}
+              </span>
+            </div>
+            <ProgressBar
+              value={character.energy}
+              max={character.maxEnergy}
+              type="energy"
+              size="sm"
+              showValue={false}
+            />
+          </div>
         </div>
       </div>
 
@@ -277,6 +341,30 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
           </div>
         </div>
       </div>
+
+      {/* Energy Warning Modal */}
+      <Dialog open={showEnergyWarning} onOpenChange={setShowEnergyWarning}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm text-center">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl text-red-500 flex items-center justify-center gap-2">
+              <Zap className="w-6 h-6" />
+              Sem Energia!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+            <p className="text-gray-300 mb-6">
+              Você está exausto aventureiro! Recupere suas energias completando missões na aba de Quests ou descansando.
+            </p>
+            <Button 
+              onClick={() => setShowEnergyWarning(false)}
+              className="w-full btn-primary"
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
