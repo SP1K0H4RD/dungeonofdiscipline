@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Heart, 
   Zap, 
@@ -9,13 +9,12 @@ import {
   Trophy, 
   Calendar,
   Target,
-  Scroll,
   AlertTriangle,
   Sparkles,
   RotateCcw,
   Skull,
   Star,
-  Crown
+  FlameKindling
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -170,11 +169,24 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onEnterDungeon }: DashboardProps) {
-  const { gameState, resetProgress, showLevelUp, setShowLevelUp } = useGame();
+  const { gameState, resetProgress, restCharacter } = useGame();
   const { character, dungeon, quests, recoveryMode } = gameState;
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetStep, setResetStep] = useState(1);
   const [showCriticalHpWarning, setShowCriticalHpWarning] = useState(false);
+  const [isResting, setIsResting] = useState(false);
+
+  const handleRest = () => {
+    if (character.energy < 3 || isResting) return;
+    
+    setIsResting(true);
+    
+    // Start animation, then apply effect after 3s
+    setTimeout(() => {
+      restCharacter();
+      setIsResting(false);
+    }, 3000);
+  };
 
   const completedDiarias = quests.diaria.filter(q => q.completed).length;
   const totalDiarias = quests.diaria.length;
@@ -203,60 +215,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       animate="visible"
       className="space-y-6 pt-4 pb-24"
     >
-      {/* Level Up Animation */}
-      <AnimatePresence>
-        {showLevelUp && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowLevelUp(false)}
-          >
-            <motion.div
-              className="text-center"
-              animate={{ 
-                rotate: [0, -5, 5, -5, 5, 0],
-                scale: [1, 1.1, 1]
-              }}
-              transition={{ duration: 0.5 }}
-            >
-              <motion.div
-                animate={{ 
-                  textShadow: [
-                    '0 0 20px #fbbf24',
-                    '0 0 40px #fbbf24',
-                    '0 0 20px #fbbf24'
-                  ]
-                }}
-                transition={{ duration: 1, repeat: Infinity }}
-              >
-                <Crown className="w-24 h-24 text-yellow-400 mx-auto mb-4" />
-              </motion.div>
-              <h2 className="text-5xl font-bold text-yellow-400 font-cinzel mb-2">
-                LEVEL UP!
-              </h2>
-              <p className="text-2xl text-white">
-                Nível {character.level}
-              </p>
-              <div className="mt-6 space-y-2 text-sm text-gray-400">
-                <p className="text-green-400">+5% HP Máximo</p>
-                <p className="text-red-400">+3% Ataque</p>
-                <p className="text-blue-400">+3% Defesa</p>
-                <p className="text-yellow-400">+0.5% Crítico</p>
-              </div>
-              <Button 
-                onClick={() => setShowLevelUp(false)}
-                className="mt-6 bg-yellow-600 hover:bg-yellow-700"
-              >
-                <Star className="w-4 h-4 mr-2" />
-                Continuar
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Recovery Mode Banner */}
       {recoveryMode && (
         <motion.div
@@ -659,12 +617,28 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
           {isCriticalHp ? '⚠️ Entrar na Dungeon (HP Crítico)' : 'Entrar na Dungeon'}
         </motion.button>
         <motion.button
-          className="btn-secondary flex items-center gap-2"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          onClick={handleRest}
+          disabled={character.energy < 3 || isResting}
+          className={cn(
+            "flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold transition-all border shadow-lg relative overflow-hidden",
+            character.energy >= 3 && !isResting
+              ? "bg-orange-600 border-orange-500 text-white hover:bg-orange-500 hover:shadow-orange-500/20 active:scale-95" 
+              : "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed"
+          )}
+          whileHover={character.energy >= 3 && !isResting ? { scale: 1.05 } : {}}
+          whileTap={character.energy >= 3 && !isResting ? { scale: 0.95 } : {}}
         >
-          <Scroll className="w-5 h-5" />
-          Nova Missão
+          <motion.div
+            animate={isResting ? { 
+              scale: [1, 1.3, 1],
+              rotate: [0, 10, -10, 10, -10, 0],
+              filter: ["drop-shadow(0 0 2px #f97316)", "drop-shadow(0 0 10px #f97316)", "drop-shadow(0 0 2px #f97316)"]
+            } : {}}
+            transition={{ duration: 0.5, repeat: isResting ? Infinity : 0 }}
+          >
+            <FlameKindling className={cn("w-5 h-5", character.energy >= 3 && !isResting ? "text-orange-200 animate-pulse" : "text-gray-600")} />
+          </motion.div>
+          <span>{isResting ? "Descansando..." : `Descansar ${character.energy < 3 ? "(Sem Energia)" : ""}`}</span>
         </motion.button>
       </motion.div>
 

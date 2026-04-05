@@ -12,7 +12,7 @@ import { Shop } from '@/sections/Shop';
 // ProfileSetup removed - onboarding simplified to just name input
 import { MasterChat } from '@/sections/MasterChat';
 import type { MapId } from '@/types/game';
-import { Swords, User, Play, RotateCcw, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Swords, User, Play, AlertTriangle, RefreshCw, Sparkles, Crown, Star, FlameKindling } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -222,38 +222,38 @@ function WelcomeScreen({ onStart }: { onStart: (name: string) => void }) {
 // DEATH SCREEN
 // ============================================
 
-function DeathScreen({ onNewGame }: { onNewGame: () => void }) {
+function DeathScreen({ onRevive }: { onRevive: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="min-h-screen flex items-center justify-center bg-black p-4"
     >
-      <div className="card-dungeon p-8 max-w-md w-full text-center">
+      <div className="card-dungeon p-8 max-w-md w-full text-center border-red-500/50">
         <div className="text-8xl mb-6">💀</div>
-        <h1 className="text-4xl font-bold text-red-500 font-cinzel mb-4">VOCÊ MORREU</h1>
-        <p className="text-gray-400 mb-8">Seu personagem foi perdido na dungeon...</p>
+        <h1 className="text-4xl font-bold text-red-500 font-cinzel mb-4">VOCÊ CAIU</h1>
+        <p className="text-gray-400 mb-8">Seu personagem foi derrotado, mas sua jornada continua...</p>
         
         <div className="bg-[#16213e] rounded-lg p-4 mb-8 text-left">
-          <p className="text-sm text-gray-400 mb-3">O que foi perdido:</p>
+          <p className="text-sm text-gray-400 mb-3">Penalidade de Ressurreição:</p>
           <ul className="text-sm text-red-400 space-y-1">
-            <li>• Level e XP</li>
-            <li>• Equipamentos</li>
-            <li>• Ataques especiais</li>
-            <li>• Quests ativas</li>
-            <li>• Streak</li>
-            <li>• Progresso da dungeon</li>
+            <li>• Perda de 40% do XP Total</li>
+            <li>• Possível regressão de nível</li>
+            <li>• HP restaurado ao novo máximo</li>
           </ul>
           <p className="text-sm text-gray-400 mt-3">Mantido:</p>
           <ul className="text-sm text-green-400 space-y-1">
-            <li>• Skins compradas</li>
-            <li>• Conquistas cosméticas</li>
+            <li>• Todos os equipamentos</li>
+            <li>• Todos os itens e ouro</li>
+            <li>• Ataques especiais</li>
+            <li>• Skins e Conquistas</li>
+            <li>• Quests e Progresso do Mapa</li>
           </ul>
         </div>
 
-        <Button onClick={onNewGame} className="w-full btn-primary py-6 text-lg">
-          <RotateCcw className="w-5 h-5 mr-2" />
-          Criar Novo Personagem
+        <Button onClick={onRevive} className="w-full btn-primary py-6 text-lg bg-red-600 hover:bg-red-700">
+          <Sparkles className="w-5 h-5 mr-2" />
+          Renascer e Continuar
         </Button>
       </div>
     </motion.div>
@@ -271,8 +271,16 @@ function AppContent() {
   const [currentCombat, setCurrentCombat] = useState<{ mapId: MapId; nodeId: string } | null>(null);
   const [showMasterChat, setShowMasterChat] = useState(false);
   const [showDeath, setShowDeath] = useState(false);
-  const { gameState, setCharacterName, resetProgress, completeProfileSetup, selectMapNode } = useGame();
-  const { character } = gameState;
+  const { 
+    gameState, 
+    setCharacterName, 
+    reviveCharacter, 
+    completeProfileSetup, 
+    selectMapNode, 
+    setShowLevelUp,
+    setShowRestOverlay
+  } = useGame();
+  const { character, showLevelUp, showRestOverlay, restDetails } = gameState;
 
   // Show welcome screen if name not set
   if (!character.name) {
@@ -291,10 +299,14 @@ function AppContent() {
   if (showDeath) {
     return (
       <DeathScreen 
-        onNewGame={() => {
-          resetProgress();
+        onRevive={() => {
+          reviveCharacter();
           setShowDeath(false);
-          window.location.reload();
+          // Return to dashboard after death
+          setInDungeon(false);
+          setCurrentCombat(null);
+          setShowMapSystem(false);
+          setCurrentView('dashboard');
         }} 
       />
     );
@@ -396,6 +408,145 @@ function AppContent() {
 
       {/* Master Chat */}
       <MasterChat isOpen={showMasterChat} onClose={() => setShowMasterChat(false)} />
+
+      {/* Global Level Up Overlay */}
+      <AnimatePresence>
+        {showLevelUp && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setShowLevelUp(false)}
+          >
+            <motion.div
+              className="text-center"
+              animate={{ 
+                rotate: [0, -2, 2, -2, 2, 0],
+                scale: [1, 1.05, 1]
+              }}
+              transition={{ duration: 0.5 }}
+            >
+              <motion.div
+                animate={{ 
+                  textShadow: [
+                    '0 0 20px #fbbf24',
+                    '0 0 40px #fbbf24',
+                    '0 0 20px #fbbf24'
+                  ]
+                }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >
+                <Crown className="w-24 h-24 text-yellow-400 mx-auto mb-4" />
+              </motion.div>
+              <h2 className="text-5xl font-bold text-yellow-400 font-cinzel mb-2">
+                LEVEL UP!
+              </h2>
+              <p className="text-2xl text-white">
+                Nível {character.level}
+              </p>
+              <div className="mt-6 space-y-2 text-sm text-gray-400">
+                <p className="text-green-400">+5 HP Máximo</p>
+                <p className="text-red-400">+2 Ataque</p>
+                <p className="text-blue-400">+0.5 Defesa</p>
+                <p className="text-yellow-400">+0.3% Crítico</p>
+              </div>
+              <Button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowLevelUp(false);
+                }}
+                className="mt-8 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-6 px-8 rounded-xl shadow-[0_0_20px_rgba(202,138,4,0.3)] transition-all hover:scale-105 active:scale-95"
+              >
+                <Star className="w-5 h-5 mr-2 fill-current" />
+                Continuar Jornada
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Global Rest Overlay */}
+      <AnimatePresence>
+        {showRestOverlay && restDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
+            onClick={() => setShowRestOverlay(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="text-center max-w-sm w-full bg-[#1a1a2e] border-2 border-orange-500/50 rounded-3xl p-8 shadow-[0_0_50px_rgba(249,115,22,0.2)]"
+            >
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  filter: ["drop-shadow(0 0 10px #f97316)", "drop-shadow(0 0 30px #f97316)", "drop-shadow(0 0 10px #f97316)"]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="mb-6"
+              >
+                <div className="w-24 h-24 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-orange-500/30">
+                  <FlameKindling className="w-12 h-12 text-orange-500" />
+                </div>
+              </motion.div>
+
+              <h2 className="text-3xl font-bold text-orange-400 font-cinzel mb-2">
+                DESCANSO
+              </h2>
+              <p className="text-gray-400 mb-8">
+                Você recuperou suas forças na fogueira.
+              </p>
+
+              <div className="bg-black/40 rounded-2xl p-6 mb-8 border border-white/5">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-gray-500 text-sm font-medium">Vida Atual</span>
+                  <span className="text-gray-300 font-mono font-bold">{restDetails.newHp} / {character.maxHp}</span>
+                </div>
+                
+                <div className="relative h-4 bg-gray-800 rounded-full overflow-hidden mb-4">
+                  {/* Previous HP Shadow */}
+                  <div 
+                    className="absolute inset-y-0 left-0 bg-white/10"
+                    style={{ width: `${(restDetails.prevHp / character.maxHp) * 100}%` }}
+                  />
+                  {/* Healing Animation */}
+                  <motion.div 
+                    initial={{ width: `${(restDetails.prevHp / character.maxHp) * 100}%` }}
+                    animate={{ width: `${(restDetails.newHp / character.maxHp) * 100}%` }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-600 to-green-400"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="text-left">
+                    <span className="text-gray-500 text-xs block">Recuperado</span>
+                    <span className="text-2xl font-bold text-green-400">+{restDetails.healAmount} HP</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-gray-500 text-xs block">Anterior</span>
+                    <span className="text-lg text-gray-400 font-mono">{restDetails.prevHp}</span>
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRestOverlay(false);
+                }}
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-6 rounded-xl transition-all active:scale-95 shadow-lg shadow-orange-900/20"
+              >
+                Continuar Jornada
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-[#2d2d44] py-6 px-4">

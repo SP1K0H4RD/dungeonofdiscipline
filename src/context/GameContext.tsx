@@ -17,6 +17,8 @@ interface GameContextType {
   isLoaded: boolean;
   showLevelUp: boolean;
   setShowLevelUp: (show: boolean) => void;
+  showRestOverlay: boolean;
+  setShowRestOverlay: (show: boolean) => void;
   LOOTBOX_TYPES: Lootbox[];
   DIFFICULTY_CONFIG: typeof DIFFICULTY_CONFIG;
   
@@ -48,6 +50,7 @@ interface GameContextType {
   advanceFloor: () => void;
   startNewBattle: () => void; // Start fresh battle after death
   resetDungeonAfterDeath: () => void; // Reset dungeon state after player death
+  reviveCharacter: () => void; // Revive character with XP penalty
   
   // Map System
   selectMapNode: (mapId: MapId, nodeId: string) => void;
@@ -57,6 +60,7 @@ interface GameContextType {
   
   // Energy System
   recoverEnergy: () => void;
+  restCharacter: () => void; // Lose 3 energy, recover 20% HP
   
   // Reset
   resetProgress: () => void;

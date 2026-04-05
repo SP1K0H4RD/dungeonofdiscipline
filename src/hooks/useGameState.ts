@@ -44,6 +44,10 @@ import {
   generateAllMaps,
   calculateAdaptiveBossStats,
   spawnMonster,
+  calculateXpForLevel,
+  getCharacterTotalXp,
+  getLevelFromTotalXp,
+  setCharacterToLevel,
   type DayOfWeek,
   type QuestType,
 } from '@/types/game';
@@ -133,8 +137,8 @@ const INITIAL_CHARACTER: Character = {
   totalGoldEarned: 0,
   // Base stats - Level 1 values
   baseStats: {
-    attack: 8,
-    defense: 3,
+    attack: 6,
+    defense: 1,
     maxHp: 100,
     dodgeChance: 0.03, // 3%
     critChance: 0.05, // 5%
@@ -150,16 +154,16 @@ const INITIAL_CHARACTER: Character = {
     coinBonus: 0,
   },
   totalStats: {
-    attack: 8,
-    defense: 3,
+    attack: 6,
+    defense: 1,
     maxHp: 100,
     dodgeChance: 0.03,
     critChance: 0.05,
     critMultiplier: 1.5,
   },
   // Legacy fields for backward compatibility
-  baseAttack: 8,
-  baseDefense: 3,
+  baseAttack: 6,
+  baseDefense: 1,
   baseDodgeChance: 0.03,
   baseCritChance: 0.05,
   equipped: {},
@@ -182,7 +186,7 @@ const INITIAL_CHARACTER: Character = {
   },
   stats: {
     totalAttack: 8,
-    totalDefense: 3,
+    totalDefense: 1,
     totalDodgeChance: 0.03,
     totalCritChance: 0.05,
     itemHpBonus: 0,
@@ -261,6 +265,9 @@ const INITIAL_GAME_STATE: GameState = {
   lastLogin: Date.now(),
   gameStarted: false,
   showProfileSetup: true,
+  showLevelUp: false,
+  showRestOverlay: false,
+  restDetails: null,
   unlockedSkins: [],
   achievements: [],
   debugLogs: [],
@@ -360,7 +367,15 @@ const generateItem = (rarity: Rarity): Item => {
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showLevelUp, setShowLevelUp] = useState(false);
+
+  // Helper to set showLevelUp
+  const setShowLevelUp = useCallback((show: boolean) => {
+    setGameState(prev => ({ ...prev, showLevelUp: show }));
+  }, []);
+
+  const setShowRestOverlay = useCallback((show: boolean) => {
+    setGameState(prev => ({ ...prev, showRestOverlay: show }));
+  }, []);
 
   // Debug logger
   const addDebugLog = useCallback((message: string) => {
@@ -443,6 +458,20 @@ export function useGameState() {
           },
           debugLogs: [],
         };
+
+        // Migration: Force base stats to user's new defaults if level 1
+        if (migrated.character.level === 1) {
+          migrated.character.baseStats.attack = 6;
+          migrated.character.totalStats.attack = 6;
+          migrated.character.baseAttack = 6;
+          migrated.character.stats.totalAttack = 6;
+
+          migrated.character.baseStats.defense = 1;
+          migrated.character.totalStats.defense = 1;
+          migrated.character.baseDefense = 1;
+          migrated.character.stats.totalDefense = 1;
+        }
+
         setGameState(migrated);
         addDebugLog('Game loaded from save');
       } catch (e) {
@@ -1085,27 +1114,30 @@ export function useGameState() {
     let newState = { ...prev };
     let currentXp = prev.character.xp + validXpGained;
     let levelsGained = 0;
+    let currentLevel = prev.character.level;
+    let currentMaxXp = prev.character.maxXp;
 
-    // SIMPLE RULE: When XP >= goal → level up → XP resets to 0
-    while (currentXp >= prev.character.maxXp) {
-      currentXp = 0; // RESET XP TO 0 (not subtract)
+    // SIMPLE RULE: When XP >= goal → level up → Keep leftover XP
+    while (currentXp >= currentMaxXp) {
+      currentXp -= currentMaxXp;
       levelsGained++;
+      currentLevel++;
+      currentMaxXp = calculateXpForLevel(currentLevel);
       
-      addDebugLog(`✨ LEVEL UP! ${prev.character.level} -> ${prev.character.level + 1}`);
+      addDebugLog(`✨ LEVEL UP! ${currentLevel - 1} -> ${currentLevel}`);
     }
 
     if (levelsGained > 0) {
-      setShowLevelUp(true);
-      
       // Use the new levelUpCharacter function that properly separates base stats from equipment
       let updatedCharacter = prev.character;
       for (let i = 0; i < levelsGained; i++) {
         updatedCharacter = levelUpCharacter(updatedCharacter);
       }
       
-      // Update XP earned tracking
+      // Update XP with leftover and update progression
       updatedCharacter = {
         ...updatedCharacter,
+        xp: currentXp, // Restore the leftover XP
         progression: {
           ...updatedCharacter.progression,
           totalXpEarned: updatedCharacter.progression.totalXpEarned + xpGained,
@@ -1119,6 +1151,7 @@ export function useGameState() {
       newState = {
         ...prev,
         character: updatedCharacter,
+        showLevelUp: true,
       };
     } else {
       // Just update XP
@@ -1428,6 +1461,7 @@ export function useGameState() {
           specialAttackCooldown: 0,
           showFloorComplete: false,
           lastDamageDealt: 0,
+          damageTakenInCurrentBattle: 0,
         },
       };
     });
@@ -1508,6 +1542,9 @@ export function useGameState() {
 
       const newPlayerHp = Math.max(0, prev.combat.playerHp - bossDamage);
       
+      // Track damage taken in this battle for post-fight lobby penalty
+      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage;
+      
       // Reduce special attack cooldown
       const newSpecialCooldown = Math.max(0, prev.combat.specialAttackCooldown - 1);
 
@@ -1520,15 +1557,20 @@ export function useGameState() {
         // Gold = XP × 0.3 (normal) or × 0.9 (boss)
         const goldReward = Math.floor(xpReward * (isBoss ? 0.9 : 0.3));
         
+        // Calculate lobby penalty: 20% of total damage taken in this battle
+        const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
+        const finalLobbyHp = Math.max(1, prev.character.hp - lobbyDamagePenalty);
+        
         // Process XP through level up system
         let stateAfterXP = processLevelUp(prev, xpReward);
         
-        addDebugLog(`Victory! +${xpReward} XP, +${goldReward} Gold`);
+        addDebugLog(`Victory! +${xpReward} XP, +${goldReward} Gold. Lobby HP: -${lobbyDamagePenalty}`);
         
         return {
           ...stateAfterXP,
           character: {
             ...stateAfterXP.character,
+            hp: finalLobbyHp, // Apply lobby penalty after victory
             // Add gold
             gold: stateAfterXP.character.gold + goldReward,
             totalGoldEarned: stateAfterXP.character.totalGoldEarned + goldReward,
@@ -1549,16 +1591,23 @@ export function useGameState() {
             logs: [...prev.combat.logs, log, `🎉 Vitória! +${xpReward} XP, +${goldReward} 🪙`],
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
+            damageTakenInCurrentBattle: newDamageTakenInBattle,
           },
         };
       }
 
       if (newPlayerHp <= 0) {
-        // Defeat
+        // Defeat - Calculate penalty based on total HP
+        const hpPenalty = Math.floor(prev.character.maxHp * 0.5);
+        // CRITICAL: Penalty is the ONLY damage applied on death to avoid double-dipping
+        // We use the HP the player had BEFORE the battle and subtract 50% of max HP
+        const finalLobbyHp = Math.max(0, prev.character.hp - hpPenalty);
+
         return {
           ...prev,
           character: {
             ...prev.character,
+            hp: finalLobbyHp, // Applied 50% penalty (if 0, App.tsx will trigger DeathScreen)
             stats: {
               ...prev.character.stats,
               totalDeaths: prev.character.stats.totalDeaths + 1,
@@ -1572,9 +1621,10 @@ export function useGameState() {
             ...prev.combat,
             playerHp: 0,
             isActive: false,
-            logs: [...prev.combat.logs, log, bossLog, '💀 Você foi derrotado!'],
+            logs: [...prev.combat.logs, log, bossLog, `💀 DERROTA! Penalidade de -${hpPenalty} HP (50%)`],
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
+            damageTakenInCurrentBattle: newDamageTakenInBattle,
           },
         };
       }
@@ -1584,6 +1634,7 @@ export function useGameState() {
         ...prev,
         character: {
           ...prev.character,
+          // Lobby HP stays the same during combat
           stats: {
             ...prev.character.stats,
             totalDamageDealt: prev.character.stats.totalDamageDealt + damage,
@@ -1600,6 +1651,7 @@ export function useGameState() {
           logs: [...prev.combat.logs, log, bossLog],
           specialAttackCooldown: newSpecialCooldown,
           lastDamageDealt: damage,
+          damageTakenInCurrentBattle: newDamageTakenInBattle,
         },
       };
     });
@@ -1666,6 +1718,9 @@ export function useGameState() {
 
       const newPlayerHp = Math.max(0, prev.combat.playerHp - bossDamage);
 
+      // Track damage taken in this battle for post-fight lobby penalty
+      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage;
+
       // Set special attack cooldown
       const newSpecialCooldown = equippedSpecial.maxCooldown;
 
@@ -1676,6 +1731,10 @@ export function useGameState() {
         const winReward = 20 + mapMultiplier * 5 + (isBoss ? 20 : 0);
         const xpReward = 50 + mapMultiplier * 10 + (isBoss ? 30 : 0);
         
+        // Calculate lobby penalty: 20% of total damage taken in this battle
+        const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
+        const finalLobbyHp = Math.max(1, prev.character.hp - lobbyDamagePenalty);
+        
         // Process XP through level up system
         let stateAfterXP = processLevelUp(prev, xpReward);
         
@@ -1683,6 +1742,7 @@ export function useGameState() {
           ...stateAfterXP,
           character: {
             ...stateAfterXP.character,
+            hp: finalLobbyHp, // Apply lobby penalty after victory
             stats: {
               ...stateAfterXP.character.stats,
               bossesDefeated: isBoss 
@@ -1702,28 +1762,26 @@ export function useGameState() {
             ...prev.combat,
             isActive: false,
             bossHp: 0,
-            logs: [log, `🎉 Vitória! +${winReward} moedas, +${xpReward} XP`, ...prev.combat.logs],
+            logs: [log, `🎉 Vitória! +${winReward} moedas, +${xpReward} XP`],
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
+            damageTakenInCurrentBattle: newDamageTakenInBattle,
           },
         };
       }
 
       if (newPlayerHp <= 0) {
-        const mapMultiplier = prev.currentMapId ? parseInt(prev.currentMapId.replace('map', '')) : 1;
-        const lossPercent = 0.15 + (mapMultiplier * 0.02);
-        const hpPenalty = Math.floor(prev.character.maxHp * Math.min(lossPercent, 0.30));
-        const finalHp = Math.max(0, prev.character.hp - hpPenalty);
-
-        if (finalHp <= 0) {
-          return handleDeath(prev);
-        }
+        // Defeat - Calculate penalty based on total HP
+        const hpPenalty = Math.floor(prev.character.maxHp * 0.5);
+        // CRITICAL: Penalty is the ONLY damage applied on death to avoid double-dipping
+        // We use the HP the player had BEFORE the battle and subtract 50% of max HP
+        const finalLobbyHp = Math.max(0, prev.character.hp - hpPenalty);
 
         return {
           ...prev,
           character: {
             ...prev.character,
-            hp: finalHp,
+            hp: finalLobbyHp, // Applied 50% penalty (if 0, App.tsx will trigger DeathScreen)
             stats: {
               ...prev.character.stats,
               totalDamageTaken: prev.character.stats.totalDamageTaken + bossDamage,
@@ -1733,31 +1791,32 @@ export function useGameState() {
             ...prev.combat,
             isActive: false,
             playerHp: 0,
-            logs: [log, bossLog, `💀 DERROTA! -${hpPenalty} HP`, ...prev.combat.logs],
+            logs: [log, bossLog, `💀 DERROTA! Penalidade de -${hpPenalty} HP (50%)`],
             specialAttackCooldown: newSpecialCooldown,
+            damageTakenInCurrentBattle: newDamageTakenInBattle,
           },
         };
       }
 
       return {
         ...prev,
+        character: {
+          ...prev.character,
+          // Lobby HP stays the same during combat
+          stats: {
+            ...prev.character.stats,
+            totalDamageDealt: prev.character.stats.totalDamageDealt + (bossDodged ? 0 : damage),
+            totalDamageTaken: prev.character.stats.totalDamageTaken + bossDamage,
+          },
+        },
         combat: {
           ...prev.combat,
           playerHp: newPlayerHp,
           bossHp: newBossHp,
           turn: prev.combat.turn + 1,
-          specialAttackCooldown: newSpecialCooldown,
           logs: [log, bossLog, ...prev.combat.logs].slice(0, 20),
-        },
-        character: {
-          ...prev.character,
-          stats: {
-            ...prev.character.stats,
-            totalDamageDealt: prev.character.stats.totalDamageDealt + damage,
-            totalDamageTaken: prev.character.stats.totalDamageTaken + bossDamage,
-            criticalHits: prev.character.stats.criticalHits + (playerCrit ? 1 : 0),
-            dodges: prev.character.stats.dodges + (playerDodged ? 1 : 0),
-          },
+          specialAttackCooldown: newSpecialCooldown,
+          damageTakenInCurrentBattle: newDamageTakenInBattle,
         },
       };
     });
@@ -1794,47 +1853,45 @@ export function useGameState() {
   // ============================================
 
   const handleDeath = (state: GameState): GameState => {
+    // Calculate 40% XP loss
+    const totalXp = getCharacterTotalXp(state.character);
+    const xpLoss = Math.floor(totalXp * 0.40);
+    const newTotalXp = Math.max(0, totalXp - xpLoss);
+    
+    // Get new level and XP from the remaining total XP
+    const { level: newLevel, xp: remainingXp } = getLevelFromTotalXp(newTotalXp);
+    
+    // Recalculate character with the new level (this resets base stats and current HP)
+    const updatedCharacter = setCharacterToLevel(state.character, newLevel, remainingXp);
+
     const deathRecord: DeathRecord = {
       id: generateId(),
       date: Date.now(),
       daysSurvived: state.character.stats.daysSurvived,
       floorReached: state.dungeon.maxFloorReached,
       bossesDefeated: state.character.stats.bossesDefeated,
-      totalXp: state.character.stats.totalXpEarned,
-      cause: 'HP zerado na dungeon',
+      totalXp: totalXp,
+      cause: 'Derrota na dungeon (Penalidade: -40% XP)',
     };
+
+    addDebugLog(`💀 Morte! Penalidade de XP: -${xpLoss} (${totalXp} -> ${newTotalXp}) | Nível: ${state.character.level} -> ${newLevel}`);
 
     return {
       ...state,
       character: {
-        ...INITIAL_CHARACTER,
-        name: state.character.name,
+        ...updatedCharacter,
         stats: {
-          ...INITIAL_CHARACTER.stats,
+          ...updatedCharacter.stats,
           totalDeaths: state.character.stats.totalDeaths + 1,
+          totalXpEarned: newTotalXp, // Update cumulative stat
+        },
+        progression: {
+          ...updatedCharacter.progression,
+          totalXpEarned: newTotalXp, // Update cumulative stat
         },
       },
-      dungeon: {
-        currentFloor: 1,
-        maxFloorReached: 1,
-        currentBoss: getBossForFloor(1),
-        bossesDefeated: 0,
-        entryCostPercent: 0.10,
-      },
+      // Keep maps and quests, but reset combat
       combat: null,
-      inventory: {
-        items: [],
-        gems: [],
-        specialAttacks: [],
-        lootboxes: state.inventory.lootboxes,
-        maxSlots: 30,
-      },
-      quests: { habito: [], diaria: [], meta: [] },
-      economy: {
-        coins: 0,
-        totalCoinsEarned: state.economy.totalCoinsEarned,
-        totalCoinsSpent: state.economy.totalCoinsSpent,
-      },
       history: {
         deaths: [...state.history.deaths, deathRecord],
         bestRuns: {
@@ -1924,6 +1981,10 @@ export function useGameState() {
   // ============================================
   // RESET SYSTEM
   // ============================================
+
+  const reviveCharacter = useCallback(() => {
+    setGameState(prev => handleDeath(prev));
+  }, []);
 
   const resetProgress = useCallback(() => {
     setGameState(prev => ({
@@ -2229,8 +2290,10 @@ export function useGameState() {
   return {
     gameState,
     isLoaded,
-    showLevelUp,
+    showLevelUp: gameState.showLevelUp,
     setShowLevelUp,
+    showRestOverlay: gameState.showRestOverlay,
+    setShowRestOverlay,
     LOOTBOX_TYPES,
     DIFFICULTY_CONFIG,
     // Character
@@ -2257,6 +2320,7 @@ export function useGameState() {
     advanceFloor,
     startNewBattle,
     resetDungeonAfterDeath,
+    reviveCharacter,
     // Map System
     selectMapNode,
     completeMapNode,
@@ -2272,6 +2336,35 @@ export function useGameState() {
         },
       }));
       addDebugLog('Energia totalmente recuperada!');
+    },
+    restCharacter: () => {
+      setGameState(prev => {
+        if (prev.character.energy < 3) {
+          addDebugLog('Energia insuficiente para descansar! (Mínimo 3)');
+          return prev;
+        }
+        
+        const healAmount = Math.floor(prev.character.maxHp * 0.20);
+        const prevHp = prev.character.hp;
+        const newHp = Math.min(prev.character.maxHp, prev.character.hp + healAmount);
+        
+        addDebugLog(`Descansou na fogueira: -3 ⚡, +${healAmount} HP`);
+        
+        return {
+          ...prev,
+          character: {
+            ...prev.character,
+            energy: prev.character.energy - 3,
+            hp: newHp,
+          },
+          showRestOverlay: true,
+          restDetails: {
+            prevHp,
+            newHp,
+            healAmount,
+          },
+        };
+      });
     },
     // Reset
     resetProgress,

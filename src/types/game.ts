@@ -619,15 +619,15 @@ export function recalculatePlayerStats(character: Character): Character {
 }
 
 // Level up - increases base stats with fixed values
-// +10 HP, +2 Attack, +1 Defense, +0.3% Crit, +0.4% Dodge per level
+// +5 HP, +2 Attack, +0.5 Defense, +0.3% Crit, +0.4% Dodge per level
 export function levelUpCharacter(character: Character): Character {
   const newLevel = character.level + 1;
   
   // Increase base stats with fixed values
   const newBaseStats = {
     attack: character.baseStats.attack + 2, // +2 attack per level
-    defense: character.baseStats.defense + 1, // +1 defense per level
-    maxHp: character.baseStats.maxHp + 10, // +10 HP per level
+    defense: character.baseStats.defense + 0.5, // +0.5 defense per level
+    maxHp: character.baseStats.maxHp + 5, // +5 HP per level
     dodgeChance: Math.min(character.baseStats.dodgeChance + 0.004, 0.35), // +0.4%, max 35%
     critChance: Math.min(character.baseStats.critChance + 0.003, 0.40), // +0.3%, max 40%
     critMultiplier: character.baseStats.critMultiplier, // stays at 1.5 (150%)
@@ -1211,6 +1211,70 @@ export function calculateXpForLevel(level: number): number {
   return Math.floor(50 * Math.pow(level, 1.6));
 }
 
+// Calculate cumulative XP needed to reach a certain level from level 1
+export function calculateCumulativeXpForLevel(level: number): number {
+  let total = 0;
+  for (let i = 1; i < level; i++) {
+    total += calculateXpForLevel(i);
+  }
+  return total;
+}
+
+// Get total accumulated XP from character state
+export function getCharacterTotalXp(character: { level: number; xp: number }): number {
+  return calculateCumulativeXpForLevel(character.level) + character.xp;
+}
+
+// Get level and remaining XP from a total amount of XP
+export function getLevelFromTotalXp(totalXp: number): { level: number; xp: number; maxXp: number } {
+  let level = 1;
+  let remainingXp = totalXp;
+  
+  while (remainingXp >= calculateXpForLevel(level)) {
+    remainingXp -= calculateXpForLevel(level);
+    level++;
+  }
+  
+  return {
+    level,
+    xp: remainingXp,
+    maxXp: calculateXpForLevel(level)
+  };
+}
+
+// Recalculate character stats based on a specific level
+export function setCharacterToLevel(character: Character, targetLevel: number, currentXp: number): Character {
+  // Start from base stats (Level 1)
+  let baseStats = {
+    attack: 6,
+    defense: 1,
+    maxHp: 100,
+    dodgeChance: 0.03,
+    critChance: 0.05,
+    critMultiplier: 1.5,
+  };
+
+  // Apply level up bonuses for each level beyond 1
+  for (let i = 1; i < targetLevel; i++) {
+    baseStats.attack += 2;
+    baseStats.defense += 0.5;
+    baseStats.maxHp += 5;
+    baseStats.dodgeChance = Math.min(baseStats.dodgeChance + 0.004, 0.35);
+    baseStats.critChance = Math.min(baseStats.critChance + 0.003, 0.40);
+  }
+
+  const updated: Character = {
+    ...character,
+    level: targetLevel,
+    xp: currentXp,
+    maxXp: calculateXpForLevel(targetLevel),
+    baseStats,
+    hp: 999999, // Will be capped to totalStats.maxHp in recalculatePlayerStats
+  };
+
+  return recalculatePlayerStats(updated);
+}
+
 // Calculate stat increases on level up
 export function calculateLevelUpStats(character: Character): Partial<Character> {
   const newLevel = character.level + 1;
@@ -1315,6 +1379,7 @@ export interface CombatState {
   equippedSpecialAttack?: SpecialAttack;
   specialAttackCooldown: number;
   lastDamageDealt?: number; // For animation
+  damageTakenInCurrentBattle: number; // Track total damage to calculate lobby penalty after fight
   // Floor progression (legacy)
   showFloorComplete?: boolean;
 }
@@ -1429,6 +1494,13 @@ export interface GameState {
   lastLogin: number;
   gameStarted: boolean;
   showProfileSetup: boolean;
+  showLevelUp: boolean; // Flag to show level up UI
+  showRestOverlay: boolean; // Flag to show rest overlay
+  restDetails: {
+    prevHp: number;
+    newHp: number;
+    healAmount: number;
+  } | null;
   unlockedSkins: string[];
   achievements: string[];
   // Debug logs
