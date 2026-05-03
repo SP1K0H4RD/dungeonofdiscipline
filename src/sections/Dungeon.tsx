@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Swords, Zap, ChevronLeft } from 'lucide-react';
+import { Swords, Zap, ChevronLeft, Coins, Star } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
 import { cn } from '@/lib/utils';
@@ -145,6 +145,23 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
           <p className="text-gray-400 mb-6">
             Você derrotou <span className="text-white font-semibold">{enemyName}</span>!
           </p>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex flex-col items-center">
+               <div className="flex items-center gap-1.5 mb-1">
+                 <Coins className="w-3 h-3 text-yellow-500" />
+                 <span className="text-[10px] text-yellow-500 uppercase font-black tracking-widest">Ouro</span>
+               </div>
+               <span className="text-xl font-black text-yellow-500">+{combat.goldReward || 0}</span>
+             </div>
+             <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 flex flex-col items-center">
+               <div className="flex items-center gap-1.5 mb-1">
+                 <Star className="w-3 h-3 text-blue-500" />
+                 <span className="text-[10px] text-blue-500 uppercase font-black tracking-widest">XP</span>
+               </div>
+               <span className="text-xl font-black text-blue-500">+{combat.xpReward || 0}</span>
+             </div>
+           </div>
           
           {currentNode.isBoss && (
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
@@ -155,6 +172,28 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
                   : 'Próximo mapa desbloqueado!'}
               </p>
             </div>
+          )}
+
+          {combat.droppedItem && (
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6"
+            >
+              <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-3">Item Encontrado!</p>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-4xl shadow-inner">
+                  {combat.droppedItem.icon}
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold leading-tight">{combat.droppedItem.name}</p>
+                  <p className="text-[10px] text-orange-400 uppercase font-black tracking-tighter mt-1">
+                    {combat.droppedItem.rarity}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           )}
           
           <Button onClick={handleReturnToMap} className="w-full btn-primary py-4">
@@ -208,10 +247,14 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2d2d44] p-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={handleReturnToMap} className="text-gray-400 hover:text-white">
-            <ChevronLeft className="w-5 h-5 mr-1" />
-            Fugir
-          </Button>
+          {combat.turn === 1 ? (
+            <Button variant="ghost" onClick={handleReturnToMap} className="text-gray-400 hover:text-white">
+              <ChevronLeft className="w-5 h-5 mr-1" />
+              Fugir
+            </Button>
+          ) : (
+            <div className="w-20" /> // Empty space when fleeing is not allowed
+          )}
           
           <div className="text-center">
             <h2 className="text-lg font-bold text-white font-cinzel">

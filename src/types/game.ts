@@ -78,6 +78,39 @@ export const SPECIAL_ATTACK_MULTIPLIERS: Record<Rarity, number> = {
   legendary: 2.3,
 };
 
+// ============================================
+// FORGE SYSTEM CONSTANTS
+// ============================================
+
+export const FORGE_SUCCESS_CHANCES: Record<number, number> = {
+  0: 100, 1: 95, 2: 90, 3: 85, 4: 80, 5: 70, 6: 60, 7: 50, 8: 40, 9: 30
+};
+
+export const FORGE_DOWNGRADE_CHANCES: Record<number, number> = {
+  0: 0, 1: 5, 2: 10, 3: 15, 4: 20, 5: 30, 6: 40, 7: 50, 8: 60, 9: 70
+};
+
+export const FORGE_BASE_COSTS: Record<number, { shards: number; gold: number }> = {
+  1: { shards: 1, gold: 10 },
+  2: { shards: 2, gold: 20 },
+  3: { shards: 3, gold: 30 },
+  4: { shards: 4, gold: 40 },
+  5: { shards: 5, gold: 60 },
+  6: { shards: 6, gold: 80 },
+  7: { shards: 7, gold: 100 },
+  8: { shards: 8, gold: 130 },
+  9: { shards: 9, gold: 160 },
+  10: { shards: 10, gold: 200 },
+};
+
+export const FORGE_RARITY_MULTIPLIERS: Record<Rarity, number> = {
+  common: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 5,
+  mythic: 8,
+};
+
 // Cooldowns based on rarity (in turns)
 export const SPECIAL_ATTACK_COOLDOWNS: Record<Rarity, number> = {
   common: 8,
@@ -183,10 +216,19 @@ export interface MonsterSpawn {
   hp: number;
   damageMin: number;
   damageMax: number;
-  defense: number; // percentage
-  dodge: number; // percentage
+  defense: number; // value
+  dodge: number; // percentage (0-100)
+  critChance: number; // percentage (0-100)
   xp: number;
+  goldMin: number;
+  goldMax: number;
   chance: number; // percentage (0-100)
+  drops?: {
+    common?: Item[];
+    rare?: Item[];
+    epic?: Item[];
+    legendary?: Item[];
+  };
 }
 
 // Stage data with possible monster spawns
@@ -194,6 +236,14 @@ export interface StageData {
   stage: number;
   spawns: MonsterSpawn[];
 }
+
+// Global drop probabilities
+export const GLOBAL_DROP_RATES = {
+  common: 15, // 15%
+  rare: 7,    // 7%
+  epic: 5,    // 5%
+  legendary: 3 // 3%
+};
 
 export interface MapNode {
   id: string;
@@ -219,7 +269,16 @@ export interface SpawnedEnemy {
   damageMax: number;
   defense: number;
   dodge: number;
+  critChance: number;
   xp: number;
+  gold: number;
+  isBoss?: boolean;
+  drops?: {
+    common?: Item[];
+    rare?: Item[];
+    epic?: Item[];
+    legendary?: Item[];
+  };
 }
 
 export interface GameMap {
@@ -236,41 +295,136 @@ export interface GameMap {
 // MONSTER DATA FROM SPREADSHEET - EXACT VALUES
 // ============================================
 
+// Stage 1 Monsters
+const RATO: MonsterSpawn = { 
+  name: 'Rato', image: '🐀', hp: 55, damageMin: 9, damageMax: 12, defense: 2, dodge: 5, critChance: 3, xp: 12, goldMin: 6, goldMax: 10, chance: 40,
+  drops: {
+    common: [
+      { id: 'sword-rato', name: 'Espada Rústica do Rato', description: 'Uma espada feita de restos metálicos.', type: 'weapon', rarity: 'common', icon: '🗡️', stats: { attack: 2 }, durability: 50, maxDurability: 50, levelRequirement: 1, upgradeLevel: 0 },
+      { id: 'armor-rato', name: 'Couro Rasgado do Rato', description: 'Um peitoral de couro remendado.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 2 }, durability: 50, maxDurability: 50, levelRequirement: 1, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const RATO_PEQUENO: MonsterSpawn = { 
+  name: 'Rato Pequeno', image: '🐀', hp: 40, damageMin: 6, damageMax: 9, defense: 1, dodge: 4, critChance: 2, xp: 8, goldMin: 4, goldMax: 7, chance: 60,
+  drops: {
+    common: [
+      { id: 'dagger-rato-p', name: 'Adaga Improvisada', description: 'Uma adaga pequena mas afiada.', type: 'weapon', rarity: 'common', icon: '🔪', stats: { attack: 2 }, durability: 40, maxDurability: 40, levelRequirement: 1, upgradeLevel: 0 },
+      { id: 'rag-rato-p', name: 'Trapo Costurado', description: 'Um pedaço de pano reforçado.', type: 'armor', rarity: 'common', icon: '👕', stats: { defense: 2 }, durability: 40, maxDurability: 40, levelRequirement: 1, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const COELHO: MonsterSpawn = { 
+  name: 'Coelho', image: '🐇', hp: 115, damageMin: 16, damageMax: 20, defense: 4, dodge: 12, critChance: 5, xp: 22, goldMin: 10, goldMax: 16, chance: 70,
+  drops: {
+    common: [
+      { id: 'sword-coelho', name: 'Lâmina Ágil do Coelho', description: 'Uma lâmina leve e veloz.', type: 'weapon', rarity: 'common', icon: '⚔️', stats: { attack: 3 }, durability: 60, maxDurability: 60, levelRequirement: 2, upgradeLevel: 0 },
+      { id: 'armor-coelho', name: 'Peitoral Leve do Coelho', description: 'Um peitoral que não limita os movimentos.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 3 }, durability: 60, maxDurability: 60, levelRequirement: 2, upgradeLevel: 0 }
+    ],
+    rare: [
+      { id: 'sword-coelho-rare', name: 'Lâmina Ágil Reforçada', description: 'Uma versão superior da lâmina do coelho.', type: 'weapon', rarity: 'rare', icon: '⚔️', stats: { attack: 6 }, durability: 80, maxDurability: 80, levelRequirement: 4, upgradeLevel: 0 },
+      { id: 'armor-coelho-rare', name: 'Peitoral Leve Reforçado', description: 'Proteção aprimorada para exploradores.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 6 }, durability: 80, maxDurability: 80, levelRequirement: 4, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const ESQUILO: MonsterSpawn = { 
+  name: 'Esquilo', image: '🐿️', hp: 130, damageMin: 18, damageMax: 22, defense: 6, dodge: 15, critChance: 8, xp: 38, goldMin: 16, goldMax: 24, chance: 70,
+  drops: {
+    common: [
+      { id: 'sword-esquilo', name: 'Espada Afiada do Esquilo', description: 'Uma espada balanceada.', type: 'weapon', rarity: 'common', icon: '🗡️', stats: { attack: 4 }, durability: 70, maxDurability: 70, levelRequirement: 3, upgradeLevel: 0 },
+      { id: 'armor-esquilo', name: 'Armadura de Couro Flexível', description: 'Proteção de couro de alta qualidade.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 4 }, durability: 70, maxDurability: 70, levelRequirement: 3, upgradeLevel: 0 }
+    ],
+    rare: [
+      { id: 'sword-esquilo-rare', name: 'Espada Afiada Reforjada', description: 'Reforjada em chamas sagradas.', type: 'weapon', rarity: 'rare', icon: '🗡️', stats: { attack: 7 }, durability: 100, maxDurability: 100, levelRequirement: 5, upgradeLevel: 0 },
+      { id: 'armor-esquilo-rare', name: 'Armadura de Couro Tratado', description: 'Couro tratado para maior durabilidade.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 7 }, durability: 100, maxDurability: 100, levelRequirement: 5, upgradeLevel: 0 }
+    ],
+    epic: [
+      { id: 'sword-esquilo-epic', name: 'Lâmina Reluzente da Floresta', description: 'Uma lâmina lendária da floresta.', type: 'weapon', rarity: 'epic', icon: '✨', stats: { attack: 10 }, durability: 150, maxDurability: 150, levelRequirement: 7, upgradeLevel: 0 },
+      { id: 'armor-esquilo-epic', name: 'Armadura Selvagem Ancestral', description: 'Uma armadura usada por heróis antigos.', type: 'armor', rarity: 'epic', icon: '🌿', stats: { defense: 10 }, durability: 150, maxDurability: 150, levelRequirement: 7, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const ESQUILO_ELITE: MonsterSpawn = { 
+  name: 'Esquilo Elite', image: '🐿️', hp: 160, damageMin: 20, damageMax: 26, defense: 8, dodge: 18, critChance: 12, xp: 60, goldMin: 22, goldMax: 32, chance: 70,
+  drops: {
+    rare: [
+      { id: 'sword-elite-rare', name: 'Espada do Guardião da Floresta', description: 'Arma cerimonial dos guardiões.', type: 'weapon', rarity: 'rare', icon: '⚔️', stats: { attack: 8 }, durability: 120, maxDurability: 120, levelRequirement: 6, upgradeLevel: 0 },
+      { id: 'armor-elite-rare', name: 'Armadura do Guardião', description: 'Usada pela elite da floresta.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 8 }, durability: 120, maxDurability: 120, levelRequirement: 6, upgradeLevel: 0 }
+    ],
+    epic: [
+      { id: 'sword-elite-epic', name: 'Espada Épica da Floresta Antiga', description: 'Uma espada imbuída de magia ancestral.', type: 'weapon', rarity: 'epic', icon: '💎', stats: { attack: 10 }, durability: 180, maxDurability: 180, levelRequirement: 8, upgradeLevel: 0 },
+      { id: 'armor-elite-epic', name: 'Armadura Épica da Floresta', description: 'Forjada no coração da floresta.', type: 'armor', rarity: 'epic', icon: '🌲', stats: { defense: 10 }, durability: 180, maxDurability: 180, levelRequirement: 8, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const RATO_GIGANTE: MonsterSpawn = { 
+  name: 'Rato Gigante', image: '🐀', hp: 190, damageMin: 22, damageMax: 28, defense: 9, dodge: 8, critChance: 10, xp: 75, goldMin: 30, goldMax: 40, chance: 5,
+  drops: {
+    rare: [
+      { id: 'axe-gigante-rare', name: 'Machado Pesado do Rato Gigante', description: 'Um machado enorme e desbalanceado.', type: 'weapon', rarity: 'rare', icon: '🪓', stats: { attack: 8 }, durability: 110, maxDurability: 110, levelRequirement: 6, upgradeLevel: 0 },
+      { id: 'armor-gigante-rare', name: 'Couraça Espessa', description: 'Feita da pele de um rato gigante.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 8 }, durability: 110, maxDurability: 110, levelRequirement: 6, upgradeLevel: 0 }
+    ],
+    epic: [
+      { id: 'axe-gigante-epic', name: 'Machado Brutal Colossal', description: 'Apenas os mais fortes conseguem empunhar.', type: 'weapon', rarity: 'epic', icon: '🪓', stats: { attack: 10 }, durability: 160, maxDurability: 160, levelRequirement: 8, upgradeLevel: 0 },
+      { id: 'armor-gigante-epic', name: 'Couraça de Guerra', description: 'Uma couraça reforçada para combate intenso.', type: 'armor', rarity: 'epic', icon: '🧥', stats: { defense: 10 }, durability: 160, maxDurability: 160, levelRequirement: 8, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const URSO_ANCESTRAL: MonsterSpawn = { 
+  name: 'Urso Ancestral', image: '🐻', hp: 230, damageMin: 26, damageMax: 32, defense: 10, dodge: 5, critChance: 18, xp: 120, goldMin: 80, goldMax: 120, chance: 100,
+  drops: {
+    epic: [
+      { id: 'sword-urso-epic', name: 'Espada do Urso Ancestral', description: 'Uma lâmina pesada e brutal.', type: 'weapon', rarity: 'epic', icon: '🗡️', stats: { attack: 11 }, durability: 200, maxDurability: 200, levelRequirement: 9, upgradeLevel: 0 },
+      { id: 'armor-urso-epic', name: 'Armadura do Urso Ancestral', description: 'Uma armadura feita de ossos e couro.', type: 'armor', rarity: 'epic', icon: '🛡️', stats: { defense: 11 }, durability: 200, maxDurability: 200, levelRequirement: 9, upgradeLevel: 0 }
+    ],
+    legendary: [
+      { id: 'sword-urso-legend', name: 'Lâmina Primordial', description: 'Uma arma de tempos esquecidos.', type: 'weapon', rarity: 'legendary', icon: '🔥', stats: { attack: 14 }, durability: 300, maxDurability: 300, levelRequirement: 12, upgradeLevel: 0 },
+      { id: 'armor-urso-legend', name: 'Armadura do Titã da Floresta', description: 'O ápice da defesa física.', type: 'armor', rarity: 'legendary', icon: '🏰', stats: { defense: 14 }, durability: 300, maxDurability: 300, levelRequirement: 12, upgradeLevel: 0 }
+    ]
+  }
+};
+
 // Map 1: Floresta Sombria
 const MAP1_STAGES: StageData[] = [
   {
     stage: 1,
     spawns: [
-      { name: 'Rato', image: '🐀', hp: 60, damageMin: 5, damageMax: 7, defense: 2, dodge: 2, xp: 8, chance: 70 },
-      { name: 'Rato Pequeno', image: '🐁', hp: 50, damageMin: 4, damageMax: 6, defense: 2, dodge: 3, xp: 7, chance: 30 },
+      { ...RATO_PEQUENO, chance: 60 },
+      { ...RATO, chance: 40 },
     ],
   },
   {
     stage: 2,
     spawns: [
-      { name: 'Coelho', image: '🐇', hp: 70, damageMin: 6, damageMax: 8, defense: 2, dodge: 3, xp: 10, chance: 70 },
-      { name: 'Rato', image: '🐀', hp: 60, damageMin: 5, damageMax: 7, defense: 2, dodge: 2, xp: 9, chance: 30 },
+      { ...COELHO, chance: 70 },
+      { ...RATO, chance: 30, drops: { common: RATO.drops?.common } }, // Stage 2 Rato: only common drops
     ],
   },
   {
     stage: 3,
     spawns: [
-      { name: 'Esquilo', image: '🐿', hp: 90, damageMin: 7, damageMax: 9, defense: 3, dodge: 4, xp: 14, chance: 70 },
-      { name: 'Coelho', image: '🐇', hp: 70, damageMin: 6, damageMax: 8, defense: 2, dodge: 3, xp: 10, chance: 30 },
+      { ...ESQUILO, chance: 70 },
+      { ...COELHO, chance: 30 },
     ],
   },
   {
     stage: 4,
     spawns: [
-      { name: 'Esquilo de Elite', image: '🐿', hp: 110, damageMin: 8, damageMax: 10, defense: 4, dodge: 4, xp: 18, chance: 70 },
-      { name: 'Rato Gigante', image: '🐀', hp: 160, damageMin: 12, damageMax: 15, defense: 5, dodge: 3, xp: 28, chance: 5 },
-      { name: 'Rato', image: '🐀', hp: 60, damageMin: 5, damageMax: 7, defense: 2, dodge: 2, xp: 9, chance: 25 },
+      { ...ESQUILO_ELITE, chance: 70 },
+      { ...RATO_GIGANTE, chance: 5 },
+      { ...ESQUILO, chance: 25 },
     ],
   },
   {
     stage: 5,
     spawns: [
-      { name: 'Urso', image: '🐻', hp: 260, damageMin: 18, damageMax: 25, defense: 6, dodge: 3, xp: 60, chance: 100 },
+      { ...URSO_ANCESTRAL, chance: 100 },
     ],
   },
 ];
@@ -280,36 +434,36 @@ const MAP2_STAGES: StageData[] = [
   {
     stage: 1,
     spawns: [
-      { name: 'Ouriço', image: '🦔', hp: 95, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, xp: 18, chance: 70 },
-      { name: 'Esquilo de Elite', image: '🐿', hp: 110, damageMin: 8, damageMax: 10, defense: 4, dodge: 4, xp: 18, chance: 30 },
+      { name: 'Ouriço', image: '🦔', hp: 95, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, critChance: 2, xp: 18, goldMin: 4, goldMax: 10, chance: 70 },
+      { name: 'Esquilo de Elite', image: '🐿', hp: 110, damageMin: 8, damageMax: 10, defense: 4, dodge: 4, critChance: 4, xp: 18, goldMin: 4, goldMax: 10, chance: 30 },
     ],
   },
   {
     stage: 2,
     spawns: [
-      { name: 'Castor', image: '🦫', hp: 100, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, xp: 20, chance: 70 },
-      { name: 'Ouriço', image: '🦔', hp: 95, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, xp: 18, chance: 30 },
+      { name: 'Castor', image: '🦫', hp: 100, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, critChance: 2, xp: 20, goldMin: 6, goldMax: 16, chance: 70 },
+      { name: 'Ouriço', image: '🦔', hp: 95, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, critChance: 2, xp: 18, goldMin: 6, goldMax: 16, chance: 30 },
     ],
   },
   {
     stage: 3,
     spawns: [
-      { name: 'Raposa', image: '🦊', hp: 120, damageMin: 9, damageMax: 12, defense: 5, dodge: 4, xp: 24, chance: 70 },
-      { name: 'Castor', image: '🦫', hp: 100, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, xp: 20, chance: 30 },
+      { name: 'Raposa', image: '🦊', hp: 120, damageMin: 9, damageMax: 12, defense: 5, dodge: 4, critChance: 5, xp: 24, goldMin: 10, goldMax: 24, chance: 70 },
+      { name: 'Castor', image: '🦫', hp: 100, damageMin: 8, damageMax: 11, defense: 4, dodge: 3, critChance: 2, xp: 20, goldMin: 10, goldMax: 24, chance: 30 },
     ],
   },
   {
     stage: 4,
     spawns: [
-      { name: 'Lobo Alfa', image: '🐺', hp: 150, damageMin: 10, damageMax: 13, defense: 6, dodge: 3, xp: 28, chance: 70 },
-      { name: 'Urso Jovem', image: '🐻', hp: 230, damageMin: 14, damageMax: 18, defense: 8, dodge: 3, xp: 40, chance: 5 },
-      { name: 'Raposa', image: '🦊', hp: 120, damageMin: 9, damageMax: 12, defense: 5, dodge: 4, xp: 24, chance: 25 },
+      { name: 'Lobo Alfa', image: '🐺', hp: 150, damageMin: 10, damageMax: 13, defense: 6, dodge: 3, critChance: 8, xp: 28, goldMin: 16, goldMax: 40, chance: 70 },
+      { name: 'Urso Jovem', image: '🐻', hp: 230, damageMin: 14, damageMax: 18, defense: 8, dodge: 3, critChance: 10, xp: 40, goldMin: 16, goldMax: 40, chance: 5 },
+      { name: 'Raposa', image: '🦊', hp: 120, damageMin: 9, damageMax: 12, defense: 5, dodge: 4, critChance: 5, xp: 24, goldMin: 16, goldMax: 40, chance: 25 },
     ],
   },
   {
     stage: 5,
     spawns: [
-      { name: 'Leão', image: '🦁', hp: 360, damageMin: 26, damageMax: 35, defense: 8, dodge: 2, xp: 90, chance: 100 },
+      { name: 'Leão', image: '🦁', hp: 360, damageMin: 26, damageMax: 35, defense: 8, dodge: 2, critChance: 15, xp: 90, goldMin: 80, goldMax: 120, chance: 100 },
     ],
   },
 ];
@@ -319,36 +473,36 @@ const MAP3_STAGES: StageData[] = [
   {
     stage: 1,
     spawns: [
-      { name: 'Gambá', image: '🦨', hp: 130, damageMin: 11, damageMax: 15, defense: 5, dodge: 3, xp: 30, chance: 70 },
-      { name: 'Lobo Alfa', image: '🐺', hp: 150, damageMin: 10, damageMax: 13, defense: 6, dodge: 3, xp: 28, chance: 30 },
+      { name: 'Gambá', image: '🦨', hp: 130, damageMin: 11, damageMax: 15, defense: 5, dodge: 3, critChance: 4, xp: 30, goldMin: 4, goldMax: 10, chance: 70 },
+      { name: 'Lobo Alfa', image: '🐺', hp: 150, damageMin: 10, damageMax: 13, defense: 6, dodge: 3, critChance: 8, xp: 28, goldMin: 4, goldMax: 10, chance: 30 },
     ],
   },
   {
     stage: 2,
     spawns: [
-      { name: 'Morcego', image: '🦇', hp: 140, damageMin: 12, damageMax: 16, defense: 5, dodge: 4, xp: 32, chance: 70 },
-      { name: 'Gambá', image: '🦨', hp: 130, damageMin: 11, damageMax: 15, defense: 5, dodge: 3, xp: 30, chance: 30 },
+      { name: 'Morcego', image: '🦇', hp: 140, damageMin: 12, damageMax: 16, defense: 5, dodge: 4, critChance: 6, xp: 32, goldMin: 6, goldMax: 16, chance: 70 },
+      { name: 'Gambá', image: '🦨', hp: 130, damageMin: 11, damageMax: 15, defense: 5, dodge: 3, critChance: 4, xp: 30, goldMin: 6, goldMax: 16, chance: 30 },
     ],
   },
   {
     stage: 3,
     spawns: [
-      { name: 'Águia', image: '🦅', hp: 170, damageMin: 13, damageMax: 17, defense: 6, dodge: 4, xp: 36, chance: 70 },
-      { name: 'Morcego', image: '🦇', hp: 140, damageMin: 12, damageMax: 16, defense: 5, dodge: 4, xp: 32, chance: 30 },
+      { name: 'Águia', image: '🦅', hp: 170, damageMin: 13, damageMax: 17, defense: 6, dodge: 4, critChance: 7, xp: 36, goldMin: 10, goldMax: 24, chance: 70 },
+      { name: 'Morcego', image: '🦇', hp: 140, damageMin: 12, damageMax: 16, defense: 5, dodge: 4, critChance: 6, xp: 32, goldMin: 10, goldMax: 24, chance: 30 },
     ],
   },
   {
     stage: 4,
     spawns: [
-      { name: 'Gorila Bravo', image: '🦍', hp: 200, damageMin: 14, damageMax: 18, defense: 6, dodge: 5, xp: 40, chance: 70 },
-      { name: 'Ent', image: '🌲', hp: 330, damageMin: 21, damageMax: 28, defense: 9, dodge: 3, xp: 60, chance: 5 },
-      { name: 'Águia', image: '🦅', hp: 170, damageMin: 13, damageMax: 17, defense: 6, dodge: 4, xp: 36, chance: 25 },
+      { name: 'Gorila Bravo', image: '🦍', hp: 200, damageMin: 14, damageMax: 18, defense: 6, dodge: 5, critChance: 10, xp: 40, goldMin: 16, goldMax: 40, chance: 70 },
+      { name: 'Ent', image: '🌲', hp: 330, damageMin: 21, damageMax: 28, defense: 9, dodge: 3, critChance: 12, xp: 60, goldMin: 16, goldMax: 40, chance: 5 },
+      { name: 'Águia', image: '🦅', hp: 170, damageMin: 13, damageMax: 17, defense: 6, dodge: 4, critChance: 7, xp: 36, goldMin: 16, goldMax: 40, chance: 25 },
     ],
   },
   {
     stage: 5,
     spawns: [
-      { name: 'Leão Ancestral', image: '🦁', hp: 520, damageMin: 38, damageMax: 50, defense: 9, dodge: 3, xp: 130, chance: 100 },
+      { name: 'Leão Ancestral', image: '🦁', hp: 520, damageMin: 38, damageMax: 50, defense: 9, dodge: 3, critChance: 20, xp: 130, goldMin: 80, goldMax: 120, chance: 100 },
     ],
   },
 ];
@@ -358,36 +512,36 @@ const MAP4_STAGES: StageData[] = [
   {
     stage: 1,
     spawns: [
-      { name: 'Cabra', image: '🐐', hp: 180, damageMin: 15, damageMax: 20, defense: 5, dodge: 4, xp: 40, chance: 70 },
-      { name: 'Gorila Bravo', image: '🦍', hp: 200, damageMin: 14, damageMax: 18, defense: 6, dodge: 5, xp: 40, chance: 30 },
+      { name: 'Cabra', image: '🐐', hp: 180, damageMin: 15, damageMax: 20, defense: 5, dodge: 4, critChance: 6, xp: 40, goldMin: 4, goldMax: 10, chance: 70 },
+      { name: 'Gorila Bravo', image: '🦍', hp: 200, damageMin: 14, damageMax: 18, defense: 6, dodge: 5, critChance: 10, xp: 40, goldMin: 4, goldMax: 10, chance: 30 },
     ],
   },
   {
     stage: 2,
     spawns: [
-      { name: 'Carneiro', image: '🐏', hp: 220, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, xp: 45, chance: 70 },
-      { name: 'Cabra', image: '🐐', hp: 180, damageMin: 15, damageMax: 20, defense: 5, dodge: 4, xp: 40, chance: 30 },
+      { name: 'Carneiro', image: '🐏', hp: 220, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, critChance: 8, xp: 45, goldMin: 6, goldMax: 16, chance: 70 },
+      { name: 'Cabra', image: '🐐', hp: 180, damageMin: 15, damageMax: 20, defense: 5, dodge: 4, critChance: 6, xp: 40, goldMin: 6, goldMax: 16, chance: 30 },
     ],
   },
   {
     stage: 3,
     spawns: [
-      { name: 'Bisão', image: '🦬', hp: 240, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, xp: 48, chance: 70 },
-      { name: 'Carneiro', image: '🐏', hp: 220, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, xp: 45, chance: 30 },
+      { name: 'Bisão', image: '🦬', hp: 240, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, critChance: 10, xp: 48, goldMin: 10, goldMax: 24, chance: 70 },
+      { name: 'Carneiro', image: '🐏', hp: 220, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, critChance: 8, xp: 45, goldMin: 10, goldMax: 24, chance: 30 },
     ],
   },
   {
     stage: 4,
     spawns: [
-      { name: 'Touro de Elite', image: '🐂', hp: 260, damageMin: 20, damageMax: 26, defense: 7, dodge: 5, xp: 52, chance: 70 },
-      { name: 'Bisão Gigante', image: '🦬', hp: 480, damageMin: 32, damageMax: 40, defense: 10, dodge: 3, xp: 80, chance: 5 },
-      { name: 'Bisão', image: '🦬', hp: 240, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, xp: 48, chance: 25 },
+      { name: 'Touro de Elite', image: '🐂', hp: 260, damageMin: 20, damageMax: 26, defense: 7, dodge: 5, critChance: 12, xp: 52, goldMin: 16, goldMax: 40, chance: 70 },
+      { name: 'Bisão Gigante', image: '🦬', hp: 480, damageMin: 32, damageMax: 40, defense: 10, dodge: 3, critChance: 15, xp: 80, goldMin: 16, goldMax: 40, chance: 5 },
+      { name: 'Bisão', image: '🦬', hp: 240, damageMin: 18, damageMax: 24, defense: 7, dodge: 3, critChance: 10, xp: 48, goldMin: 16, goldMax: 40, chance: 25 },
     ],
   },
   {
     stage: 5,
     spawns: [
-      { name: 'Gorila Rei', image: '🦍', hp: 750, damageMin: 54, damageMax: 75, defense: 11, dodge: 4, xp: 170, chance: 100 },
+      { name: 'Gorila Rei', image: '🦍', hp: 750, damageMin: 54, damageMax: 75, defense: 11, dodge: 4, critChance: 25, xp: 170, goldMin: 80, goldMax: 120, chance: 100 },
     ],
   },
 ];
@@ -397,36 +551,36 @@ const MAP5_STAGES: StageData[] = [
   {
     stage: 1,
     spawns: [
-      { name: 'Cervo', image: '🦌', hp: 320, damageMin: 25, damageMax: 35, defense: 8, dodge: 2, xp: 70, chance: 70 },
-      { name: 'Touro de Elite', image: '🐂', hp: 260, damageMin: 20, damageMax: 26, defense: 7, dodge: 5, xp: 52, chance: 30 },
+      { name: 'Cervo', image: '🦌', hp: 320, damageMin: 25, damageMax: 35, defense: 8, dodge: 2, critChance: 10, xp: 70, goldMin: 4, goldMax: 10, chance: 70 },
+      { name: 'Touro de Elite', image: '🐂', hp: 260, damageMin: 20, damageMax: 26, defense: 7, dodge: 5, critChance: 12, xp: 52, goldMin: 4, goldMax: 10, chance: 30 },
     ],
   },
   {
     stage: 2,
     spawns: [
-      { name: 'Lhama', image: '🦙', hp: 380, damageMin: 26, damageMax: 36, defense: 9, dodge: 2, xp: 75, chance: 70 },
-      { name: 'Cervo', image: '🦌', hp: 320, damageMin: 25, damageMax: 35, defense: 8, dodge: 2, xp: 70, chance: 30 },
+      { name: 'Lhama', image: '🦙', hp: 380, damageMin: 26, damageMax: 36, defense: 9, dodge: 2, critChance: 12, xp: 75, goldMin: 6, goldMax: 16, chance: 70 },
+      { name: 'Cervo', image: '🦌', hp: 320, damageMin: 25, damageMax: 35, defense: 8, dodge: 2, critChance: 10, xp: 70, goldMin: 6, goldMax: 16, chance: 30 },
     ],
   },
   {
     stage: 3,
     spawns: [
-      { name: 'Girafa', image: '🦒', hp: 420, damageMin: 28, damageMax: 38, defense: 9, dodge: 2, xp: 80, chance: 70 },
-      { name: 'Lhama', image: '🦙', hp: 380, damageMin: 26, damageMax: 36, defense: 9, dodge: 2, xp: 75, chance: 30 },
+      { name: 'Girafa', image: '🦒', hp: 420, damageMin: 28, damageMax: 38, defense: 9, dodge: 2, critChance: 15, xp: 80, goldMin: 10, goldMax: 24, chance: 70 },
+      { name: 'Lhama', image: '🦙', hp: 380, damageMin: 26, damageMax: 36, defense: 9, dodge: 2, critChance: 12, xp: 75, goldMin: 10, goldMax: 24, chance: 30 },
     ],
   },
   {
     stage: 4,
     spawns: [
-      { name: 'Leopardo Veloz', image: '🐆', hp: 470, damageMin: 30, damageMax: 40, defense: 8, dodge: 4, xp: 85, chance: 70 },
-      { name: 'Rino Real', image: '🦏', hp: 800, damageMin: 50, damageMax: 65, defense: 12, dodge: 2, xp: 120, chance: 5 },
-      { name: 'Girafa', image: '🦒', hp: 420, damageMin: 28, damageMax: 38, defense: 9, dodge: 2, xp: 80, chance: 25 },
+      { name: 'Leopardo Veloz', image: '🐆', hp: 470, damageMin: 30, damageMax: 40, defense: 8, dodge: 4, critChance: 18, xp: 85, goldMin: 16, goldMax: 40, chance: 70 },
+      { name: 'Rino Real', image: '🦏', hp: 800, damageMin: 50, damageMax: 65, defense: 12, dodge: 2, critChance: 20, xp: 120, goldMin: 16, goldMax: 40, chance: 5 },
+      { name: 'Girafa', image: '🦒', hp: 420, damageMin: 28, damageMax: 38, defense: 9, dodge: 2, critChance: 15, xp: 80, goldMin: 16, goldMax: 40, chance: 25 },
     ],
   },
   {
     stage: 5,
     spawns: [
-      { name: 'Elefante', image: '🐘', hp: 1400, damageMin: 90, damageMax: 125, defense: 13, dodge: 3, xp: 260, chance: 100 },
+      { name: 'Elefante', image: '🐘', hp: 1400, damageMin: 90, damageMax: 125, defense: 13, dodge: 3, critChance: 30, xp: 260, goldMin: 80, goldMax: 120, chance: 100 },
     ],
   },
 ];
@@ -448,6 +602,8 @@ export function spawnMonster(stageData: StageData): SpawnedEnemy {
   for (const spawn of stageData.spawns) {
     cumulativeChance += spawn.chance;
     if (roll <= cumulativeChance) {
+      const goldReward = spawn.goldMin + Math.floor(Math.random() * (spawn.goldMax - spawn.goldMin + 1));
+      
       return {
         name: spawn.name,
         image: spawn.image,
@@ -457,13 +613,19 @@ export function spawnMonster(stageData: StageData): SpawnedEnemy {
         damageMax: spawn.damageMax,
         defense: spawn.defense,
         dodge: spawn.dodge,
+        critChance: spawn.critChance,
         xp: spawn.xp,
+        gold: goldReward,
+        isBoss: stageData.stage === 5, // Stage 5 is boss
+        drops: spawn.drops,
       };
     }
   }
   
   // Fallback to first spawn
   const fallback = stageData.spawns[0];
+  const fallbackGold = fallback.goldMin + Math.floor(Math.random() * (fallback.goldMax - fallback.goldMin + 1));
+  
   return {
     name: fallback.name,
     image: fallback.image,
@@ -473,8 +635,46 @@ export function spawnMonster(stageData: StageData): SpawnedEnemy {
     damageMax: fallback.damageMax,
     defense: fallback.defense,
     dodge: fallback.dodge,
+    critChance: fallback.critChance,
     xp: fallback.xp,
+    gold: fallbackGold,
+    isBoss: stageData.stage === 5,
+    drops: fallback.drops,
   };
+}
+
+// Calculate if a monster drops an item based on global rates
+export function calculateMonsterDrop(enemy: SpawnedEnemy): Item | null {
+  if (!enemy.drops) return null;
+
+  const roll = Math.random() * 100;
+  
+  // Check rarities from highest to lowest
+  // Legendary (3% - only boss)
+  if (enemy.isBoss && enemy.drops.legendary && roll <= GLOBAL_DROP_RATES.legendary) {
+    const drops = enemy.drops.legendary;
+    return { ...drops[Math.floor(Math.random() * drops.length)], id: `drop-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` };
+  }
+  
+  // Epic (5%)
+  if (enemy.drops.epic && roll <= GLOBAL_DROP_RATES.epic) {
+    const drops = enemy.drops.epic;
+    return { ...drops[Math.floor(Math.random() * drops.length)], id: `drop-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` };
+  }
+  
+  // Rare (7%)
+  if (enemy.drops.rare && roll <= GLOBAL_DROP_RATES.rare) {
+    const drops = enemy.drops.rare;
+    return { ...drops[Math.floor(Math.random() * drops.length)], id: `drop-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` };
+  }
+  
+  // Common (15%)
+  if (enemy.drops.common && roll <= GLOBAL_DROP_RATES.common) {
+    const drops = enemy.drops.common;
+    return { ...drops[Math.floor(Math.random() * drops.length)], id: `drop-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` };
+  }
+
+  return null;
 }
 
 // Generate a complete map with nodes
@@ -548,16 +748,20 @@ export function calculateEquipmentBonuses(equipped: Character['equipped']): Char
   equipmentSlots.forEach(slot => {
     const item = equipped[slot];
     if (item && 'stats' in item) {
-      // Add item stats
-      bonuses.attack += item.stats.attack || 0;
-      bonuses.defense += item.stats.defense || 0;
-      bonuses.maxHp += item.stats.hpBonus || 0;
-      bonuses.dodgeChance += item.stats.dodgeChance || 0;
-      bonuses.critChance += item.stats.critChance || 0;
+      // Forge upgrade bonus: +0.5 per upgrade level (e.g., +10 adds +5 to base stat)
+      const upgradeBonus = item.upgradeLevel * 0.5;
+
+      // Add item stats with upgrade bonus
+      if (item.stats.attack !== undefined) bonuses.attack += item.stats.attack + upgradeBonus;
+      if (item.stats.defense !== undefined) bonuses.defense += item.stats.defense + upgradeBonus;
+      if (item.stats.hpBonus !== undefined) bonuses.maxHp += item.stats.hpBonus + (upgradeBonus * 2); // HP scales more
+      
+      bonuses.dodgeChance += (item.stats.dodgeChance || 0);
+      bonuses.critChance += (item.stats.critChance || 0);
       bonuses.xpBonus += item.stats.xpBonus || 0;
       bonuses.coinBonus += item.stats.coinBonus || 0;
 
-      // Add gem stats if socketed
+      // Add gem stats
       if (item.gemSlot) {
         bonuses.attack += item.gemSlot.stats.attack || 0;
         bonuses.defense += item.gemSlot.stats.defense || 0;
@@ -580,9 +784,9 @@ export function recalculatePlayerStats(character: Character): Character {
 
   // Calculate total stats (base + equipment)
   const totalStats = {
-    attack: character.baseStats.attack + equipmentBonuses.attack,
-    defense: character.baseStats.defense + equipmentBonuses.defense,
-    maxHp: character.baseStats.maxHp + equipmentBonuses.maxHp,
+    attack: Math.floor(character.baseStats.attack + equipmentBonuses.attack),
+    defense: Math.floor(character.baseStats.defense + equipmentBonuses.defense),
+    maxHp: Math.floor(character.baseStats.maxHp + equipmentBonuses.maxHp),
     dodgeChance: Math.min(character.baseStats.dodgeChance + equipmentBonuses.dodgeChance, 0.35), // 35% cap
     critChance: Math.min(character.baseStats.critChance + equipmentBonuses.critChance, 0.40), // 40% cap
     critMultiplier: character.baseStats.critMultiplier, // 150% base
@@ -619,17 +823,16 @@ export function recalculatePlayerStats(character: Character): Character {
 }
 
 // Level up - increases base stats with fixed values
-// +5 HP, +2 Attack, +0.5 Defense, +0.3% Crit, +0.4% Dodge per level
 export function levelUpCharacter(character: Character): Character {
   const newLevel = character.level + 1;
   
   // Increase base stats with fixed values
   const newBaseStats = {
-    attack: character.baseStats.attack + 2, // +2 attack per level
+    attack: character.baseStats.attack + 0.5, // +0.5 attack per level
     defense: character.baseStats.defense + 0.5, // +0.5 defense per level
     maxHp: character.baseStats.maxHp + 5, // +5 HP per level
-    dodgeChance: Math.min(character.baseStats.dodgeChance + 0.004, 0.35), // +0.4%, max 35%
-    critChance: Math.min(character.baseStats.critChance + 0.003, 0.40), // +0.3%, max 40%
+    dodgeChance: Math.min(character.baseStats.dodgeChance + 0.003, 0.35), // +0.3% per level
+    critChance: Math.min(character.baseStats.critChance + 0.003, 0.40), // +0.3% per level
     critMultiplier: character.baseStats.critMultiplier, // stays at 1.5 (150%)
   };
 
@@ -666,6 +869,7 @@ export interface Item {
   durability: number;
   maxDurability: number;
   levelRequirement: number;
+  upgradeLevel: number; // Current upgrade level (+0 to +10)
   gemSlot?: Gem | null; // Gem socket for this item
   // Item stat variation (for display)
   statVariation?: number; // Percentage variation from base (e.g., +15%, -10%)
@@ -800,15 +1004,12 @@ export interface Quest {
   description: string;
   type: QuestType;
   difficulty: Difficulty;
-  xpReward: number;
-  coinReward: number;
-  hpReward: number;
+  energyReward: number;
   completed: boolean;
   createdAt: number;
   completedAt?: number;
   expiresAt?: number;
   scheduledDate?: string; // YYYY-MM-DD format
-  lootboxChance: number;
   isEmergency?: boolean;
   suggestedByMaster?: boolean;
   focusTag?: FocusTag;
@@ -943,6 +1144,7 @@ export interface DailyProgress {
   date: string; // YYYY-MM-DD
   completedTasks: number;
   streakCounted: boolean;
+  extraEnergyGained: number; // New field to track daily limit (max 5)
 }
 
 export interface CalendarState {
@@ -1256,10 +1458,10 @@ export function setCharacterToLevel(character: Character, targetLevel: number, c
 
   // Apply level up bonuses for each level beyond 1
   for (let i = 1; i < targetLevel; i++) {
-    baseStats.attack += 2;
+    baseStats.attack += 0.5;
     baseStats.defense += 0.5;
     baseStats.maxHp += 5;
-    baseStats.dodgeChance = Math.min(baseStats.dodgeChance + 0.004, 0.35);
+    baseStats.dodgeChance = Math.min(baseStats.dodgeChance + 0.003, 0.35);
     baseStats.critChance = Math.min(baseStats.critChance + 0.003, 0.40);
   }
 
@@ -1380,6 +1582,9 @@ export interface CombatState {
   specialAttackCooldown: number;
   lastDamageDealt?: number; // For animation
   damageTakenInCurrentBattle: number; // Track total damage to calculate lobby penalty after fight
+  droppedItem?: Item | null;
+  xpReward?: number;
+  goldReward?: number;
   // Floor progression (legacy)
   showFloorComplete?: boolean;
 }
@@ -1414,6 +1619,13 @@ export interface Inventory {
 
 export interface Economy {
   coins: number;
+  shards: {
+    common: number;
+    rare: number;
+    epic: number;
+    legendary: number;
+    mythic: number;
+  };
   totalCoinsEarned: number;
   totalCoinsSpent: number;
 }

@@ -2,540 +2,376 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Coins, 
-  Check, 
   Lock,
-  Sparkles,
-  Flame,
   Zap,
-  TrendingUp,
-  Palette,
+  Hammer,
+  Trash2,
+  ArrowUpCircle,
+  AlertCircle,
   Package,
-  Gift,
-  Sword,
-  Settings,
-  RefreshCw
+  ArrowRight,
+  TrendingUp,
+  ShieldCheck
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
-import type { ShopItem, Lootbox, Item, SpecialAttack } from '@/types/game';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import type { Item, Rarity } from '@/types/game';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { 
+  FORGE_SUCCESS_CHANCES, 
+  FORGE_DOWNGRADE_CHANCES, 
+  FORGE_BASE_COSTS, 
+  FORGE_RARITY_MULTIPLIERS 
+} from '@/types/game';
 
-const typeIcons: Record<string, React.ElementType> = {
-  skin: Palette,
-  effect: Sparkles,
-  boost: TrendingUp,
-  special: Zap,
+const rarityColors: Record<Rarity, { border: string; bg: string; text: string; shadow: string; glow: string }> = {
+  common: { border: 'border-gray-500', bg: 'bg-gray-500/10', text: 'text-gray-400', shadow: 'shadow-gray-500/20', glow: 'shadow-gray-500/10' },
+  rare: { border: 'border-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-400', shadow: 'shadow-blue-500/20', glow: 'shadow-blue-500/20' },
+  epic: { border: 'border-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/20', glow: 'shadow-purple-500/30' },
+  legendary: { border: 'border-yellow-500', bg: 'bg-yellow-500/10', text: 'text-yellow-400', shadow: 'shadow-yellow-500/20', glow: 'shadow-yellow-500/40' },
+  mythic: { border: 'border-red-500', bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/20', glow: 'shadow-red-500/50' },
 };
-
-const typeColors: Record<string, { bg: string; text: string }> = {
-  skin: { bg: 'bg-pink-500/10', text: 'text-pink-400' },
-  effect: { bg: 'bg-cyan-500/10', text: 'text-cyan-400' },
-  boost: { bg: 'bg-green-500/10', text: 'text-green-400' },
-  special: { bg: 'bg-purple-500/10', text: 'text-purple-400' },
-};
-
-const rarityColors: Record<string, { border: string; bg: string; text: string }> = {
-  common: { border: 'border-gray-500', bg: 'bg-gray-500/10', text: 'text-gray-400' },
-  rare: { border: 'border-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-400' },
-  epic: { border: 'border-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-400' },
-  legendary: { border: 'border-yellow-500', bg: 'bg-yellow-500/10', text: 'text-yellow-400' },
-  mythic: { border: 'border-red-500', bg: 'bg-red-500/10', text: 'text-red-400' },
-};
-
-const elementIcons: Record<string, string> = {
-  fire: '🔥', water: '💧', lightning: '⚡', ice: '❄️',
-  earth: '🌍', shadow: '🌑', light: '✨',
-};
-
-// Extended shop items
-const extendedShopItems: ShopItem[] = [
-  { id: 'skin-fire', name: 'Skin de Fogo', description: 'Aparência flamejante', type: 'skin', price: 100, icon: '🔥', owned: false, element: 'fire' },
-  { id: 'skin-ice', name: 'Skin de Gelo', description: 'Aparência gélida', type: 'skin', price: 100, icon: '❄️', owned: false, element: 'ice' },
-  { id: 'skin-shadow', name: 'Skin das Sombras', description: 'Aparência sombria', type: 'skin', price: 200, icon: '🌑', owned: false, element: 'shadow' },
-  { id: 'skin-gold', name: 'Skin Dourada', description: 'Aparência luxuosa', type: 'skin', price: 500, icon: '👑', owned: false, element: 'light' },
-  { id: 'effect-golden', name: 'Efeito Dourado', description: 'Brilho dourado ao atacar', type: 'effect', price: 200, icon: '✨', owned: false },
-  { id: 'effect-lightning', name: 'Efeito Raio', description: 'Raios ao atacar', type: 'effect', price: 250, icon: '⚡', owned: false },
-  { id: 'boost-xp', name: 'Boost de XP', description: '+20% XP por 24h', type: 'boost', price: 150, icon: '📈', owned: false },
-  { id: 'boost-coins', name: 'Boost de Moedas', description: '+50% moedas por 24h', type: 'boost', price: 200, icon: '💰', owned: false },
-];
-
-interface ShopCardProps {
-  item: ShopItem;
-  canAfford: boolean;
-  onClick: () => void;
-}
-
-function ShopCard({ item, canAfford, onClick }: ShopCardProps) {
-  const TypeIcon = typeIcons[item.type];
-  const colors = typeColors[item.type];
-  
-  return (
-    <motion.button
-      onClick={onClick}
-      disabled={item.owned}
-      className={cn(
-        'card-dungeon p-4 text-left transition-all relative overflow-hidden',
-        item.owned && 'opacity-60',
-        !item.owned && !canAfford && 'opacity-50'
-      )}
-      whileHover={!item.owned ? { scale: 1.02, borderColor: 'var(--purple-primary)' } : {}}
-      whileTap={!item.owned ? { scale: 0.98 } : {}}
-    >
-      <div className={cn('absolute top-2 right-2 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1', colors.bg, colors.text)}>
-        <TypeIcon className="w-3 h-3" />
-        {item.type}
-      </div>
-
-      <div className="text-5xl mb-3">{item.icon}</div>
-
-      <h4 className={cn('font-semibold mb-1', item.owned ? 'text-gray-500' : 'text-white')}>
-        {item.name}
-      </h4>
-      
-      <p className="text-sm text-gray-400 mb-3 line-clamp-2">{item.description}</p>
-
-      {item.owned ? (
-        <div className="flex items-center gap-2 text-green-400">
-          <Check className="w-4 h-4" />
-          <span className="text-sm font-medium">Adquirido</span>
-        </div>
-      ) : (
-        <div className={cn('flex items-center gap-2', canAfford ? 'text-yellow-400' : 'text-red-400')}>
-          <Coins className="w-4 h-4" />
-          <span className="font-mono font-bold">{item.price}</span>
-          {!canAfford && <Lock className="w-3 h-3 ml-auto" />}
-        </div>
-      )}
-    </motion.button>
-  );
-}
-
-interface LootboxCardProps {
-  lootbox: Lootbox;
-  ownedCount: number;
-  canAfford: boolean;
-  onBuy: () => void;
-  onOpen: () => void;
-}
-
-function LootboxCard({ lootbox, ownedCount, canAfford, onBuy, onOpen }: LootboxCardProps) {
-  const colors = rarityColors[lootbox.rarity];
-  
-  return (
-    <motion.div
-      className={cn(
-        'card-dungeon p-4 relative overflow-hidden',
-        colors.border
-      )}
-      whileHover={{ scale: 1.02 }}
-    >
-      <div className={cn('absolute top-2 right-2 px-2 py-0.5 rounded text-xs font-medium', colors.bg, colors.text)}>
-        {lootbox.rarity.toUpperCase()}
-      </div>
-
-      <div className="text-5xl mb-3">{lootbox.icon}</div>
-
-      <h4 className="font-semibold text-white mb-1">{lootbox.name}</h4>
-      <p className="text-sm text-gray-400 mb-3">{lootbox.description}</p>
-
-      {/* Drop Rates */}
-      <div className="bg-black/30 rounded p-2 mb-3 text-xs">
-        <p className="text-gray-500 mb-1">Chances de Itens:</p>
-        <div className="grid grid-cols-2 gap-1">
-          <span className="text-gray-400">Comum: {lootbox.dropRates.common}%</span>
-          <span className="text-blue-400">Raro: {lootbox.dropRates.rare}%</span>
-          <span className="text-purple-400">Épico: {lootbox.dropRates.epic}%</span>
-          <span className="text-yellow-400">Lendário: {lootbox.dropRates.legendary}%</span>
-        </div>
-        <p className="text-orange-400 mt-1">⚡ Ataque Especial: {lootbox.specialAttackChance}%</p>
-      </div>
-
-      {/* Owned Count */}
-      {ownedCount > 0 && (
-        <div className="bg-purple-500/10 rounded p-2 mb-3 text-center">
-          <span className="text-purple-400 font-bold">{ownedCount} possuída(s)</span>
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          onClick={onBuy}
-          disabled={!canAfford}
-          className={cn(
-            'flex-1',
-            canAfford ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-700 cursor-not-allowed'
-          )}
-          size="sm"
-        >
-          <Coins className="w-4 h-4 mr-1" />
-          {lootbox.price}
-        </Button>
-        {ownedCount > 0 && (
-          <Button
-            onClick={onOpen}
-            className="flex-1 bg-purple-600 hover:bg-purple-700"
-            size="sm"
-          >
-            <Gift className="w-4 h-4 mr-1" />
-            Abrir
-          </Button>
-        )}
-      </div>
-    </motion.div>
-  );
-}
 
 export function Shop() {
-  const { gameState, buyShopItem, buyLootbox, openLootbox, recoverEnergy, LOOTBOX_TYPES } = useGame();
-  const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
-  const [openingLootbox, setOpeningLootbox] = useState<string | null>(null);
-  const [openedItems, setOpenedItems] = useState<Item[]>([]);
-  const [openedSpecialAttack, setOpenedSpecialAttack] = useState<SpecialAttack | null>(null);
-  const [showOpenedItems, setShowOpenedItems] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [recovering, setRecovering] = useState(false);
+  const { gameState, destroyItem, upgradeItem, convertShards } = useGame();
+  const { economy, inventory } = gameState;
+  const [selectedForgeItem, setSelectedForgeItem] = useState<Item | null>(null);
+  const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; result: 'success' | 'fail' | 'downgrade' } | null>(null);
 
-  // Merge saved shop items with extended items
-  const shopItems = extendedShopItems.map(item => {
-    const saved = gameState.shop.find(s => s.id === item.id);
-    return saved || item;
-  });
-
-  const handlePurchase = () => {
-    if (!selectedItem) return;
+  const handleUpgrade = () => {
+    if (!selectedForgeItem) return;
+    const res = upgradeItem(selectedForgeItem.id);
+    setUpgradeResult(res);
     
-    if (buyShopItem(selectedItem.id)) {
-      setPurchaseSuccess(true);
-      setTimeout(() => {
-        setPurchaseSuccess(false);
-        setSelectedItem(null);
-      }, 1500);
-    }
+    // Refresh selected item from inventory to show updated level
+    const updatedItem = inventory.items.find(i => i.id === selectedForgeItem.id);
+    if (updatedItem) setSelectedForgeItem(updatedItem);
+
+    // Clear result after 3 seconds
+    setTimeout(() => setUpgradeResult(null), 3000);
   };
 
-  const handleBuyLootbox = (lootboxId: string) => {
-    if (buyLootbox(lootboxId)) {
-      // Success
-    }
+  const handleDestroy = (itemId: string) => {
+    destroyItem(itemId);
+    if (selectedForgeItem?.id === itemId) setSelectedForgeItem(null);
   };
 
-  const handleOpenLootbox = (lootboxId: string) => {
-    setOpeningLootbox(lootboxId);
-    
-    setTimeout(() => {
-      const result = openLootbox(lootboxId);
-      setOpenedItems(result.items);
-      setOpenedSpecialAttack(result.specialAttack || null);
-      setOpeningLootbox(null);
-      setShowOpenedItems(true);
-    }, 2000);
-  };
-
-  const canAfford = (price: number) => gameState.economy.coins >= price;
-
-  const getOwnedCount = (lootboxId: string) => {
-    const owned = gameState.ownedLootboxes.find(o => o.lootboxId === lootboxId);
-    return owned?.quantity || 0;
-  };
-
-  const handleRecoverEnergy = () => {
-    setRecovering(true);
-    setTimeout(() => {
-      recoverEnergy();
-      setRecovering(false);
-      setShowSettings(false);
-    }, 1000);
-  };
+  const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6 pt-4 pb-24"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white font-cinzel">Loja</h2>
-          <p className="text-gray-400">Gaste suas moedas em itens e lootboxes</p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowSettings(true)}
-            className="text-gray-400 hover:text-white hover:bg-white/10"
-          >
-            <Settings className="w-6 h-6" />
-          </Button>
+    <div className="space-y-6 pt-0 pb-24">
+      {/* Header Mobile Sticky */}
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
+        <h2 className="text-2xl font-bold text-white font-cinzel">Forja</h2>
+        <p className="text-xs text-gray-400 mt-1">Refine seus equipamentos</p>
+      </div>
 
-          <motion.div 
-            className="flex items-center gap-3 bg-yellow-500/10 px-4 py-2 rounded-lg border border-yellow-500/30"
-            whileHover={{ scale: 1.05 }}
-          >
-            <Coins className="w-6 h-6 text-yellow-500" />
+      {/* Economy Header - Detailed Shards */}
+      <div className="bg-black/40 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/30">
+              <Coins className="w-5 h-5 text-yellow-500" />
+            </div>
             <div>
-              <p className="text-xs text-gray-400">Suas Moedas</p>
-              <p className="text-xl font-mono font-bold text-yellow-400">
-                {gameState.economy.coins}
+              <p className="text-[10px] text-gray-500 uppercase font-black tracking-tighter mb-0.5">Ouro Total</p>
+              <p className="text-xl font-black text-yellow-500 font-mono leading-none">{economy.coins}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+            <Hammer className="w-4 h-4 text-orange-500" />
+            <span className="text-xs font-black text-orange-500 uppercase tracking-widest">Forja Ativa</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {rarities.map(r => (
+            <div key={r} className={cn(
+              "p-3 rounded-2xl border flex flex-col items-center justify-center relative overflow-hidden group",
+              rarityColors[r].border,
+              rarityColors[r].bg
+            )}>
+              <div className="absolute top-0 right-0 w-12 h-12 bg-white/5 rounded-full -mr-6 -mt-6 blur-xl group-hover:bg-white/10 transition-all" />
+              <Zap className={cn("w-4 h-4 mb-1", rarityColors[r].text)} />
+              <p className="text-[9px] font-black uppercase tracking-tighter opacity-50 mb-1">{r}</p>
+              <p className={cn("text-lg font-black font-mono leading-none", rarityColors[r].text)}>
+                {economy.shards[r] || 0}
               </p>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Lootboxes Section */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-4 font-cinzel flex items-center gap-2">
-          <Package className="w-5 h-5 text-purple-400" />
-          Lootboxes
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {LOOTBOX_TYPES.map((lootbox) => (
-            <LootboxCard
-              key={lootbox.id}
-              lootbox={lootbox}
-              ownedCount={getOwnedCount(lootbox.id)}
-              canAfford={canAfford(lootbox.price)}
-              onBuy={() => handleBuyLootbox(lootbox.id)}
-              onOpen={() => handleOpenLootbox(lootbox.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Shop Items Section */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-4 font-cinzel flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-cyan-400" />
-          Itens da Loja
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {shopItems.map((item) => (
-            <ShopCard
-              key={item.id}
-              item={item}
-              canAfford={canAfford(item.price)}
-              onClick={() => setSelectedItem(item)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Purchase Modal */}
-      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
-          {selectedItem && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
-                  <span className="text-3xl">{selectedItem.icon}</span>
-                  {selectedItem.name}
-                </DialogTitle>
-              </DialogHeader>
               
-              <div className="space-y-4 mt-4">
-                <div className={cn('inline-block px-3 py-1 rounded-full text-sm font-medium capitalize', typeColors[selectedItem.type].bg, typeColors[selectedItem.type].text)}>
-                  {selectedItem.type}
-                </div>
-                
-                <p className="text-gray-400">{selectedItem.description}</p>
-                
-                <div className="flex items-center gap-2 text-yellow-400 bg-yellow-500/10 p-3 rounded-lg">
-                  <Coins className="w-5 h-5" />
-                  <span className="text-lg font-mono font-bold">{selectedItem.price} moedas</span>
-                </div>
-                
-                <div className="pt-4 flex gap-2">
-                  <Button
-                    onClick={handlePurchase}
-                    disabled={!canAfford(selectedItem.price) || purchaseSuccess}
-                    className={cn('flex-1', purchaseSuccess ? 'bg-green-600' : 'bg-purple-600 hover:bg-purple-700')}
-                  >
-                    {purchaseSuccess ? (
-                      <><Check className="w-4 h-4 mr-2" />Comprado!</>
-                    ) : canAfford(selectedItem.price) ? (
-                      <><Coins className="w-4 h-4 mr-2" />Comprar</>
-                    ) : (
-                      <><Lock className="w-4 h-4 mr-2" />Sem Moedas</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Opening Lootbox Animation */}
-      <Dialog open={!!openingLootbox} onOpenChange={() => {}}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm text-center">
-          <div className="py-8">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 10, -10, 0], scale: [1, 1.1, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              className="text-8xl mb-4"
-            >
-              {openingLootbox && LOOTBOX_TYPES.find(l => l.id === openingLootbox)?.icon}
-            </motion.div>
-            <p className="text-xl font-bold text-purple-400">Abrindo...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Opened Items Modal */}
-      <Dialog open={showOpenedItems} onOpenChange={() => setShowOpenedItems(false)}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl text-center">🎉 Recompensas!</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            {/* Special Attack */}
-            {openedSpecialAttack && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={cn(
-                  'p-4 rounded-lg border-2 text-center',
-                  rarityColors[openedSpecialAttack.rarity].border,
-                  rarityColors[openedSpecialAttack.rarity].bg
-                )}
-              >
-                <div className="text-5xl mb-2">{elementIcons[openedSpecialAttack.element]}</div>
-                <p className={cn('font-bold text-lg', rarityColors[openedSpecialAttack.rarity].text)}>
-                  ⚡ {openedSpecialAttack.name}
-                </p>
-                <p className="text-sm text-gray-400">Ataque Especial</p>
-                <div className="flex justify-center gap-4 mt-2 text-sm">
-                  <span className="text-orange-400">×{openedSpecialAttack.damageMultiplier} dano</span>
-                  <span className="text-cyan-400">CD: {openedSpecialAttack.maxCooldown}</span>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Items */}
-            <AnimatePresence>
-              {openedItems.map((item, i) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.2 }}
-                  className={cn(
-                    'p-4 rounded-lg border-2 flex items-center gap-4',
-                    rarityColors[item.rarity].border,
-                    rarityColors[item.rarity].bg
-                  )}
+              {/* Conversion Trigger */}
+              {r !== 'legendary' && economy.shards[r] >= 10 && (
+                <button
+                  onClick={() => convertShards(r)}
+                  className="absolute bottom-1 right-1 p-1 bg-black/60 rounded-lg border border-white/10 hover:bg-black/80 transition-all group/btn"
                 >
-                  <span className="text-4xl">{item.icon}</span>
-                  <div>
-                    <p className={cn('font-bold', rarityColors[item.rarity].text)}>{item.name}</p>
-                    <p className="text-sm text-gray-400">{item.type}</p>
-                    {item.element && <span className="text-lg">{elementIcons[item.element]}</span>}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            
-            <Button onClick={() => setShowOpenedItems(false)} className="w-full btn-primary">
-              <Check className="w-4 h-4 mr-2" />
-              Coletar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Info Section */}
-      <motion.div className="card-dungeon p-6 mt-8">
-        <h3 className="text-lg font-bold text-white mb-4 font-cinzel">Como Ganhar Moedas</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-white">Complete Missões</h4>
-              <p className="text-sm text-gray-400">Ganhe moedas ao completar missões</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-              <Flame className="w-5 h-5 text-yellow-400" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-white">Mantenha Streak</h4>
-              <p className="text-sm text-gray-400">Streaks maiores dão bônus</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-              <Sword className="w-5 h-5 text-red-400" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-white">Derrote Bosses</h4>
-              <p className="text-sm text-gray-400">Cada boss derrotado dá recompensa</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Settings Modal */}
-      <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Configurações
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 pt-4">
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-yellow-400" />
-                  <span className="font-medium">Energia Atual</span>
-                </div>
-                <span className="font-mono font-bold">
-                  {gameState.character.energy} / {gameState.character.maxEnergy}
-                </span>
-              </div>
-              
-              <Button
-                onClick={handleRecoverEnergy}
-                disabled={recovering || gameState.character.energy === gameState.character.maxEnergy}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                {recovering ? (
-                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Zap className="w-4 h-4 mr-2" />
-                )}
-                Recuperar Energia
-              </Button>
-              {gameState.character.energy === gameState.character.maxEnergy && (
-                <p className="text-[10px] text-center text-gray-500 mt-2">
-                  Sua energia já está no máximo!
-                </p>
+                  <TrendingUp className="w-3 h-3 text-green-500 group-hover/btn:scale-110 transition-transform" />
+                </button>
               )}
             </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Forge Slot Area */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-orange-950/20 border-2 border-orange-500/30 p-8 rounded-[2.5rem] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent)] group-hover:scale-110 transition-transform duration-1000" />
             
-            <p className="text-xs text-gray-500 text-center">
-              Dungeon of Discipline v1.0.0
-            </p>
+            <div className="relative flex flex-col items-center">
+              <div className="text-center mb-8">
+                <h3 className="text-3xl font-black text-orange-500 font-cinzel tracking-tight uppercase">A Forja Ancestral</h3>
+                <p className="text-gray-400 text-sm font-medium italic opacity-70">"O poder reside no aço refinado, não apenas no portador."</p>
+              </div>
+
+              <div className="w-full flex justify-center gap-8 mb-8 items-center">
+                {/* Main Upgrade Slot */}
+                <div className="relative group/slot">
+                  <div className={cn(
+                    "w-36 h-36 rounded-[2rem] border-4 border-dashed flex items-center justify-center transition-all duration-500",
+                    selectedForgeItem 
+                      ? cn("border-orange-500 bg-orange-500/10 scale-105 shadow-2xl", rarityColors[selectedForgeItem.rarity].glow)
+                      : "border-orange-500/20 bg-black/40 hover:border-orange-500/40"
+                  )}>
+                    {selectedForgeItem ? (
+                      <div className="text-7xl drop-shadow-2xl filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                        {selectedForgeItem.icon}
+                      </div>
+                    ) : (
+                      <Hammer className="w-14 h-14 text-orange-500/10 animate-pulse" />
+                    )}
+                  </div>
+                  {selectedForgeItem && (
+                    <div className="absolute -top-4 -right-4 w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-lg shadow-2xl rotate-12">
+                      +{selectedForgeItem.upgradeLevel}
+                    </div>
+                  )}
+                  <p className="mt-5 text-xs font-black text-gray-500 uppercase tracking-widest text-center">
+                    {selectedForgeItem ? selectedForgeItem.name : "Insira um Equipamento"}
+                  </p>
+                </div>
+
+                {selectedForgeItem && selectedForgeItem.upgradeLevel < 10 && (
+                  <>
+                    <div className="flex flex-col items-center gap-3">
+                      <ArrowRight className="w-6 h-6 text-orange-500 animate-pulse" />
+                      <span className="text-[10px] font-black text-orange-500/50 uppercase tracking-tighter">Refinando</span>
+                    </div>
+
+                    <div className="relative group/slot opacity-40 grayscale scale-90 blur-[1px]">
+                      <div className="w-36 h-36 rounded-[2rem] border-4 border-orange-500/40 bg-orange-500/5 flex items-center justify-center">
+                        <div className="text-7xl">{selectedForgeItem.icon}</div>
+                      </div>
+                      <div className="absolute -top-4 -right-4 w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-lg shadow-2xl -rotate-12">
+                        +{selectedForgeItem.upgradeLevel + 1}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {selectedForgeItem && (
+                <div className="w-full max-w-md space-y-4">
+                  {/* Upgrade Stats Preview */}
+                  <div className="grid grid-cols-2 gap-4 bg-black/60 p-5 rounded-3xl border border-white/5 shadow-inner">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Coins className="w-3.5 h-3.5 text-yellow-500" />
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Ouro</p>
+                      </div>
+                      <p className="text-lg font-black text-yellow-500 font-mono">
+                        {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center border-l border-white/10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className="w-3.5 h-3.5 text-purple-500" />
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Fragmentos</p>
+                      </div>
+                      <p className="text-lg font-black text-purple-500 font-mono">
+                        {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards}
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedForgeItem.upgradeLevel < 10 ? (
+                    <div className="bg-black/40 p-5 rounded-3xl border border-white/5 space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                          <span className="text-gray-500">Chance de Sucesso</span>
+                          <span className={cn(
+                            "font-mono text-sm",
+                            FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel] > 50 ? "text-green-400" : "text-yellow-400"
+                          )}>
+                            {FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel]}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-900 rounded-full overflow-hidden p-0.5 border border-white/5">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel]}%` }}
+                            className={cn(
+                              "h-full rounded-full transition-all duration-1000",
+                              FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel] > 50 ? "bg-green-500" : "bg-yellow-500"
+                            )}
+                          />
+                        </div>
+                      </div>
+                      
+                      {selectedForgeItem.upgradeLevel > 0 && (
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                          <span className="text-gray-500">Risco de Downgrade</span>
+                          <span className="text-red-500 font-mono text-sm">{FORGE_DOWNGRADE_CHANCES[selectedForgeItem.upgradeLevel]}%</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-500/10 border-2 border-yellow-500/20 p-5 rounded-3xl text-center shadow-lg shadow-yellow-500/5">
+                      <p className="text-yellow-500 font-black text-sm uppercase tracking-widest">Equipamento no Ápice (+10)</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    <Button
+                      onClick={handleUpgrade}
+                      disabled={
+                        selectedForgeItem.upgradeLevel >= 10 || 
+                        economy.coins < (FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]) || 
+                        economy.shards[selectedForgeItem.rarity] < FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards
+                      }
+                      className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black h-16 rounded-2xl shadow-xl shadow-orange-900/40 active:scale-95 transition-all text-base uppercase tracking-widest border-b-4 border-orange-800"
+                    >
+                      <ArrowUpCircle className="w-5 h-5 mr-3" />
+                      Forjar Aço
+                    </Button>
+                    <Button
+                      onClick={() => handleDestroy(selectedForgeItem.id)}
+                      className="bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-500/20 px-8 h-16 rounded-2xl active:scale-95 transition-all border-b-4 border-red-900/40"
+                    >
+                      <Trash2 className="w-6 h-6" />
+                    </Button>
+                  </div>
+
+                  {/* Upgrade Result Feedback */}
+                  <AnimatePresence>
+                    {upgradeResult && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={cn(
+                          "p-4 rounded-2xl border-2 text-center font-black text-xs uppercase tracking-widest shadow-2xl",
+                          upgradeResult.result === 'success' ? "bg-green-500/10 border-green-500/30 text-green-400" :
+                          upgradeResult.result === 'downgrade' ? "bg-red-500/10 border-red-500/30 text-red-400" :
+                          "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                        )}
+                      >
+                        {upgradeResult.result === 'success' ? "✨ SUCESSO! Atributos aumentados." :
+                         upgradeResult.result === 'downgrade' ? "💢 FALHA! O aço enfraqueceu." :
+                         "⚠️ FALHA! Nível mantido."}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </motion.div>
+        </div>
+
+        {/* Inventory Sidebar */}
+        <div className="space-y-6">
+          <div className="bg-black/40 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/10 flex flex-col h-full max-h-[700px] shadow-2xl">
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 px-2 flex items-center justify-between">
+              Inventário
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <AlertCircle className="w-4 h-4 text-gray-700 hover:text-orange-500 transition-colors" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-black border-white/10">
+                    <p className="text-[10px] font-bold uppercase">Itens equipados estão travados.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </h4>
+            
+            <div className="grid grid-cols-3 gap-3 overflow-y-auto pr-3 custom-scrollbar flex-1">
+              {inventory.items.map((item) => {
+                const isEquipped = Object.values(gameState.character.equipped).some(i => i?.id === item.id);
+                const colors = rarityColors[item.rarity as Rarity] || rarityColors.common;
+                
+                return (
+                  <motion.button
+                    key={item.id}
+                    onClick={() => setSelectedForgeItem(item)}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(
+                      "relative aspect-square rounded-2xl border-2 transition-all group flex items-center justify-center shadow-lg",
+                      selectedForgeItem?.id === item.id 
+                        ? "border-orange-500 bg-orange-500/20 ring-4 ring-orange-500/10" 
+                        : cn(colors.border, "bg-black/60 hover:border-white/20 hover:bg-black/40"),
+                      isEquipped && "opacity-40"
+                    )}
+                  >
+                    <div className="text-3xl filter drop-shadow-md group-hover:scale-110 transition-transform">{item.icon}</div>
+                    {item.upgradeLevel > 0 && (
+                      <div className="absolute -top-1 -right-1 text-[9px] font-black text-white bg-orange-600 px-1.5 py-0.5 rounded-lg shadow-lg border border-white/10">
+                        +{item.upgradeLevel}
+                      </div>
+                    )}
+                    {isEquipped && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl">
+                        <Lock className="w-4 h-4 text-gray-500" />
+                      </div>
+                    )}
+                  </motion.button>
+                );
+              })}
+              {inventory.items.length === 0 && (
+                <div className="col-span-3 py-16 text-center opacity-30">
+                  <Package className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Sem Itens</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Forge Rules Detailed Card */}
+          <div className="bg-orange-500/5 border border-orange-500/10 p-6 rounded-[2rem] space-y-4">
+            <div className="flex items-center gap-2 text-orange-500">
+              <ShieldCheck className="w-5 h-5" />
+              <span className="text-xs font-black uppercase tracking-widest">Tradição da Forja</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
+                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
+                  <span className="text-orange-500/80">MELHORIA:</span> Cada nível concede <span className="text-white">+0.5</span> fixo ao atributo base.
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
+                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
+                  <span className="text-orange-500/80">DESMANTELAR:</span> Itens +0~9 rendem 1 Fragmento. Itens <span className="text-white">+10</span> rendem 10 Fragmentos.
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
+                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
+                  <span className="text-orange-500/80">CONVERSÃO:</span> Use 10 Fragmentos para criar 1 da raridade superior clicando na seta.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

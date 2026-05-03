@@ -5,7 +5,6 @@ import {
   Check, 
   Trash2, 
   Zap, 
-  Coins, 
   Gift, 
   Calendar, 
   Target,
@@ -140,19 +139,12 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
           </p>
 
           {/* Rewards */}
+          {/* Rewards */}
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1 text-purple-400">
-              <Zap className="w-4 h-4" />
-              <span className="text-sm font-mono">+{quest.xpReward} XP</span>
-            </div>
-            <div className="flex items-center gap-1 text-yellow-400">
-              <Coins className="w-4 h-4" />
-              <span className="text-sm font-mono">+{quest.coinReward}</span>
-            </div>
-            {quest.lootboxChance > 0 && (
+            {quest.energyReward > 0 && (
               <div className="flex items-center gap-1 text-cyan-400">
-                <Gift className="w-4 h-4" />
-                <span className="text-sm">{Math.round(quest.lootboxChance * 100)}% Loot</span>
+                <Zap className="w-4 h-4 fill-cyan-400/50" />
+                <span className="text-sm font-mono">+{quest.energyReward} NRG</span>
               </div>
             )}
           </div>
@@ -193,6 +185,7 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
     scheduledDate: '',
     habitDays: [] as DayOfWeek[],
     metaTarget: 100,
+    energyReward: 0,
   });
 
   const handleQuestClick = (quest: Quest) => {
@@ -235,7 +228,8 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
       newQuest.scheduledDate || undefined,
       playerProfile.activeFocusTag,
       newQuest.type === 'habito' ? newQuest.habitDays : undefined,
-      newQuest.type === 'meta' ? newQuest.metaTarget : undefined
+      newQuest.type === 'meta' ? newQuest.metaTarget : undefined,
+      newQuest.energyReward
     );
     
     addQuest(quest);
@@ -247,6 +241,7 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
       scheduledDate: '',
       habitDays: [],
       metaTarget: 100,
+      energyReward: 0,
     });
     setIsDialogOpen(false);
     setShowIntervention(false);
@@ -278,10 +273,10 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 pt-4 pb-24"
+      className="space-y-6 pt-0 pb-24"
     >
       {/* Header */}
-      <div>
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel mb-3">Missões</h2>
         
         <div className="flex gap-2">
@@ -499,21 +494,54 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
                     </motion.div>
                   )}
 
+                  {/* Energy Reward Selector */}
+                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                    <label className="text-sm text-cyan-400 mb-2 block flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4" />
+                        Ganho de Energia
+                      </div>
+                      <span className="text-lg font-black text-cyan-400">{newQuest.energyReward} NRG</span>
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
+                        onClick={() => setNewQuest(prev => ({ ...prev, energyReward: Math.max(0, prev.energyReward - 0.5) }))}
+                      >
+                        -
+                      </Button>
+                      <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
+                        <div 
+                          className="h-full bg-cyan-500 transition-all" 
+                          style={{ width: `${Math.min(100, (newQuest.energyReward / 5) * 100)}%` }}
+                        />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
+                        onClick={() => setNewQuest(prev => ({ ...prev, energyReward: prev.energyReward + 0.5 }))}
+                      >
+                        +
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-2 text-center">
+                      Cada 1.0 de energia permite uma nova batalha no mapa
+                    </p>
+                  </div>
+
                   {/* Difficulty Info */}
                   <div className="bg-[#16213e] rounded-lg p-3 text-sm">
-                    <p className="text-gray-400 mb-2">Recompensas para {difficultyConfig[newQuest.difficulty].label}:</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-purple-400">
-                        <Zap className="w-4 h-4 inline mr-1" />
-                        XP ×{newQuest.difficulty === 'veryEasy' ? '0.5' : newQuest.difficulty === 'easy' ? '0.75' : newQuest.difficulty === 'normal' ? '1' : newQuest.difficulty === 'hard' ? '1.5' : newQuest.difficulty === 'veryHard' ? '2.5' : '5'}
+                    <p className="text-gray-400 mb-2">Resumo da Missão:</p>
+                    <div className="flex items-center gap-4">
+                      <div className="text-cyan-400">
+                        <Zap className="w-4 h-4 inline mr-1 fill-cyan-400/50" />
+                        Energia: +{newQuest.energyReward}
                       </div>
-                      <div className="text-yellow-400">
-                        <Coins className="w-4 h-4 inline mr-1" />
-                        Moedas ×{newQuest.difficulty === 'veryEasy' ? '0.5' : newQuest.difficulty === 'easy' ? '0.75' : newQuest.difficulty === 'normal' ? '1' : newQuest.difficulty === 'hard' ? '1.5' : newQuest.difficulty === 'veryHard' ? '2' : '3'}
-                      </div>
-                      <div className="text-green-400">
-                        <Gift className="w-4 h-4 inline mr-1" />
-                        HP ×{newQuest.difficulty === 'veryEasy' ? '0.5' : newQuest.difficulty === 'easy' ? '0.75' : newQuest.difficulty === 'normal' ? '1' : newQuest.difficulty === 'hard' ? '1.5' : newQuest.difficulty === 'veryHard' ? '2' : '3'}
+                      <div className="text-gray-400">
+                        Dificuldade: {difficultyConfig[newQuest.difficulty].label}
                       </div>
                     </div>
                   </div>
@@ -817,8 +845,9 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
               <div className="bg-[#16213e] rounded-lg p-4 space-y-2">
                 <p className="text-gray-400 text-sm">{selectedQuest.description || 'Sem descrição'}</p>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="text-purple-400">⭐ {selectedQuest.xpReward} XP</span>
-                  <span className="text-yellow-400">💰 {selectedQuest.coinReward} moedas</span>
+                  {selectedQuest.energyReward > 0 && (
+                    <span className="text-cyan-400">⚡ {selectedQuest.energyReward} energia</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{difficultyConfig[selectedQuest.difficulty].emoji}</span>
@@ -1047,9 +1076,9 @@ function CalendarView({ quests, onSelectDate, selectedDate, onQuestClick }: Cale
                     {q.title}
                   </span>
                   {q.completed ? (
-                    <span className="text-green-400 text-xs">✓ Concluída (+{q.xpReward} XP)</span>
+                    <span className="text-green-400 text-xs">✓ Concluída</span>
                   ) : (
-                    <span className="text-gray-500 text-xs">{q.xpReward} XP</span>
+                    <span className="text-gray-500 text-xs">NRG: +{q.energyReward}</span>
                   )}
                 </button>
               ))}

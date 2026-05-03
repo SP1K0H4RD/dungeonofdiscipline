@@ -29,7 +29,7 @@ export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderPr
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={cn(
-        'fixed top-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-md border-b',
+        'fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b',
         isCriticalHp ? 'border-red-500/50' : 'border-[#2d2d44]'
       )}
     >

@@ -4,7 +4,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
-import type { GameState, Quest, Item, Gem, PlayerProfile, Lootbox, SpecialAttack, FocusTag, QuestType, Difficulty, DayOfWeek, MapId } from '@/types/game';
+import type { GameState, Quest, Item, Gem, PlayerProfile, Lootbox, SpecialAttack, FocusTag, QuestType, Difficulty, DayOfWeek, MapId, Rarity } from '@/types/game';
 import { DIFFICULTY_CONFIG } from '@/types/game';
 
 // ============================================
@@ -37,7 +37,7 @@ interface GameContextType {
   unequipSpecialAttack: () => void;
   
   // Quests
-  createQuest: (title: string, description: string, type: QuestType, difficulty: Difficulty, isEmergency?: boolean, suggestedByMaster?: boolean, scheduledDate?: string, focusTag?: FocusTag, habitDays?: DayOfWeek[], metaTarget?: number) => Quest;
+  createQuest: (title: string, description: string, type: QuestType, difficulty: Difficulty, isEmergency?: boolean, suggestedByMaster?: boolean, scheduledDate?: string, focusTag?: FocusTag, habitDays?: DayOfWeek[], metaTarget?: number, energyReward?: number) => Quest;
   addQuest: (quest: Quest) => void;
   completeQuest: (questId: string, type: QuestType) => void;
   deleteQuest: (questId: string, type: QuestType) => void;
@@ -72,8 +72,10 @@ interface GameContextType {
   // Chest System
   openChest: () => { type: 'gold' | 'consumable' | 'equipment'; reward: any } | null;
   
-  // Shop
-  buyShopItem: (itemId: string) => boolean;
+  // Forge
+  destroyItem: (itemId: string) => void;
+  upgradeItem: (itemId: string) => { success: boolean; result: 'success' | 'fail' | 'downgrade' };
+  convertShards: (fromRarity: Rarity) => void;
   
   // Chat
   sendChatMessage: (content: string) => void;

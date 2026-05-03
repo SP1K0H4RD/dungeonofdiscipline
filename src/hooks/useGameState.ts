@@ -11,7 +11,6 @@ import type {
   Item, 
   Gem,
   DeathRecord,
-  ShopItem,
   PlayerProfile,
   ChatMessage,
   Rarity,
@@ -44,10 +43,15 @@ import {
   generateAllMaps,
   calculateAdaptiveBossStats,
   spawnMonster,
+  calculateMonsterDrop,
   calculateXpForLevel,
   getCharacterTotalXp,
   getLevelFromTotalXp,
   setCharacterToLevel,
+  FORGE_BASE_COSTS,
+  FORGE_RARITY_MULTIPLIERS,
+  FORGE_SUCCESS_CHANCES,
+  FORGE_DOWNGRADE_CHANCES,
   type DayOfWeek,
   type QuestType,
 } from '@/types/game';
@@ -131,7 +135,7 @@ const INITIAL_CHARACTER: Character = {
   maxHp: 100,
   // Energy system - limits gameplay (max 10, each battle costs 1)
   energy: 10,
-  maxEnergy: 10,
+  maxEnergy: 100,
   // Currency
   gold: 0,
   totalGoldEarned: 0,
@@ -233,6 +237,13 @@ const INITIAL_GAME_STATE: GameState = {
   },
   economy: {
     coins: 0,
+    shards: {
+      common: 0,
+      rare: 0,
+      epic: 0,
+      legendary: 0,
+      mythic: 0,
+    },
     totalCoinsEarned: 0,
     totalCoinsSpent: 0,
   },
@@ -356,6 +367,7 @@ const generateItem = (rarity: Rarity): Item => {
     durability: 100,
     maxDurability: 100,
     levelRequirement: Math.floor(multiplier * 2),
+    upgradeLevel: 0,
     statVariation: variationPercent,
   };
 };
@@ -459,6 +471,18 @@ export function useGameState() {
           debugLogs: [],
         };
 
+        // Migration: Shards system
+        if (typeof migrated.economy.shards === 'number') {
+          const legacyShards = migrated.economy.shards;
+          migrated.economy.shards = {
+            common: legacyShards,
+            rare: 0,
+            epic: 0,
+            legendary: 0,
+            mythic: 0,
+          };
+        }
+
         // Migration: Force base stats to user's new defaults if level 1
         if (migrated.character.level === 1) {
           migrated.character.baseStats.attack = 6;
@@ -543,6 +567,7 @@ export function useGameState() {
             ...prev,
             character: {
               ...prev.character,
+              energy: 10, // Daily reset to 10 energy
               stats: {
                 ...prev.character.stats,
                 streak: newStreak,
@@ -554,7 +579,7 @@ export function useGameState() {
               lastDailyReset: today,
               dailyProgress: [
                 ...prev.calendar.dailyProgress,
-                { date: today, completedTasks: 0, streakCounted: false }
+                { date: today, completedTasks: 0, streakCounted: false, extraEnergyGained: 0 }
               ].slice(-30), // Keep last 30 days
             },
             quests: {
@@ -1040,12 +1065,9 @@ export function useGameState() {
     scheduledDate?: string,
     focusTag?: FocusTag,
     habitDays?: DayOfWeek[],
-    metaTarget?: number
+    metaTarget?: number,
+    energyReward = 0
   ): Quest => {
-    const baseXp = 20;
-    const baseCoins = 10;
-    const baseHp = 10;
-    
     const config = DIFFICULTY_CONFIG[difficulty];
     
     return {
@@ -1054,14 +1076,11 @@ export function useGameState() {
       description,
       type,
       difficulty,
-      xpReward: Math.floor(baseXp * config.xpMultiplier),
-      coinReward: Math.floor(baseCoins * config.coinMultiplier),
-      hpReward: Math.floor(baseHp * config.hpMultiplier),
+      energyReward: energyReward,
       completed: false,
       createdAt: Date.now(),
       expiresAt: type === 'diaria' ? Date.now() + 24 * 60 * 60 * 1000 : undefined,
       scheduledDate,
-      lootboxChance: config.dropChance / 100, // Convert percentage to decimal
       isEmergency,
       suggestedByMaster,
       focusTag,
@@ -1184,40 +1203,7 @@ export function useGameState() {
         return prev;
       }
 
-      addDebugLog(`Completing quest: ${quest.title} (+${quest.xpReward} XP)`);
-
-      // Step 2: Calculate drop chance based on difficulty
-      const dropChance = DIFFICULTY_CONFIG[quest.difficulty].dropChance;
-      let newItems = [...prev.inventory.items];
-      let dropMessage = '';
-      
-      if (Math.random() * 100 <= dropChance) {
-        // Balanced drop table
-        const dropTable = { 
-          common: quest.difficulty === 'veryEasy' ? 80 : 60, 
-          rare: quest.difficulty === 'veryEasy' ? 18 : 30, 
-          epic: quest.difficulty === 'veryEasy' ? 2 : 8, 
-          legendary: 1.5, 
-          mythic: 0.5 
-        };
-        const rarity = getRarityFromDropTable(dropTable);
-        const droppedItem = generateItemWithVariation(generateItem(rarity));
-        newItems.push(droppedItem);
-        dropMessage = `🎁 Drop: ${droppedItem.name} (${rarity})`;
-        addDebugLog(dropMessage);
-      }
-
-      // Step 3: Check for special attack drop (only for hard+ quests)
-      let newSpecialAttacks = [...prev.inventory.specialAttacks];
-      if (['hard', 'veryHard', 'meta'].includes(quest.difficulty)) {
-        const specialDropChance = quest.difficulty === 'meta' ? 5 : quest.difficulty === 'veryHard' ? 3 : 1;
-        if (Math.random() * 100 <= specialDropChance) {
-          const rarity = getRarityFromDropTable({ common: 50, rare: 30, epic: 15, legendary: 4, mythic: 1 });
-          const element = getRandomElement();
-          newSpecialAttacks.push(generateSpecialAttack(element, rarity));
-          addDebugLog(`⚡ Special attack dropped! (${rarity})`);
-        }
-      }
+      addDebugLog(`Completing quest: ${quest.title}`);
 
       // Step 4: Update weekly goal progress if applicable
       let updatedGoals = [...prev.calendar.weeklyGoals];
@@ -1236,12 +1222,26 @@ export function useGameState() {
         });
       }
 
-      // Step 5: Apply XP rewards and process level up
-      let newState = processLevelUp(prev, quest.xpReward);
+      // Step 5 & 6: Replaced XP/Coins/HP logic
+      const today = getBrazilDateString();
+      let dailyProg = prev.calendar.dailyProgress.find(dp => dp.date === today);
+      
+      if (!dailyProg) {
+        dailyProg = { date: today, completedTasks: 0, streakCounted: false, extraEnergyGained: 0 };
+      }
 
-      // Step 6: Update HP (capped at max)
-      const newHp = Math.min(newState.character.maxHp, newState.character.hp + quest.hpReward);
-      const newRecoveryMode = newHp < newState.character.maxHp * 0.30 ? prev.recoveryMode : false;
+      // Calculate how much energy can actually be gained (limit 5 per day)
+      const currentExtraEnergy = dailyProg.extraEnergyGained || 0;
+      const energyCanGain = Math.max(0, Math.min(quest.energyReward, 5 - currentExtraEnergy));
+      const newExtraEnergy = currentExtraEnergy + energyCanGain;
+
+      const newEnergy = Math.min(100, prev.character.energy + energyCanGain);
+      
+      if (energyCanGain < quest.energyReward) {
+        addDebugLog(`Limite diário de energia extra atingido. Ganho: ${energyCanGain} NRG`);
+      } else if (energyCanGain > 0) {
+        addDebugLog(`Energia conquistada: +${energyCanGain} NRG`);
+      }
 
       // Step 7: Update profile - CRITICAL: Ensure questHistory is always an array
       const currentQuestHistory = Array.isArray(prev.playerProfile?.questHistory) 
@@ -1258,46 +1258,31 @@ export function useGameState() {
       };
 
       // Step 8: Update daily progress for streak calculation
-      const today = getBrazilDateString();
-      const updatedDailyProgress = prev.calendar.dailyProgress.map(dp => 
-        dp.date === today 
-          ? { ...dp, completedTasks: dp.completedTasks + 1 }
-          : dp
-      );
-      
-      // If no progress exists for today, add it
-      if (!updatedDailyProgress.find(dp => dp.date === today)) {
-        updatedDailyProgress.push({ date: today, completedTasks: 1, streakCounted: false });
-      }
+      const updatedDailyProgress = prev.calendar.dailyProgress.some(dp => dp.date === today)
+        ? prev.calendar.dailyProgress.map(dp => 
+            dp.date === today 
+              ? { ...dp, completedTasks: dp.completedTasks + 1, extraEnergyGained: newExtraEnergy }
+              : dp
+          )
+        : [...prev.calendar.dailyProgress, { date: today, completedTasks: 1, streakCounted: false, extraEnergyGained: newExtraEnergy }];
 
-      // Step 9: Return updated state (ensure all fields are defined)
-      // Recover +2 energy per quest completed (capped at max)
-      const newEnergy = Math.min(newState.character.maxEnergy, newState.character.energy + 2);
-      
       return {
-        ...newState,
+        ...prev,
         character: {
-          ...newState.character,
-          hp: newHp,
+          ...prev.character,
           energy: newEnergy,
         },
         inventory: { 
           ...prev.inventory, 
-          items: newItems,
+          items: prev.inventory.items,
           gems: prev.inventory.gems,
-          specialAttacks: newSpecialAttacks,
-        },
-        economy: {
-          ...prev.economy,
-          coins: prev.economy.coins + quest.coinReward,
-          totalCoinsEarned: prev.economy.totalCoinsEarned + quest.coinReward,
+          specialAttacks: prev.inventory.specialAttacks,
         },
         quests: {
           ...prev.quests,
           [type]: prev.quests[type].map(q => q.id === questId ? { ...q, completed: true, completedAt: Date.now() } : q),
         },
         playerProfile: newProfile,
-        recoveryMode: newRecoveryMode,
         calendar: {
           ...prev.calendar,
           weeklyGoals: updatedGoals,
@@ -1305,7 +1290,7 @@ export function useGameState() {
         },
       };
     });
-  }, [processLevelUp, addDebugLog]);
+  }, [addDebugLog]);
 
   const deleteQuest = useCallback((questId: string, type: QuestType) => {
     setGameState(prev => ({
@@ -1552,10 +1537,9 @@ export function useGameState() {
       if (newBossHp <= 0) {
         // Victory!
         const isBoss = currentNode?.isBoss || false;
-        // XP from spreadsheet
+        // XP and Gold from spawned enemy
         const xpReward = spawnedEnemy?.xp || 10;
-        // Gold = XP × 0.3 (normal) or × 0.9 (boss)
-        const goldReward = Math.floor(xpReward * (isBoss ? 0.9 : 0.3));
+        const goldReward = spawnedEnemy?.gold || 0;
         
         // Calculate lobby penalty: 20% of total damage taken in this battle
         const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
@@ -1564,16 +1548,23 @@ export function useGameState() {
         // Process XP through level up system
         let stateAfterXP = processLevelUp(prev, xpReward);
         
-        addDebugLog(`Victory! +${xpReward} XP, +${goldReward} Gold. Lobby HP: -${lobbyDamagePenalty}`);
+        // Calculate monster drop
+        const droppedItem = spawnedEnemy ? calculateMonsterDrop(spawnedEnemy) : null;
+        const newInventoryItems = droppedItem 
+          ? [...stateAfterXP.inventory.items, droppedItem]
+          : stateAfterXP.inventory.items;
+        
+        const dropLog = droppedItem 
+          ? `🎁 DROP! Você encontrou: ${droppedItem.name}`
+          : '';
+
+        addDebugLog(`Victory! +${xpReward} XP, +${goldReward} Gold. Lobby HP: -${lobbyDamagePenalty}${droppedItem ? ` | Drop: ${droppedItem.name}` : ''}`);
         
         return {
           ...stateAfterXP,
           character: {
             ...stateAfterXP.character,
             hp: finalLobbyHp, // Apply lobby penalty after victory
-            // Add gold
-            gold: stateAfterXP.character.gold + goldReward,
-            totalGoldEarned: stateAfterXP.character.totalGoldEarned + goldReward,
             stats: {
               ...stateAfterXP.character.stats,
               bossesDefeated: isBoss 
@@ -1584,14 +1575,26 @@ export function useGameState() {
               criticalHits: stateAfterXP.character.stats.criticalHits + (playerCrit ? 1 : 0),
             },
           },
+          inventory: {
+            ...stateAfterXP.inventory,
+            items: newInventoryItems,
+          },
+          economy: {
+            ...stateAfterXP.economy,
+            coins: stateAfterXP.economy.coins + goldReward,
+            totalCoinsEarned: stateAfterXP.economy.totalCoinsEarned + goldReward,
+          },
           combat: {
             ...prev.combat,
             bossHp: 0,
             isActive: false,
-            logs: [...prev.combat.logs, log, `🎉 Vitória! +${xpReward} XP, +${goldReward} 🪙`],
+            logs: [...prev.combat.logs, log, `🎉 Vitória! +${xpReward} XP, +${goldReward} 🪙`, dropLog].filter(Boolean),
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
             damageTakenInCurrentBattle: newDamageTakenInBattle,
+            droppedItem: droppedItem,
+            xpReward,
+            goldReward,
           },
         };
       }
@@ -1726,10 +1729,10 @@ export function useGameState() {
 
       // Check victory/defeat
       if (newBossHp <= 0) {
-        const mapMultiplier = prev.currentMapId ? parseInt(prev.currentMapId.replace('map', '')) : 1;
+        // Use enemy stats for rewards
         const isBoss = currentNode?.isBoss || false;
-        const winReward = 20 + mapMultiplier * 5 + (isBoss ? 20 : 0);
-        const xpReward = 50 + mapMultiplier * 10 + (isBoss ? 30 : 0);
+        const xpReward = spawnedEnemy?.xp || 20;
+        const goldReward = spawnedEnemy?.gold || 10;
         
         // Calculate lobby penalty: 20% of total damage taken in this battle
         const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
@@ -1738,6 +1741,18 @@ export function useGameState() {
         // Process XP through level up system
         let stateAfterXP = processLevelUp(prev, xpReward);
         
+        // Calculate monster drop
+        const droppedItem = spawnedEnemy ? calculateMonsterDrop(spawnedEnemy) : null;
+        const newInventoryItems = droppedItem 
+          ? [...stateAfterXP.inventory.items, droppedItem]
+          : stateAfterXP.inventory.items;
+        
+        const dropLog = droppedItem 
+          ? `🎁 DROP! Você encontrou: ${droppedItem.name}`
+          : '';
+
+        addDebugLog(`Special Victory! +${xpReward} XP, +${goldReward} Gold. Lobby HP: -${lobbyDamagePenalty}${droppedItem ? ` | Drop: ${droppedItem.name}` : ''}`);
+
         return {
           ...stateAfterXP,
           character: {
@@ -1753,19 +1768,26 @@ export function useGameState() {
               criticalHits: stateAfterXP.character.stats.criticalHits + (playerCrit ? 1 : 0),
             },
           },
+          inventory: {
+            ...stateAfterXP.inventory,
+            items: newInventoryItems,
+          },
           economy: {
             ...stateAfterXP.economy,
-            coins: stateAfterXP.economy.coins + winReward,
-            totalCoinsEarned: stateAfterXP.economy.totalCoinsEarned + winReward,
+            coins: stateAfterXP.economy.coins + goldReward,
+            totalCoinsEarned: stateAfterXP.economy.totalCoinsEarned + goldReward,
           },
           combat: {
             ...prev.combat,
             isActive: false,
             bossHp: 0,
-            logs: [log, `🎉 Vitória! +${winReward} moedas, +${xpReward} XP`],
+            logs: [log, `🎉 Vitória! +${goldReward} moedas, +${xpReward} XP`, dropLog].filter(Boolean),
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
             damageTakenInCurrentBattle: newDamageTakenInBattle,
+            droppedItem: droppedItem,
+            xpReward,
+            goldReward,
           },
         };
       }
@@ -1921,10 +1943,10 @@ export function useGameState() {
       const goldAmount = 10 + Math.floor(Math.random() * 21);
       setGameState(prev => ({
         ...prev,
-        character: {
-          ...prev.character,
-          gold: prev.character.gold + goldAmount,
-          totalGoldEarned: prev.character.totalGoldEarned + goldAmount,
+        economy: {
+          ...prev.economy,
+          coins: prev.economy.coins + goldAmount,
+          totalCoinsEarned: prev.economy.totalCoinsEarned + goldAmount,
         },
       }));
       addDebugLog(`Chest opened: +${goldAmount} gold`);
@@ -1952,31 +1974,179 @@ export function useGameState() {
   }, [addDebugLog]);
 
   // ============================================
-  // SHOP SYSTEM - NPC Vendor
+  // FORGE SYSTEM - DESTROY, UPGRADE & CONVERT
   // ============================================
-  
-  const buyShopItem = useCallback((itemId: string): boolean => {
-    setGameState(prev => {
-      const item = prev.shop.find(i => i.id === itemId);
-      if (!item || item.owned || prev.character.gold < item.price) return prev;
 
-      const newUnlockedSkins = item.type === 'skin' 
-        ? [...prev.unlockedSkins, item.id]
-        : prev.unlockedSkins;
+  const convertShards = useCallback((fromRarity: Rarity) => {
+    const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+    const fromIndex = rarities.indexOf(fromRarity);
+    
+    if (fromIndex === -1 || fromIndex >= rarities.length - 1) {
+      addDebugLog(`Cannot convert from rarity: ${fromRarity}`);
+      return;
+    }
+
+    const toRarity = rarities[fromIndex + 1];
+
+    setGameState(prev => {
+      if (prev.economy.shards[fromRarity] < 10) {
+        addDebugLog(`Insufficient ${fromRarity} shards (10 required)`);
+        return prev;
+      }
+
+      const newShards = { ...prev.economy.shards };
+      newShards[fromRarity] -= 10;
+      newShards[toRarity] += 1;
+
+      addDebugLog(`Converted 10 ${fromRarity} shards into 1 ${toRarity} shard`);
 
       return {
         ...prev,
-        character: {
-          ...prev.character,
-          gold: prev.character.gold - item.price,
+        economy: {
+          ...prev.economy,
+          shards: newShards,
         },
-        shop: prev.shop.map(i => i.id === itemId ? { ...i, owned: true } : i),
-        unlockedSkins: newUnlockedSkins,
       };
     });
+  }, [addDebugLog]);
 
-    return true;
-  }, []);
+  const destroyItem = useCallback((itemId: string) => {
+    setGameState(prev => {
+      // Find in inventory
+      const itemToDestroy = prev.inventory.items.find(i => i.id === itemId);
+      if (!itemToDestroy) return prev;
+
+      // Check if equipped
+      const isEquipped = Object.values(prev.character.equipped).some(i => i?.id === itemId);
+      if (isEquipped) {
+        addDebugLog(`Cannot destroy equipped item: ${itemToDestroy.name}`);
+        return prev;
+      }
+
+      const rarity = itemToDestroy.rarity;
+      // Item +10 gives 10 shards, others give 1
+      const shardAmount = itemToDestroy.upgradeLevel >= 10 ? 10 : 1;
+      
+      const newShards = { ...prev.economy.shards };
+      newShards[rarity] = (newShards[rarity] || 0) + shardAmount;
+      
+      const newInventoryItems = prev.inventory.items.filter(i => i.id !== itemId);
+
+      addDebugLog(`Destroyed ${itemToDestroy.name} for ${shardAmount} ${rarity} fragment(s)`);
+
+      return {
+        ...prev,
+        economy: {
+          ...prev.economy,
+          shards: newShards,
+        },
+        inventory: {
+          ...prev.inventory,
+          items: newInventoryItems,
+        },
+      };
+    });
+  }, [addDebugLog]);
+
+  const upgradeItem = useCallback((itemId: string): { success: boolean; result: 'success' | 'fail' | 'downgrade' } => {
+    let result: 'success' | 'fail' | 'downgrade' = 'fail';
+    let isSuccess = false;
+
+    setGameState(prev => {
+      const itemToUpgrade = prev.inventory.items.find(i => i.id === itemId);
+      if (!itemToUpgrade) return prev;
+
+      if (itemToUpgrade.upgradeLevel >= 10) {
+        addDebugLog(`${itemToUpgrade.name} is already at max level (+10)`);
+        return prev;
+      }
+
+      const currentLevel = itemToUpgrade.upgradeLevel;
+      const targetLevel = currentLevel + 1;
+      const rarity = itemToUpgrade.rarity;
+      
+      const baseCost = FORGE_BASE_COSTS[targetLevel];
+      const multiplier = FORGE_RARITY_MULTIPLIERS[rarity];
+      
+      const goldCost = baseCost.gold * multiplier;
+      const shardCost = baseCost.shards;
+
+      if (prev.economy.coins < goldCost) {
+        addDebugLog(`Insufficient coins for upgrade (${goldCost} required)`);
+        return prev;
+      }
+
+      if (prev.economy.shards[rarity] < shardCost) {
+        addDebugLog(`Insufficient ${rarity} fragments for upgrade (${shardCost} required)`);
+        return prev;
+      }
+
+      // Upgrade chances
+      const successChance = FORGE_SUCCESS_CHANCES[currentLevel];
+      const roll = Math.random() * 100;
+
+      let newLevel = currentLevel;
+      
+      if (roll <= successChance) {
+        newLevel = targetLevel;
+        isSuccess = true;
+        result = 'success';
+        addDebugLog(`SUCCESS! ${itemToUpgrade.name} upgraded to +${newLevel}`);
+      } else {
+        // Fail: Check for downgrade
+        const downgradeChance = FORGE_DOWNGRADE_CHANCES[currentLevel];
+        const downgradeRoll = Math.random() * 100;
+        
+        if (downgradeRoll <= downgradeChance && currentLevel > 0) {
+          newLevel = currentLevel - 1;
+          result = 'downgrade';
+          addDebugLog(`FAIL! ${itemToUpgrade.name} downgraded to +${newLevel}`);
+        } else {
+          result = 'fail';
+          addDebugLog(`FAIL! ${itemToUpgrade.name} stayed at +${newLevel}`);
+        }
+      }
+
+      const updatedItem = { ...itemToUpgrade, upgradeLevel: newLevel };
+      
+      // Update inventory (must update the item object itself)
+      const newInventoryItems = prev.inventory.items.map(i => i.id === itemId ? updatedItem : i);
+
+      // If equipped, update equipped item too
+      const newEquipped = { ...prev.character.equipped };
+      const slot = updatedItem.type as keyof typeof newEquipped;
+      if (newEquipped[slot]?.id === itemId) {
+        (newEquipped as any)[slot] = updatedItem;
+      }
+
+      const newShards = { ...prev.economy.shards };
+      newShards[rarity] -= shardCost;
+
+      const newState = {
+        ...prev,
+        character: recalculatePlayerStats({
+          ...prev.character,
+          equipped: newEquipped,
+        }),
+        economy: {
+          ...prev.economy,
+          coins: prev.economy.coins - goldCost,
+          shards: newShards,
+          totalCoinsSpent: prev.economy.totalCoinsSpent + goldCost,
+        },
+        inventory: {
+          ...prev.inventory,
+          items: newInventoryItems,
+        },
+      };
+
+      return newState;
+    });
+
+    // We need to return the actual result from the state update
+    // But since setGameState is async, we'll return a pessimistic success if we didn't return prev
+    return { success: isSuccess, result };
+  }, [addDebugLog]);
 
   // ============================================
   // RESET SYSTEM
@@ -2266,27 +2436,6 @@ export function useGameState() {
     addQuest(quest);
   }, [addQuest]);
 
-  // ============================================
-  // INITIALIZE SHOP
-  // ============================================
-
-  useEffect(() => {
-    if (gameState.shop.length === 0) {
-      const initialShop: ShopItem[] = [
-        { id: 'skin-fire', name: 'Skin de Fogo', description: 'Aparência flamejante', type: 'skin', price: 100, icon: '🔥', owned: false, element: 'fire' },
-        { id: 'skin-ice', name: 'Skin de Gelo', description: 'Aparência gélida', type: 'skin', price: 100, icon: '❄️', owned: false, element: 'ice' },
-        { id: 'skin-shadow', name: 'Skin das Sombras', description: 'Aparência sombria', type: 'skin', price: 200, icon: '🌑', owned: false, element: 'shadow' },
-        { id: 'effect-golden', name: 'Efeito Dourado', description: 'Brilho dourado ao atacar', type: 'effect', price: 200, icon: '✨', owned: false },
-        { id: 'boost-xp', name: 'Boost de XP', description: '+20% XP por 24h', type: 'boost', price: 150, icon: '📈', owned: false },
-      ];
-      
-      setGameState(prev => ({
-        ...prev,
-        shop: initialShop,
-      }));
-    }
-  }, [gameState.shop.length]);
-
   return {
     gameState,
     isLoaded,
@@ -2366,6 +2515,10 @@ export function useGameState() {
         };
       });
     },
+    // Forge
+    destroyItem,
+    upgradeItem,
+    convertShards,
     // Reset
     resetProgress,
     // Lootbox
@@ -2373,8 +2526,6 @@ export function useGameState() {
     openLootbox,
     // Chest System
     openChest,
-    // Shop
-    buyShopItem,
     // Chat
     sendChatMessage,
     acceptSuggestedQuest,

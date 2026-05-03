@@ -270,12 +270,12 @@ export function Inventory() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 pt-4 pb-24"
+      className="space-y-6 pt-0 pb-24"
     >
       {/* Header */}
-      <div>
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">Inventário</h2>
-        <p className="text-gray-400">
+        <p className="text-xs text-gray-400 mt-1">
           Gerencie seus equipamentos e ataques especiais
         </p>
       </div>

@@ -6,15 +6,15 @@ import {
   Swords, 
   Shield, 
   Flame, 
-  Trophy, 
   Calendar,
-  Target,
-  AlertTriangle,
   Sparkles,
   RotateCcw,
   Skull,
   Star,
-  FlameKindling
+  FlameKindling,
+  Settings,
+  Target,
+  AlertTriangle
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -169,29 +171,30 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onEnterDungeon }: DashboardProps) {
-  const { gameState, resetProgress, restCharacter } = useGame();
-  const { character, dungeon, quests, recoveryMode } = gameState;
+  const { gameState, resetProgress, restCharacter, recoverEnergy } = useGame();
+  const { character, recoveryMode } = gameState;
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [resetStep, setResetStep] = useState(1);
   const [showCriticalHpWarning, setShowCriticalHpWarning] = useState(false);
   const [isResting, setIsResting] = useState(false);
+
+  const handleRecoverEnergy = () => {
+    recoverEnergy();
+    setShowSettings(false);
+  };
 
   const handleRest = () => {
     if (character.energy < 3 || isResting) return;
     
     setIsResting(true);
     
-    // Start animation, then apply effect after 3s
+    // Start animation, then apply effect after 1.5s
     setTimeout(() => {
       restCharacter();
       setIsResting(false);
-    }, 3000);
+    }, 1500);
   };
-
-  const completedDiarias = quests.diaria.filter(q => q.completed).length;
-  const totalDiarias = quests.diaria.length;
-  const completedMetas = quests.meta.filter(q => q.completed).length;
-  const totalMetas = quests.meta.length;
 
   const hpPercent = (character.hp / character.maxHp) * 100;
   const isCriticalHp = hpPercent < 25;
@@ -251,6 +254,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
       {/* Header Actions */}
       <div className="flex justify-end gap-2">
+        <Button
+          onClick={() => setShowSettings(true)}
+          variant="outline"
+          size="sm"
+          className="border-gray-500/30 text-gray-400 hover:bg-gray-500/10"
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Configurações
+        </Button>
         <Button
           onClick={() => setShowResetConfirm(true)}
           variant="outline"
@@ -440,13 +452,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-xs text-gray-400">Ataque</span>
             </div>
             <p className="text-xl font-mono font-bold text-red-400">
-              {character.totalStats?.attack || character.stats.totalAttack}
-            </p>
-            <p className="text-xs text-gray-500">
-              Base: {character.baseStats?.attack || character.baseAttack} 
-              {character.equipmentBonuses?.attack > 0 && (
-                <span className="text-green-400"> +{character.equipmentBonuses.attack}</span>
-              )}
+              {Math.floor(character.totalStats?.attack || character.stats.totalAttack)}
             </p>
           </div>
           
@@ -457,30 +463,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-xs text-gray-400">Defesa</span>
             </div>
             <p className="text-xl font-mono font-bold text-blue-400">
-              {character.totalStats?.defense || character.stats.totalDefense}
-            </p>
-            <p className="text-xs text-gray-500">
-              Base: {character.baseStats?.defense || character.baseDefense}
-              {character.equipmentBonuses?.defense > 0 && (
-                <span className="text-green-400"> +{character.equipmentBonuses.defense}</span>
-              )}
-            </p>
-          </div>
-          
-          {/* HP */}
-          <div className="bg-[#16213e] rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Heart className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-gray-400">Vida Máx</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-green-400">
-              {character.totalStats?.maxHp || character.maxHp}
-            </p>
-            <p className="text-xs text-gray-500">
-              Base: {character.baseStats?.maxHp || 100}
-              {character.equipmentBonuses?.maxHp > 0 && (
-                <span className="text-green-400"> +{character.equipmentBonuses.maxHp}</span>
-              )}
+              {Math.floor(character.totalStats?.defense || character.stats.totalDefense)}
             </p>
           </div>
           
@@ -493,46 +476,37 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             <p className="text-xl font-mono font-bold text-yellow-400">
               {Math.round((character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%
             </p>
-            <p className="text-xs text-gray-500">
-              Base: {Math.round((character.baseStats?.critChance || character.baseCritChance) * 100)}%
-              {character.equipmentBonuses?.critChance > 0 && (
-                <span className="text-green-400"> +{Math.round(character.equipmentBonuses.critChance * 100)}%</span>
-              )}
+          </div>
+
+          {/* Dodge */}
+          <div className="bg-[#16213e] rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Star className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs text-gray-400">Esquiva</span>
+            </div>
+            <p className="text-xl font-mono font-bold text-cyan-400">
+              {Math.round((character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%
+            </p>
+          </div>
+
+          {/* HP (Span 2) */}
+          <div className="bg-[#16213e] rounded-lg p-3 col-span-2 md:col-span-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Heart className="w-4 h-4 text-green-400" />
+              <span className="text-xs text-gray-400">Vida Máxima</span>
+            </div>
+            <p className="text-xl font-mono font-bold text-green-400">
+              {character.totalStats?.maxHp || character.maxHp}
             </p>
           </div>
         </div>
       </motion.div>
 
       {/* Progression Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
         <StatCard icon={Flame} label="Streak" value={`${character.progression?.streak || character.stats.streak} dias`} color="#f59e0b" />
         <StatCard icon={Calendar} label="Dias Sobrevividos" value={character.progression?.daysSurvived || character.stats.daysSurvived} color="#22c55e" />
-        <StatCard icon={Target} label="Andar Atual" value={dungeon.currentFloor} color="#a855f7" />
-        <StatCard icon={Trophy} label="Bosses Derrotados" value={character.progression?.bossesDefeated || character.stats.bossesDefeated} color="#fbbf24" />
       </div>
-
-      {/* Combat Stats */}
-      <motion.div variants={itemVariants} className="card-dungeon p-4">
-        <h4 className="text-sm font-semibold text-gray-400 mb-3">Estatísticas de Combate</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <p className="text-2xl font-mono font-bold text-red-400">{(character.progression?.totalDamageDealt || character.stats.totalDamageDealt).toLocaleString()}</p>
-            <p className="text-xs text-gray-500">Dano Causado</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-mono font-bold text-orange-400">{(character.progression?.totalDamageTaken || character.stats.totalDamageTaken).toLocaleString()}</p>
-            <p className="text-xs text-gray-500">Dano Recebido</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-mono font-bold text-yellow-400">{character.progression?.criticalHits || character.stats.criticalHits}</p>
-            <p className="text-xs text-gray-500">Críticos</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-mono font-bold text-cyan-400">{character.progression?.dodges || character.stats.dodges}</p>
-            <p className="text-xs text-gray-500">Esquivas</p>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Special Attack Info */}
       {character.equipped.specialAttack && (
@@ -560,41 +534,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
           </div>
         </motion.div>
       )}
-
-      {/* Quest Progress */}
-      <motion.div variants={itemVariants} className="card-dungeon p-6">
-        <h3 className="text-lg font-bold text-white mb-4 font-cinzel">Progresso de Missões</h3>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-400">Missões Diárias</span>
-              <span className="text-sm font-mono text-cyan-400">{completedDiarias}/{totalDiarias}</span>
-            </div>
-            <div className="progress-bar-bg h-3">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400"
-                initial={{ width: 0 }}
-                animate={{ width: totalDiarias > 0 ? `${(completedDiarias / totalDiarias) * 100}%` : '0%' }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-400">Metas</span>
-              <span className="text-sm font-mono text-purple-400">{completedMetas}/{totalMetas}</span>
-            </div>
-            <div className="progress-bar-bg h-3">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400"
-                initial={{ width: 0 }}
-                animate={{ width: totalMetas > 0 ? `${(completedMetas / totalMetas) * 100}%` : '0%' }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Quick Actions */}
       <motion.div variants={itemVariants} className="flex gap-4 flex-wrap">
@@ -705,6 +644,51 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings / Recover Energy Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
+              <Settings className="w-5 h-5 text-purple-400" />
+              Configurações
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Gerencie seu personagem e recursos.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Energia do Personagem</p>
+                  <p className="text-xs text-gray-500">Recuperar todas as energias agora?</p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleRecoverEnergy}
+                className="bg-purple-600 hover:bg-purple-500 text-white font-bold h-10 px-4 rounded-lg shadow-lg"
+              >
+                Recuperar
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => setShowSettings(false)}
+              variant="outline"
+              className="w-full border-gray-600 text-gray-400"
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
