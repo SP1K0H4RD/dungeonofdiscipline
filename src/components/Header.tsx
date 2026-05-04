@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 interface HeaderProps {
   currentView: string;
   onViewChange: (view: string) => void;
-  onOpenMasterChat: () => void;
 }
 
 const navItems = [
@@ -17,7 +16,7 @@ const navItems = [
   { id: 'shop', label: 'Loja', icon: Store },
 ];
 
-export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderProps) {
+export function Header({ currentView, onViewChange }: HeaderProps) {
   const { gameState } = useGame();
   const { character, economy, recoveryMode } = gameState;
 
@@ -42,14 +41,15 @@ export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderPr
             onClick={() => onViewChange('dashboard')}
           >
             <div className="relative">
-              <Sword className={cn('w-8 h-8', isCriticalHp ? 'text-red-500' : 'text-purple-500')} />
+              <Sword className={cn('w-6 h-6 sm:w-8 sm:h-8', isCriticalHp ? 'text-red-500' : 'text-purple-500')} />
               <div className={cn('absolute inset-0 blur-lg', isCriticalHp ? 'bg-red-500/50' : 'bg-purple-500/50')} />
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-white font-cinzel">
-                Dungeon of
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-white font-cinzel">
+                <span className="block sm:hidden">DoD</span>
+                <span className="hidden sm:block">Dungeon of</span>
               </h1>
-              <p className={cn('text-xs -mt-1', isCriticalHp ? 'text-red-400' : 'text-purple-400')}>Discipline</p>
+              <p className={cn('hidden sm:block text-xs -mt-1', isCriticalHp ? 'text-red-400' : 'text-purple-400')}>Discipline</p>
             </div>
             {recoveryMode && (
               <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500/20 text-orange-400 text-xs rounded-full">
@@ -85,17 +85,6 @@ export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderPr
             })}
           </nav>
 
-          {/* Master Chat Button */}
-          <motion.button
-            onClick={onOpenMasterChat}
-            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors border border-cyan-500/30"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span className="text-sm">Mestre</span>
-          </motion.button>
-
           {/* Stats */}
           <div className="flex items-center gap-3">
             {/* HP Mini */}
@@ -129,21 +118,13 @@ export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderPr
               </div>
             </div>
 
-            {/* Dodge & Crit - Hidden on small screens */}
-            <div className="hidden lg:flex items-center gap-2 text-xs">
-              <div className="flex items-center gap-1 text-cyan-400">
-                <Wind className="w-3 h-3" />
-                <span className="font-mono">{Math.round(character.stats.totalDodgeChance * 100)}%</span>
-              </div>
-            </div>
-
             {/* Coins */}
             <motion.div 
-              className="flex items-center gap-2 bg-yellow-500/10 px-3 py-1.5 rounded-lg border border-yellow-500/30"
+              className="flex items-center gap-2 bg-yellow-500/10 px-2 sm:px-3 py-1.5 rounded-lg border border-yellow-500/30"
               whileHover={{ scale: 1.05 }}
             >
               <Coins className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm font-mono font-bold text-yellow-400">
+              <span className="text-xs sm:text-sm font-mono font-bold text-yellow-400">
                 {economy.coins}
               </span>
             </motion.div>
@@ -151,7 +132,7 @@ export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderPr
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden flex items-center justify-around py-2 border-t border-[#2d2d44]">
+        <div className="md:hidden flex items-center justify-around py-1 border-t border-[#2d2d44]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -161,7 +142,7 @@ export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderPr
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
                 className={cn(
-                  'flex flex-col items-center gap-1 p-2 rounded-lg transition-all',
+                  'flex flex-col items-center gap-1 p-1 rounded-lg transition-all',
                   isActive 
                     ? 'text-purple-400' 
                     : 'text-gray-400'
@@ -169,7 +150,7 @@ export function Header({ currentView, onViewChange, onOpenMasterChat }: HeaderPr
                 whileTap={{ scale: 0.9 }}
               >
                 <Icon className={cn('w-5 h-5', isActive && 'text-glow-purple')} />
-                <span className="text-xs">{item.label}</span>
+                <span className="text-[10px]">{item.label}</span>
               </motion.button>
             );
           })}

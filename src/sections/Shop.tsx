@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Coins, 
-  Lock,
   Zap,
   Hammer,
   Trash2,
   ArrowUpCircle,
   AlertCircle,
   Package,
-  ArrowRight,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -40,26 +40,26 @@ const rarityColors: Record<Rarity, { border: string; bg: string; text: string; s
 
 export function Shop() {
   const { gameState, destroyItem, upgradeItem, convertShards } = useGame();
-  const { economy, inventory } = gameState;
-  const [selectedForgeItem, setSelectedForgeItem] = useState<Item | null>(null);
+  const { economy, inventory, character } = gameState;
+  const [selectedForgeItemId, setSelectedForgeItemId] = useState<string | null>(null);
   const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; result: 'success' | 'fail' | 'downgrade' } | null>(null);
 
+  const selectedForgeItem = inventory.items.find(i => i.id === selectedForgeItemId) || 
+                            Object.values(character.equipped).find(i => i?.id === selectedForgeItemId) || 
+                            null;
+
   const handleUpgrade = () => {
-    if (!selectedForgeItem) return;
-    const res = upgradeItem(selectedForgeItem.id);
+    if (!selectedForgeItemId) return;
+    const res = upgradeItem(selectedForgeItemId);
     setUpgradeResult(res);
     
-    // Refresh selected item from inventory to show updated level
-    const updatedItem = inventory.items.find(i => i.id === selectedForgeItem.id);
-    if (updatedItem) setSelectedForgeItem(updatedItem);
-
     // Clear result after 3 seconds
     setTimeout(() => setUpgradeResult(null), 3000);
   };
 
   const handleDestroy = (itemId: string) => {
     destroyItem(itemId);
-    if (selectedForgeItem?.id === itemId) setSelectedForgeItem(null);
+    if (selectedForgeItemId === itemId) setSelectedForgeItemId(null);
   };
 
   const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
@@ -152,9 +152,28 @@ export function Shop() {
                       +{selectedForgeItem.upgradeLevel}
                     </div>
                   )}
-                  <p className="mt-5 text-xs font-black text-gray-500 uppercase tracking-widest text-center">
-                    {selectedForgeItem ? selectedForgeItem.name : "Insira um Equipamento"}
-                  </p>
+                  <div className="mt-5 text-center space-y-1">
+                    <h3 className={cn(
+                      "text-xs font-black uppercase tracking-widest",
+                      selectedForgeItem ? rarityColors[selectedForgeItem.rarity as Rarity].text : "text-gray-500"
+                    )}>
+                      {selectedForgeItem ? (
+                        <>
+                          {selectedForgeItem.name}
+                          {selectedForgeItem.upgradeLevel > 0 && (
+                            <span className="ml-1 text-yellow-500">+{selectedForgeItem.upgradeLevel}</span>
+                          )}
+                        </>
+                      ) : (
+                        "Insira um Equipamento"
+                      )}
+                    </h3>
+                    {selectedForgeItem?.description && (
+                      <p className="text-[10px] text-gray-500 font-bold max-w-[200px] mx-auto leading-relaxed italic opacity-70">
+                        "{selectedForgeItem.description}"
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {selectedForgeItem && selectedForgeItem.upgradeLevel < 10 && (
@@ -179,6 +198,43 @@ export function Shop() {
               {selectedForgeItem && (
                 <div className="w-full max-w-md space-y-4">
                   {/* Upgrade Stats Preview */}
+                  {selectedForgeItem.upgradeLevel < 10 && (
+                    <div className="bg-black/60 p-4 rounded-2xl border border-white/5 space-y-2">
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center mb-2">Previsão de Atributos (+{selectedForgeItem.upgradeLevel + 1})</p>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                        {Object.entries(selectedForgeItem.stats).map(([stat, val]) => {
+                          if (!val) return null;
+                          const currentVal = Math.floor(val * (1 + selectedForgeItem.upgradeLevel * 0.1));
+                          const nextVal = Math.floor(val * (1 + (selectedForgeItem.upgradeLevel + 1) * 0.1));
+                          const diff = nextVal - currentVal;
+                          if (diff === 0 && selectedForgeItem.upgradeLevel < 10) return null; // Avoid showing 0 changes
+
+                          const statLabels: Record<string, string> = {
+                            attack: 'Ataque',
+                            defense: 'Defesa',
+                            hpBonus: 'Vida',
+                            xpBonus: 'XP',
+                            coinBonus: 'Ouro',
+                            critChance: 'Crítico',
+                            dodgeChance: 'Esquiva'
+                          };
+
+                          return (
+                            <div key={stat} className="flex justify-between items-center">
+                              <span className="text-[10px] text-gray-400 font-bold uppercase">{statLabels[stat] || stat}</span>
+                              <div className="flex items-center gap-1 font-mono">
+                                <span className="text-xs text-white font-bold">{currentVal}</span>
+                                <ArrowRight className="w-2.5 h-2.5 text-gray-600" />
+                                <span className="text-xs text-green-400 font-bold">{nextVal}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Costs */}
                   <div className="grid grid-cols-2 gap-4 bg-black/60 p-5 rounded-3xl border border-white/5 shadow-inner">
                     <div className="flex flex-col items-center justify-center">
                       <div className="flex items-center gap-2 mb-1">
@@ -309,12 +365,12 @@ export function Shop() {
                 return (
                   <motion.button
                     key={item.id}
-                    onClick={() => setSelectedForgeItem(item)}
+                    onClick={() => setSelectedForgeItemId(item.id)}
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     className={cn(
                       "relative aspect-square rounded-2xl border-2 transition-all group flex items-center justify-center shadow-lg",
-                      selectedForgeItem?.id === item.id 
+                      selectedForgeItemId === item.id 
                         ? "border-orange-500 bg-orange-500/20 ring-4 ring-orange-500/10" 
                         : cn(colors.border, "bg-black/60 hover:border-white/20 hover:bg-black/40"),
                       isEquipped && "opacity-40"

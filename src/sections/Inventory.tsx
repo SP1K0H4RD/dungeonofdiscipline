@@ -92,8 +92,13 @@ function ItemCard({ item, onClick, isEquipped }: ItemCardProps) {
       whileTap={{ scale: 0.95 }}
     >
       <span className="text-3xl">{item.icon}</span>
+      {item.upgradeLevel > 0 && (
+        <div className="absolute top-1 left-1 bg-yellow-500 text-black text-[10px] font-black px-1 rounded min-w-[18px] text-center shadow-lg z-10">
+          +{item.upgradeLevel}
+        </div>
+      )}
       {isEquipped && (
-        <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full" />
+        <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full z-10" />
       )}
       <div className={cn('text-xs font-medium capitalize', rarity.text)}>
         {item.rarity}
@@ -168,6 +173,11 @@ function EquipmentSlot({ type, item, onClick }: EquipmentSlotProps) {
       {item ? (
         <>
           <span className="text-3xl">{item.icon}</span>
+          {item.upgradeLevel > 0 && (
+            <div className="absolute top-1 left-1 bg-yellow-500 text-black text-[10px] font-black px-1 rounded min-w-[18px] text-center shadow-lg">
+              +{item.upgradeLevel}
+            </div>
+          )}
           <span className="text-xs text-gray-400 truncate max-w-full px-2">
             {item.name}
           </span>
@@ -234,6 +244,40 @@ export function Inventory() {
   const [selectedSpecialSlot, setSelectedSpecialSlot] = useState(false);
 
   const equippedItems = character.equipped;
+
+  const getUpgradedStat = (base: number | undefined, level: number) => {
+    if (base === undefined) return null;
+    const bonus = 1 + (level * 0.1);
+    const total = base * bonus;
+    return {
+      base: Math.floor(base),
+      total: Math.floor(total),
+      diff: Math.floor(total) - Math.floor(base)
+    };
+  };
+
+  const StatRow = ({ icon: Icon, label, base, level, color, isPercent = false }: any) => {
+    const stat = getUpgradedStat(base, level);
+    if (!stat) return null;
+
+    return (
+      <div className={cn("flex items-center justify-between p-2 rounded bg-black/20", color)}>
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4" />
+          <span className="text-xs font-medium">{label}</span>
+        </div>
+        <div className="flex items-center gap-1.5 font-mono">
+          <span className="text-gray-400 text-xs">{stat.base}{isPercent ? '%' : ''}</span>
+          {stat.diff > 0 && (
+            <span className="text-[10px] text-green-400 font-bold">+{stat.diff}{isPercent ? '%' : ''}</span>
+          )}
+          <span className="text-sm font-bold ml-1">
+            {stat.total}{isPercent ? '%' : ''}
+          </span>
+        </div>
+      </div>
+    );
+  };
   
   // Get equipped item IDs
   const equippedIds = new Set([
@@ -448,9 +492,14 @@ export function Inventory() {
               <DialogHeader>
                 <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
                   <span className="text-3xl">{selectedItem.icon}</span>
-                  <span className={rarityColors[selectedItem.rarity].text}>
-                    {selectedItem.name}
-                  </span>
+                  <div>
+                    <span className={rarityColors[selectedItem.rarity].text}>
+                      {selectedItem.name}
+                    </span>
+                    {selectedItem.upgradeLevel > 0 && (
+                      <span className="ml-2 text-yellow-500 font-black">+{selectedItem.upgradeLevel}</span>
+                    )}
+                  </div>
                 </DialogTitle>
               </DialogHeader>
               
@@ -467,31 +516,60 @@ export function Inventory() {
                 
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold text-gray-300">Status:</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedItem.stats.attack && (
-                      <div className="flex items-center gap-2 text-red-400">
-                        <Sword className="w-4 h-4" />
-                        <span>+{selectedItem.stats.attack} Ataque</span>
-                      </div>
-                    )}
-                    {selectedItem.stats.defense && (
-                      <div className="flex items-center gap-2 text-blue-400">
-                        <Shield className="w-4 h-4" />
-                        <span>+{selectedItem.stats.defense} Defesa</span>
-                      </div>
-                    )}
-                    {selectedItem.stats.hpBonus && (
-                      <div className="flex items-center gap-2 text-green-400">
-                        <Info className="w-4 h-4" />
-                        <span>+{selectedItem.stats.hpBonus} HP</span>
-                      </div>
-                    )}
-                    {selectedItem.stats.xpBonus && (
-                      <div className="flex items-center gap-2 text-purple-400">
-                        <Info className="w-4 h-4" />
-                        <span>+{selectedItem.stats.xpBonus}% XP</span>
-                      </div>
-                    )}
+                  <div className="flex flex-col gap-2">
+                    <StatRow 
+                      icon={Sword} 
+                      label="Ataque" 
+                      base={selectedItem.stats.attack} 
+                      level={selectedItem.upgradeLevel} 
+                      color="text-red-400" 
+                    />
+                    <StatRow 
+                      icon={Shield} 
+                      label="Defesa" 
+                      base={selectedItem.stats.defense} 
+                      level={selectedItem.upgradeLevel} 
+                      color="text-blue-400" 
+                    />
+                    <StatRow 
+                      icon={Heart} 
+                      label="HP" 
+                      base={selectedItem.stats.hpBonus} 
+                      level={selectedItem.upgradeLevel} 
+                      color="text-green-400" 
+                    />
+                    <StatRow 
+                      icon={Zap} 
+                      label="XP" 
+                      base={selectedItem.stats.xpBonus} 
+                      level={selectedItem.upgradeLevel} 
+                      color="text-purple-400" 
+                      isPercent 
+                    />
+                    <StatRow 
+                      icon={Info} 
+                      label="Moedas" 
+                      base={selectedItem.stats.coinBonus} 
+                      level={selectedItem.upgradeLevel} 
+                      color="text-yellow-400" 
+                      isPercent 
+                    />
+                    <StatRow 
+                      icon={Flame} 
+                      label="Crítico" 
+                      base={selectedItem.stats.critChance ? selectedItem.stats.critChance * 100 : undefined} 
+                      level={selectedItem.upgradeLevel} 
+                      color="text-orange-400" 
+                      isPercent 
+                    />
+                    <StatRow 
+                      icon={Zap} 
+                      label="Esquiva" 
+                      base={selectedItem.stats.dodgeChance ? selectedItem.stats.dodgeChance * 100 : undefined} 
+                      level={selectedItem.upgradeLevel} 
+                      color="text-cyan-400" 
+                      isPercent 
+                    />
                   </div>
                 </div>
                 
@@ -526,6 +604,9 @@ export function Inventory() {
                           <span className={rarityColors[item.rarity].text}>
                             {item.name}
                           </span>
+                          {item.upgradeLevel > 0 && (
+                            <span className="ml-2 text-yellow-500 font-black">+{item.upgradeLevel}</span>
+                          )}
                           <div className="flex items-center gap-2 mt-1">
                             <div className="w-2 h-2 bg-green-500 rounded-full" />
                             <span className="text-xs text-green-400">Equipado</span>
@@ -559,49 +640,60 @@ export function Inventory() {
                           <Sword className="w-4 h-4" />
                           Atributos do Item
                         </h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          {item.stats.attack !== undefined && item.stats.attack > 0 && (
-                            <div className="flex items-center gap-2 text-red-400">
-                              <Sword className="w-4 h-4" />
-                              <span>+{item.stats.attack} Ataque</span>
-                            </div>
-                          )}
-                          {item.stats.defense !== undefined && item.stats.defense > 0 && (
-                            <div className="flex items-center gap-2 text-blue-400">
-                              <Shield className="w-4 h-4" />
-                              <span>+{item.stats.defense} Defesa</span>
-                            </div>
-                          )}
-                          {item.stats.hpBonus !== undefined && item.stats.hpBonus > 0 && (
-                            <div className="flex items-center gap-2 text-green-400">
-                              <Info className="w-4 h-4" />
-                              <span>+{item.stats.hpBonus} HP</span>
-                            </div>
-                          )}
-                          {item.stats.xpBonus !== undefined && item.stats.xpBonus > 0 && (
-                            <div className="flex items-center gap-2 text-purple-400">
-                              <Zap className="w-4 h-4" />
-                              <span>+{item.stats.xpBonus}% XP</span>
-                            </div>
-                          )}
-                          {item.stats.coinBonus !== undefined && item.stats.coinBonus > 0 && (
-                            <div className="flex items-center gap-2 text-yellow-400">
-                              <Info className="w-4 h-4" />
-                              <span>+{item.stats.coinBonus}% Moedas</span>
-                            </div>
-                          )}
-                          {item.stats.critChance !== undefined && item.stats.critChance > 0 && (
-                            <div className="flex items-center gap-2 text-orange-400">
-                              <Flame className="w-4 h-4" />
-                              <span>+{Math.round(item.stats.critChance * 100)}% Crítico</span>
-                            </div>
-                          )}
-                          {item.stats.dodgeChance !== undefined && item.stats.dodgeChance > 0 && (
-                            <div className="flex items-center gap-2 text-cyan-400">
-                              <Zap className="w-4 h-4" />
-                              <span>+{Math.round(item.stats.dodgeChance * 100)}% Esquiva</span>
-                            </div>
-                          )}
+                        <div className="flex flex-col gap-2">
+                          <StatRow 
+                            icon={Sword} 
+                            label="Ataque" 
+                            base={item.stats.attack} 
+                            level={item.upgradeLevel} 
+                            color="text-red-400" 
+                          />
+                          <StatRow 
+                            icon={Shield} 
+                            label="Defesa" 
+                            base={item.stats.defense} 
+                            level={item.upgradeLevel} 
+                            color="text-blue-400" 
+                          />
+                          <StatRow 
+                            icon={Heart} 
+                            label="HP" 
+                            base={item.stats.hpBonus} 
+                            level={item.upgradeLevel} 
+                            color="text-green-400" 
+                          />
+                          <StatRow 
+                            icon={Zap} 
+                            label="XP" 
+                            base={item.stats.xpBonus} 
+                            level={item.upgradeLevel} 
+                            color="text-purple-400" 
+                            isPercent 
+                          />
+                          <StatRow 
+                            icon={Info} 
+                            label="Moedas" 
+                            base={item.stats.coinBonus} 
+                            level={item.upgradeLevel} 
+                            color="text-yellow-400" 
+                            isPercent 
+                          />
+                          <StatRow 
+                            icon={Flame} 
+                            label="Crítico" 
+                            base={item.stats.critChance ? item.stats.critChance * 100 : undefined} 
+                            level={item.upgradeLevel} 
+                            color="text-orange-400" 
+                            isPercent 
+                          />
+                          <StatRow 
+                            icon={Zap} 
+                            label="Esquiva" 
+                            base={item.stats.dodgeChance ? item.stats.dodgeChance * 100 : undefined} 
+                            level={item.upgradeLevel} 
+                            color="text-cyan-400" 
+                            isPercent 
+                          />
                         </div>
                       </div>
                       

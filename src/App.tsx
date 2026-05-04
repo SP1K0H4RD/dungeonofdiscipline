@@ -345,7 +345,7 @@ function AppContent() {
       case 'dashboard':
         return <Dashboard onEnterDungeon={handleEnterDungeon} />;
       case 'quests':
-        return <Quests onOpenMasterChat={() => setShowMasterChat(true)} />;
+        return <Quests />;
       case 'inventory':
         return <Inventory />;
       case 'shop':
@@ -356,7 +356,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black overflow-x-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 bg-gradient-dark pointer-events-none" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none" />
@@ -365,11 +365,10 @@ function AppContent() {
       <Header 
         currentView={currentView} 
         onViewChange={setCurrentView}
-        onOpenMasterChat={() => setShowMasterChat(true)}
       />
 
       {/* Main Content */}
-      <main className="relative z-10 pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+      <main className="relative z-10 pt-32 sm:pt-24 pb-24 sm:pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
@@ -405,9 +404,6 @@ function AppContent() {
           />
         )}
       </AnimatePresence>
-
-      {/* Master Chat */}
-      <MasterChat isOpen={showMasterChat} onClose={() => setShowMasterChat(false)} />
 
       {/* Global Level Up Overlay */}
       <AnimatePresence>

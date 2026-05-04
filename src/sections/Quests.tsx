@@ -10,7 +10,8 @@ import {
   Flame,
   Sparkles,
   MessageSquare,
-  Bot
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -168,14 +169,16 @@ interface QuestsProps {
 }
 
 export function Quests({ onOpenMasterChat }: QuestsProps) {
-  const { gameState, createQuest, addQuest, completeQuest, deleteQuest, sendChatMessage } = useGame();
+  const { gameState, createQuest, addQuest, completeQuest, deleteQuest } = useGame();
   const { playerProfile } = gameState;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [showIntervention, setShowIntervention] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [showQuestModal, setShowQuestModal] = useState(false);
+  const [showCompletedHabitos, setShowCompletedHabitos] = useState(false);
+  const [showCompletedDiarias, setShowCompletedDiarias] = useState(false);
+  const [showCompletedMetas, setShowCompletedMetas] = useState(false);
   const [newQuest, setNewQuest] = useState({
     title: '',
     description: '',
@@ -186,6 +189,8 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
     metaTarget: 100,
     energyReward: 0,
   });
+
+  const todayStr = getBrazilDateStringFromDate(new Date());
 
   const handleQuestClick = (quest: Quest) => {
     setSelectedQuest(quest);
@@ -209,21 +214,15 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
   };
 
   const handleCreateQuest = () => {
-    if (!newQuest.title.trim()) return;
-    
-    // Validate habit quest requirements
-    if (newQuest.type === 'habito' && newQuest.habitDays.length === 0) {
-      alert('Por favor, selecione pelo menos um dia da semana para o hábito.');
-      return;
-    }
+    if (!newQuest.title) return;
     
     const quest = createQuest(
       newQuest.title,
       newQuest.description,
       newQuest.type,
       newQuest.difficulty,
-      false,
-      false,
+      false, // isEmergency
+      false, // suggestedByMaster
       newQuest.scheduledDate || undefined,
       playerProfile.activeFocusTag,
       newQuest.type === 'habito' ? newQuest.habitDays : undefined,
@@ -243,30 +242,23 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
       energyReward: 0,
     });
     setIsDialogOpen(false);
-    setShowIntervention(false);
   };
 
-  const handleMasterIntervention = () => {
-    if (!newQuest.title.trim()) return;
-    
-    setShowIntervention(false);
-    setIsDialogOpen(false);
-    
-    // Open master chat and send context
-    if (onOpenMasterChat) {
-      onOpenMasterChat();
-    }
-    
-    // Send message to master with context
-    sendChatMessage(`Quero criar uma missão: "${newQuest.title}". ${newQuest.description}. Dificuldade: ${difficultyConfig[newQuest.difficulty].label}.`);
+  // Helper to filter quests: active or completed today
+  const filterQuests = (quests: Quest[]) => {
+    return quests.filter(q => {
+      if (!q.completed) return true;
+      const completedDate = getBrazilDateStringFromDate(new Date(q.completedAt || q.createdAt));
+      return completedDate === todayStr;
+    });
   };
 
-  const activeHabitos = gameState.quests.habito.filter(q => !q.completed);
-  const completedHabitos = gameState.quests.habito.filter(q => q.completed);
-  const activeDiarias = gameState.quests.diaria.filter(q => !q.completed);
-  const completedDiarias = gameState.quests.diaria.filter(q => q.completed);
-  const activeMetas = gameState.quests.meta.filter(q => !q.completed);
-  const completedMetas = gameState.quests.meta.filter(q => q.completed);
+  const activeHabitos = filterQuests(gameState.quests.habito).filter(q => !q.completed);
+  const completedHabitos = filterQuests(gameState.quests.habito).filter(q => q.completed);
+  const activeDiarias = filterQuests(gameState.quests.diaria).filter(q => !q.completed);
+  const completedDiarias = filterQuests(gameState.quests.diaria).filter(q => q.completed);
+  const activeMetas = filterQuests(gameState.quests.meta).filter(q => !q.completed);
+  const completedMetas = filterQuests(gameState.quests.meta).filter(q => q.completed);
 
   return (
     <motion.div
@@ -303,146 +295,119 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
           <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-cinzel text-xl">
-                {showIntervention ? '🧙 Intervenção do Mestre' : 'Criar Nova Missão'}
+                Criar Nova Missão
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4 mt-4">
-              {!showIntervention ? (
-                <>
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Título</label>
-                    <Input
-                      value={newQuest.title}
-                      onChange={(e) => setNewQuest({ ...newQuest, title: e.target.value })}
-                      placeholder="Ex: Ler 30 minutos"
-                      className="bg-[#16213e] border-[#2d2d44] text-white"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Descrição</label>
-                    <Textarea
-                      value={newQuest.description}
-                      onChange={(e) => setNewQuest({ ...newQuest, description: e.target.value })}
-                      placeholder="Detalhes da missão..."
-                      className="bg-[#16213e] border-[#2d2d44] text-white"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
-                      <Select
-                        value={newQuest.type}
-                        onValueChange={(v) => setNewQuest({ ...newQuest, type: v as QuestType })}
-                      >
-                        <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                          <SelectItem value="habito" className="text-white">
-                            <div className="flex items-center gap-2">
-                              <Flame className="w-4 h-4 text-orange-400" />
-                              Hábito
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="diaria" className="text-white">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-cyan-400" />
-                              Diária
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="meta" className="text-white">
-                            <div className="flex items-center gap-2">
-                              <Target className="w-4 h-4 text-purple-400" />
-                              Meta
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
-                      <Select
-                        value={newQuest.difficulty}
-                        onValueChange={(v) => setNewQuest({ ...newQuest, difficulty: v as Difficulty })}
-                      >
-                        <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                          <SelectItem value="veryEasy" className="text-white">
-                            <span className="text-green-400">🟢 Muito Fácil</span>
-                          </SelectItem>
-                          <SelectItem value="easy" className="text-white">
-                            <span className="text-emerald-400">🟩 Fácil</span>
-                          </SelectItem>
-                          <SelectItem value="normal" className="text-white">
-                            <span className="text-blue-400">🔵 Normal</span>
-                          </SelectItem>
-                          <SelectItem value="hard" className="text-white">
-                            <span className="text-purple-400">🟣 Difícil</span>
-                          </SelectItem>
-                          <SelectItem value="veryHard" className="text-white">
-                            <span className="text-red-400">🔴 Muito Difícil</span>
-                          </SelectItem>
-                          <SelectItem value="meta" className="text-white">
-                            <span className="text-yellow-400">🟡 Meta</span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-2 block">Título da Missão</label>
+                <Input
+                  placeholder="Ex: Treino de perna, Estudar React..."
+                  value={newQuest.title}
+                  onChange={(e) => setNewQuest(prev => ({ ...prev, title: e.target.value }))}
+                  className="bg-black/40 border-gray-700"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-400 mb-2 block">Descrição (opcional)</label>
+                <Textarea
+                  placeholder="Detalhes sobre a missão..."
+                  value={newQuest.description}
+                  onChange={(e) => setNewQuest(prev => ({ ...prev, description: e.target.value }))}
+                  className="bg-black/40 border-gray-700 resize-none h-20"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
+                  <Select
+                    value={newQuest.type}
+                    onValueChange={(v) => setNewQuest({ ...newQuest, type: v as QuestType })}
+                  >
+                    <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                      <SelectItem value="habito" className="text-white">
+                        <div className="flex items-center gap-2">
+                          <Flame className="w-4 h-4 text-orange-400" />
+                          Hábito
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="diaria" className="text-white">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-cyan-400" />
+                          Diária
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="meta" className="text-white">
+                        <div className="flex items-center gap-2">
+                          <Target className="w-4 h-4 text-purple-400" />
+                          Meta
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+                  <Select
+                    value={newQuest.difficulty}
+                    onValueChange={(v) => setNewQuest({ ...newQuest, difficulty: v as Difficulty })}
+                  >
+                    <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                      {Object.entries(difficultyConfig).map(([key, config]) => (
+                        <SelectItem key={key} value={key} className="text-white">
+                          <div className="flex items-center gap-2">
+                            <span>{config.emoji}</span>
+                            {config.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-                  {/* Habit Days Selector - Only shows when type is 'habito' */}
-                  {newQuest.type === 'habito' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4"
-                    >
-                      <label className="text-sm text-orange-400 mb-3 block flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        Dias da Semana
-                      </label>
-                      <div className="flex gap-2 justify-center">
-                        {[
-                          { day: 1 as DayOfWeek, label: 'Seg' },
-                          { day: 2 as DayOfWeek, label: 'Ter' },
-                          { day: 3 as DayOfWeek, label: 'Qua' },
-                          { day: 4 as DayOfWeek, label: 'Qui' },
-                          { day: 5 as DayOfWeek, label: 'Sex' },
-                          { day: 6 as DayOfWeek, label: 'Sáb' },
-                          { day: 0 as DayOfWeek, label: 'Dom' },
-                        ].map(({ day, label }) => (
-                          <button
-                            key={day}
-                            onClick={() => {
-                              const currentDays = newQuest.habitDays;
-                              const newDays = currentDays.includes(day)
-                                ? currentDays.filter(d => d !== day)
-                                : [...currentDays, day];
-                              setNewQuest({ ...newQuest, habitDays: newDays });
-                            }}
-                            className={cn(
-                              'w-10 h-10 rounded-full text-xs font-medium transition-all',
-                              newQuest.habitDays.includes(day)
-                                ? 'bg-orange-500 text-white'
-                                : 'bg-[#16213e] text-gray-400 border border-[#2d2d44] hover:border-orange-500/50'
-                            )}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-3 text-center">
-                        O hábito aparecerá automaticamente nos dias selecionados
-                      </p>
-                    </motion.div>
-                  )}
+              {newQuest.type === 'habito' && (
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-400 block">Dias da Semana</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
+                      const dayVal = idx as DayOfWeek;
+                      const isSelected = newQuest.habitDays.includes(dayVal);
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => {
+                            setNewQuest(prev => ({
+                              ...prev,
+                              habitDays: isSelected 
+                                ? prev.habitDays.filter(d => d !== dayVal)
+                                : [...prev.habitDays, dayVal]
+                            }));
+                          }}
+                          className={cn(
+                            "px-3 py-1 rounded-full text-xs font-bold transition-all border",
+                            isSelected 
+                              ? "bg-orange-500 border-orange-400 text-white shadow-lg" 
+                              : "bg-black/40 border-gray-700 text-gray-400"
+                          )}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
                   {/* Meta Target - Only shows when type is 'meta' */}
                   {newQuest.type === 'meta' && (
@@ -469,168 +434,111 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
                     </motion.div>
                   )}
 
-                  {/* Scheduled Date Picker - Only shows when type is 'meta' */}
-                  {newQuest.type === 'meta' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4"
-                    >
-                      <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        Data de Conclusão (Opcional)
-                      </label>
-                      <Input
-                        type="date"
-                        value={newQuest.scheduledDate}
-                        onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
-                        className="bg-[#16213e] border-cyan-500/50 text-white"
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Defina uma data para concluir a meta
-                      </p>
-                    </motion.div>
-                  )}
-
-                  {/* Energy Reward Selector */}
-                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                    <label className="text-sm text-cyan-400 mb-2 block flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4" />
-                        Ganho de Energia
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="5"
-                          value={newQuest.energyReward}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            if (!isNaN(val)) {
-                              setNewQuest(prev => ({ ...prev, energyReward: val }));
-                            } else if (e.target.value === '') {
-                              setNewQuest(prev => ({ ...prev, energyReward: 0 }));
-                            }
-                          }}
-                          className="w-20 bg-black/40 border border-cyan-500/30 rounded-lg px-2 py-1 text-right font-black text-cyan-400 focus:outline-none focus:border-cyan-500 transition-colors"
-                        />
-                        <span className="text-lg font-black text-cyan-400">NRG</span>
-                      </div>
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
-                        onClick={() => setNewQuest(prev => ({ ...prev, energyReward: Math.max(0, prev.energyReward - 0.5) }))}
-                      >
-                        -
-                      </Button>
-                      <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
-                        <div 
-                          className="h-full bg-cyan-500 transition-all" 
-                          style={{ width: `${Math.min(100, (newQuest.energyReward / 5) * 100)}%` }}
-                        />
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
-                        onClick={() => setNewQuest(prev => ({ ...prev, energyReward: prev.energyReward + 0.5 }))}
-                      >
-                        +
-                      </Button>
-                    </div>
-                    <p className="text-[10px] text-gray-500 mt-2 text-center">
-                      Cada 1.0 de energia permite uma nova batalha no mapa
-                    </p>
-                  </div>
-
-                  {/* Difficulty Info */}
-                  <div className="bg-[#16213e] rounded-lg p-3 text-sm">
-                    <p className="text-gray-400 mb-2">Resumo da Missão:</p>
-                    <div className="flex items-center gap-4">
-                      <div className="text-cyan-400">
-                        <Zap className="w-4 h-4 inline mr-1 fill-cyan-400/50" />
-                        Energia: +{newQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')}
-                      </div>
-                      <div className="text-gray-400">
-                        Dificuldade: {difficultyConfig[newQuest.difficulty].label}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleCreateQuest}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Criar Missão
-                    </Button>
-                  </div>
-
-                  {/* Master Intervention Button */}
-                  <div className="border-t border-[#2d2d44] pt-4">
-                    <p className="text-sm text-gray-400 mb-3">Precisa de ajuda do Mestre?</p>
-                    <Button
-                      onClick={() => setShowIntervention(true)}
-                      variant="outline"
-                      className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
-                    >
-                      <Bot className="w-4 h-4 mr-2" />
-                      🧙 Pedir Intervenção do Mestre
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-                    <p className="text-purple-400 font-semibold mb-2">🧙 O Mestre vai ajudar!</p>
-                    <p className="text-sm text-gray-400">
-                      Ao continuar, o chat com o Mestre será aberto e ele receberá o contexto da sua missão:
-                    </p>
-                    <div className="mt-3 bg-black/30 rounded p-3">
-                      <p className="text-white font-semibold">{newQuest.title || '(Sem título)'}</p>
-                      <p className="text-gray-400 text-sm">{newQuest.description || '(Sem descrição)'}</p>
-                      <p className="text-gray-500 text-sm mt-1">
-                        Dificuldade: {difficultyConfig[newQuest.difficulty].label}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    O Mestre poderá:
+              {newQuest.type === 'meta' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4"
+                >
+                  <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Data de Conclusão (Opcional)
+                  </label>
+                  <Input
+                    type="date"
+                    value={newQuest.scheduledDate}
+                    onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
+                    className="bg-[#16213e] border-cyan-500/50 text-white"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Defina uma data para concluir a meta
                   </p>
-                  <ul className="text-sm text-gray-400 space-y-1">
-                    <li>• Sugerir quests relacionadas ao tema</li>
-                    <li>• Ajustar a dificuldade</li>
-                    <li>• Criar missões auxiliares</li>
-                    <li>• Dar dicas estratégicas</li>
-                  </ul>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setShowIntervention(false)}
-                      variant="outline"
-                      className="flex-1 border-gray-600 text-gray-400"
-                    >
-                      Voltar
-                    </Button>
-                    <Button
-                      onClick={handleMasterIntervention}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Conversar com Mestre
-                    </Button>
-                  </div>
-                </>
+                </motion.div>
               )}
+
+              {/* Energy Reward Selector */}
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                <label className="text-sm text-cyan-400 mb-2 block flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Ganho de Energia
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="5"
+                      value={newQuest.energyReward}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) {
+                          setNewQuest(prev => ({ ...prev, energyReward: val }));
+                        } else if (e.target.value === '') {
+                          setNewQuest(prev => ({ ...prev, energyReward: 0 }));
+                        }
+                      }}
+                      className="w-20 bg-black/40 border border-cyan-500/30 rounded-lg px-2 py-1 text-right font-black text-cyan-400 focus:outline-none focus:border-cyan-500 transition-colors"
+                    />
+                    <span className="text-lg font-black text-cyan-400">NRG</span>
+                  </div>
+                </label>
+                <div className="flex items-center gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
+                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: Math.max(0, prev.energyReward - 0.5) }))}
+                  >
+                    -
+                  </Button>
+                  <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
+                    <div 
+                      className="h-full bg-cyan-500 transition-all" 
+                      style={{ width: `${Math.min(100, (newQuest.energyReward / 5) * 100)}%` }}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
+                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: prev.energyReward + 0.5 }))}
+                  >
+                    +
+                  </Button>
+                </div>
+                <p className="text-[10px] text-gray-500 mt-2 text-center">
+                  Cada 1.0 de energia permite uma nova batalha no mapa
+                </p>
+              </div>
+
+              {/* Difficulty Info */}
+              <div className="bg-[#16213e] rounded-lg p-3 text-sm">
+                <p className="text-gray-400 mb-2">Resumo da Missão:</p>
+                <div className="flex items-center gap-4">
+                  <div className="text-cyan-400">
+                    <Zap className="w-4 h-4 inline mr-1 fill-cyan-400/50" />
+                    Energia: +{newQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')}
+                  </div>
+                  <div className="text-gray-400">
+                    Dificuldade: {difficultyConfig[newQuest.difficulty].label}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCreateQuest}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Missão
+                </Button>
+              </div>
             </div>
           </DialogContent>
-        </Dialog>
+            </Dialog>
         </div>
       </div>
 
@@ -697,7 +605,7 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="habito" className="mt-4">
+        <TabsContent value="habito" className="mt-4 space-y-4">
           <AnimatePresence mode="popLayout">
             {activeHabitos.length === 0 ? (
               <motion.div
@@ -723,24 +631,37 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
             )}
             
             {completedHabitos.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-sm text-gray-500 mb-3">Concluídos</h4>
-                <div className="space-y-3">
-                  {completedHabitos.map((quest) => (
-                    <QuestCard
-                      key={quest.id}
-                      quest={quest}
-                      onComplete={() => {}}
-                      onDelete={() => deleteQuest(quest.id, 'habito')}
-                    />
-                  ))}
-                </div>
+              <div className="mt-6 border-t border-[#2d2d44] pt-4">
+                <button 
+                  onClick={() => setShowCompletedHabitos(!showCompletedHabitos)}
+                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors w-full group"
+                >
+                  {showCompletedHabitos ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  <span className="font-bold uppercase tracking-widest text-[10px]">Concluídos Hoje ({completedHabitos.length})</span>
+                </button>
+                
+                {showCompletedHabitos && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-3 mt-4"
+                  >
+                    {completedHabitos.map((quest) => (
+                      <QuestCard
+                        key={quest.id}
+                        quest={quest}
+                        onComplete={() => {}}
+                        onDelete={() => deleteQuest(quest.id, 'habito')}
+                      />
+                    ))}
+                  </motion.div>
+                )}
               </div>
             )}
           </AnimatePresence>
         </TabsContent>
 
-        <TabsContent value="diaria" className="mt-4">
+        <TabsContent value="diaria" className="mt-4 space-y-4">
           <AnimatePresence mode="popLayout">
             {activeDiarias.length === 0 ? (
               <motion.div
@@ -766,24 +687,37 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
             )}
             
             {completedDiarias.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-sm text-gray-500 mb-3">Concluídas</h4>
-                <div className="space-y-3">
-                  {completedDiarias.map((quest) => (
-                    <QuestCard
-                      key={quest.id}
-                      quest={quest}
-                      onComplete={() => {}}
-                      onDelete={() => deleteQuest(quest.id, 'diaria')}
-                    />
-                  ))}
-                </div>
+              <div className="mt-6 border-t border-[#2d2d44] pt-4">
+                <button 
+                  onClick={() => setShowCompletedDiarias(!showCompletedDiarias)}
+                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors w-full group"
+                >
+                  {showCompletedDiarias ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  <span className="font-bold uppercase tracking-widest text-[10px]">Concluídas Hoje ({completedDiarias.length})</span>
+                </button>
+                
+                {showCompletedDiarias && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-3 mt-4"
+                  >
+                    {completedDiarias.map((quest) => (
+                      <QuestCard
+                        key={quest.id}
+                        quest={quest}
+                        onComplete={() => {}}
+                        onDelete={() => deleteQuest(quest.id, 'diaria')}
+                      />
+                    ))}
+                  </motion.div>
+                )}
               </div>
             )}
           </AnimatePresence>
         </TabsContent>
 
-        <TabsContent value="meta" className="mt-4">
+        <TabsContent value="meta" className="mt-4 space-y-4">
           <AnimatePresence mode="popLayout">
             {activeMetas.length === 0 ? (
               <motion.div
@@ -809,18 +743,31 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
             )}
             
             {completedMetas.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-sm text-gray-500 mb-3">Concluídas</h4>
-                <div className="space-y-3">
-                  {completedMetas.map((quest) => (
-                    <QuestCard
-                      key={quest.id}
-                      quest={quest}
-                      onComplete={() => {}}
-                      onDelete={() => deleteQuest(quest.id, 'meta')}
-                    />
-                  ))}
-                </div>
+              <div className="mt-6 border-t border-[#2d2d44] pt-4">
+                <button 
+                  onClick={() => setShowCompletedMetas(!showCompletedMetas)}
+                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors w-full group"
+                >
+                  {showCompletedMetas ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  <span className="font-bold uppercase tracking-widest text-[10px]">Concluídas Hoje ({completedMetas.length})</span>
+                </button>
+                
+                {showCompletedMetas && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-3 mt-4"
+                  >
+                    {completedMetas.map((quest) => (
+                      <QuestCard
+                        key={quest.id}
+                        quest={quest}
+                        onComplete={() => {}}
+                        onDelete={() => deleteQuest(quest.id, 'meta')}
+                      />
+                    ))}
+                  </motion.div>
+                )}
               </div>
             )}
           </AnimatePresence>
