@@ -9,7 +9,6 @@ import {
   Target,
   Flame,
   Sparkles,
-  MessageSquare,
   ChevronDown,
   ChevronRight
 } from 'lucide-react';

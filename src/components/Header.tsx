@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Wind, Flame, MessageSquare } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from './ProgressBar';
 import { cn } from '@/lib/utils';

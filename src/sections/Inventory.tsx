@@ -9,7 +9,8 @@ import {
   Package,
   Zap,
   Flame,
-  Gem
+  Gem,
+  Heart
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';

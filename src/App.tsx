@@ -10,7 +10,6 @@ import { MapSystem } from '@/sections/MapSystem';
 import { Inventory } from '@/sections/Inventory';
 import { Shop } from '@/sections/Shop';
 // ProfileSetup removed - onboarding simplified to just name input
-import { MasterChat } from '@/sections/MasterChat';
 import type { MapId } from '@/types/game';
 import { Swords, User, Play, AlertTriangle, RefreshCw, Sparkles, Crown, Star, FlameKindling } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -269,7 +268,6 @@ function AppContent() {
   const [inDungeon, setInDungeon] = useState(false);
   const [showMapSystem, setShowMapSystem] = useState(false);
   const [currentCombat, setCurrentCombat] = useState<{ mapId: MapId; nodeId: string } | null>(null);
-  const [showMasterChat, setShowMasterChat] = useState(false);
   const [showDeath, setShowDeath] = useState(false);
   const { 
     gameState, 
