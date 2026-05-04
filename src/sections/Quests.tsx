@@ -143,7 +143,7 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
             {quest.energyReward > 0 && (
               <div className="flex items-center gap-1 text-cyan-400">
                 <Zap className="w-4 h-4 fill-cyan-400/50" />
-                <span className="text-sm font-mono">+{quest.energyReward} NRG</span>
+                <span className="text-sm font-mono">+{quest.energyReward.toFixed(2).replace(/\.?0+$/, '')} NRG</span>
               </div>
             )}
           </div>
@@ -500,7 +500,25 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
                         <Zap className="w-4 h-4" />
                         Ganho de Energia
                       </div>
-                      <span className="text-lg font-black text-cyan-400">{newQuest.energyReward} NRG</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="5"
+                          value={newQuest.energyReward}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val)) {
+                              setNewQuest(prev => ({ ...prev, energyReward: val }));
+                            } else if (e.target.value === '') {
+                              setNewQuest(prev => ({ ...prev, energyReward: 0 }));
+                            }
+                          }}
+                          className="w-20 bg-black/40 border border-cyan-500/30 rounded-lg px-2 py-1 text-right font-black text-cyan-400 focus:outline-none focus:border-cyan-500 transition-colors"
+                        />
+                        <span className="text-lg font-black text-cyan-400">NRG</span>
+                      </div>
                     </label>
                     <div className="flex items-center gap-3">
                       <Button 
@@ -537,7 +555,7 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
                     <div className="flex items-center gap-4">
                       <div className="text-cyan-400">
                         <Zap className="w-4 h-4 inline mr-1 fill-cyan-400/50" />
-                        Energia: +{newQuest.energyReward}
+                        Energia: +{newQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')}
                       </div>
                       <div className="text-gray-400">
                         Dificuldade: {difficultyConfig[newQuest.difficulty].label}
@@ -845,7 +863,7 @@ export function Quests({ onOpenMasterChat }: QuestsProps) {
                 <p className="text-gray-400 text-sm">{selectedQuest.description || 'Sem descrição'}</p>
                 <div className="flex items-center gap-4 text-sm">
                   {selectedQuest.energyReward > 0 && (
-                    <span className="text-cyan-400">⚡ {selectedQuest.energyReward} energia</span>
+                    <span className="text-cyan-400">⚡ {selectedQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')} energia</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -1077,7 +1095,7 @@ function CalendarView({ quests, onSelectDate, selectedDate, onQuestClick }: Cale
                   {q.completed ? (
                     <span className="text-green-400 text-xs">✓ Concluída</span>
                   ) : (
-                    <span className="text-gray-500 text-xs">NRG: +{q.energyReward}</span>
+                    <span className="text-gray-500 text-xs">NRG: +{q.energyReward.toFixed(2).replace(/\.?0+$/, '')}</span>
                   )}
                 </button>
               ))}

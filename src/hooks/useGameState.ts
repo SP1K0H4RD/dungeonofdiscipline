@@ -132,9 +132,9 @@ const INITIAL_CHARACTER: Character = {
   // Lobby HP - real character state
   hp: 100,
   maxHp: 100,
-  // Energy system - limits gameplay (max 10, each battle costs 1)
-  energy: 10,
-  maxEnergy: 100,
+  // Energy system - limits gameplay (starts at 5, max 10 per day)
+  energy: 5,
+  maxEnergy: 10,
   // Currency
   gold: 0,
   totalGoldEarned: 0,
@@ -471,8 +471,8 @@ export function useGameState() {
         };
 
         // Migration: Shards system
-        if (typeof migrated.economy.shards === 'number') {
-          const legacyShards = migrated.economy.shards;
+        if (!migrated.economy.shards || typeof migrated.economy.shards === 'number') {
+          const legacyShards = typeof migrated.economy.shards === 'number' ? migrated.economy.shards : 0;
           migrated.economy.shards = {
             common: legacyShards,
             rare: 0,
@@ -480,6 +480,13 @@ export function useGameState() {
             legendary: 0,
             mythic: 0,
           };
+        }
+
+        // Migration: Force energy limits
+        migrated.character.maxEnergy = 10;
+        // If it was the old default (10 or 100), or if it's higher than 10, reset to 5
+        if (migrated.character.energy > 5) {
+          migrated.character.energy = 5;
         }
 
         // Migration: Force base stats to user's new defaults if level 1
@@ -566,7 +573,7 @@ export function useGameState() {
             ...prev,
             character: {
               ...prev.character,
-              energy: 10, // Daily reset to 10 energy
+              energy: 5, // Daily reset to 5 base energy
               stats: {
                 ...prev.character.stats,
                 streak: newStreak,
@@ -1232,12 +1239,20 @@ export function useGameState() {
       const energyCanGain = Math.max(0, Math.min(quest.energyReward, 5 - currentExtraEnergy));
       const newExtraEnergy = currentExtraEnergy + energyCanGain;
 
-      const newEnergy = Math.min(100, prev.character.energy + energyCanGain);
+      // Update energy with precision handling (3x 0.33 = 0.99 -> 1.0)
+      let rawNewEnergy = prev.character.energy + energyCanGain;
+      
+      // If it's very close to an integer (within 0.05), round it
+      if (Math.abs(rawNewEnergy - Math.round(rawNewEnergy)) < 0.05) {
+        rawNewEnergy = Math.round(rawNewEnergy);
+      }
+      
+      const newEnergy = Math.min(10, rawNewEnergy);
       
       if (energyCanGain < quest.energyReward) {
-        addDebugLog(`Limite diário de energia extra atingido. Ganho: ${energyCanGain} NRG`);
+        addDebugLog(`Limite diário de energia extra atingido. Ganho: ${energyCanGain.toFixed(2)} NRG`);
       } else if (energyCanGain > 0) {
-        addDebugLog(`Energia conquistada: +${energyCanGain} NRG`);
+        addDebugLog(`Energia conquistada: +${energyCanGain.toFixed(2)} NRG`);
       }
 
       // Step 7: Update profile - CRITICAL: Ensure questHistory is always an array
@@ -1986,14 +2001,15 @@ export function useGameState() {
     const toRarity = rarities[fromIndex + 1];
 
     setGameState(prev => {
-      if (prev.economy.shards[fromRarity] < 10) {
+      const shards = prev.economy?.shards || { common: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
+      if (shards[fromRarity] < 10) {
         addDebugLog(`Insufficient ${fromRarity} shards (10 required)`);
         return prev;
       }
 
-      const newShards = { ...prev.economy.shards };
+      const newShards = { ...shards };
       newShards[fromRarity] -= 10;
-      newShards[toRarity] += 1;
+      newShards[toRarity] = (newShards[toRarity] || 0) + 1;
 
       addDebugLog(`Converted 10 ${fromRarity} shards into 1 ${toRarity} shard`);
 
@@ -2024,7 +2040,8 @@ export function useGameState() {
       // Item +10 gives 10 shards, others give 1
       const shardAmount = itemToDestroy.upgradeLevel >= 10 ? 10 : 1;
       
-      const newShards = { ...prev.economy.shards };
+      const shards = prev.economy?.shards || { common: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
+      const newShards = { ...shards };
       newShards[rarity] = (newShards[rarity] || 0) + shardAmount;
       
       const newInventoryItems = prev.inventory.items.filter(i => i.id !== itemId);
@@ -2068,12 +2085,14 @@ export function useGameState() {
       const goldCost = baseCost.gold * multiplier;
       const shardCost = baseCost.shards;
 
+      const shards = prev.economy?.shards || { common: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
+
       if (prev.economy.coins < goldCost) {
         addDebugLog(`Insufficient coins for upgrade (${goldCost} required)`);
         return prev;
       }
 
-      if (prev.economy.shards[rarity] < shardCost) {
+      if (shards[rarity] < shardCost) {
         addDebugLog(`Insufficient ${rarity} fragments for upgrade (${shardCost} required)`);
         return prev;
       }
@@ -2116,8 +2135,8 @@ export function useGameState() {
         (newEquipped as any)[slot] = updatedItem;
       }
 
-      const newShards = { ...prev.economy.shards };
-      newShards[rarity] -= shardCost;
+      const newShards = { ...shards };
+      newShards[rarity] = Math.max(0, newShards[rarity] - shardCost);
 
       const newState = {
         ...prev,

@@ -101,11 +101,11 @@ export function Shop() {
               <Zap className={cn("w-4 h-4 mb-1", rarityColors[r].text)} />
               <p className="text-[9px] font-black uppercase tracking-tighter opacity-50 mb-1">{r}</p>
               <p className={cn("text-lg font-black font-mono leading-none", rarityColors[r].text)}>
-                {economy.shards[r] || 0}
+                {economy?.shards?.[r] || 0}
               </p>
               
               {/* Conversion Trigger */}
-              {r !== 'legendary' && economy.shards[r] >= 10 && (
+              {r !== 'legendary' && economy?.shards?.[r] >= 10 && (
                 <button
                   onClick={() => convertShards(r)}
                   className="absolute bottom-1 right-1 p-1 bg-black/60 rounded-lg border border-white/10 hover:bg-black/80 transition-all group/btn"
@@ -243,7 +243,7 @@ export function Shop() {
                       disabled={
                         selectedForgeItem.upgradeLevel >= 10 || 
                         economy.coins < (FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]) || 
-                        economy.shards[selectedForgeItem.rarity] < FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards
+                        (economy?.shards?.[selectedForgeItem.rarity] || 0) < FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards
                       }
                       className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black h-16 rounded-2xl shadow-xl shadow-orange-900/40 active:scale-95 transition-all text-base uppercase tracking-widest border-b-4 border-orange-800"
                     >
