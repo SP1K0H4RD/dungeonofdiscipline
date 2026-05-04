@@ -5,7 +5,6 @@ import {
   Check, 
   Trash2, 
   Zap, 
-  Gift, 
   Calendar, 
   Target,
   Flame,

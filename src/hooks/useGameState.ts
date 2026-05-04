@@ -37,7 +37,6 @@ import {
   isNewWeek,
   getWeekStart,
   getWeekEnd,
-  generateItemWithVariation,
   recalculatePlayerStats,
   levelUpCharacter,
   generateAllMaps,
@@ -1068,8 +1067,6 @@ export function useGameState() {
     metaTarget?: number,
     energyReward = 0
   ): Quest => {
-    const config = DIFFICULTY_CONFIG[difficulty];
-    
     return {
       id: generateId(),
       title,
