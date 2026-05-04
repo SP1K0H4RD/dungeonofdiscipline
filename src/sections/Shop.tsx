@@ -44,9 +44,15 @@ export function Shop() {
   const [selectedForgeItemId, setSelectedForgeItemId] = useState<string | null>(null);
   const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; result: 'success' | 'fail' | 'downgrade' } | null>(null);
 
-  const selectedForgeItem = inventory.items.find(i => i.id === selectedForgeItemId) || 
-                            Object.values(character.equipped).find(i => i?.id === selectedForgeItemId) || 
-                            null;
+  const selectedForgeItem = (inventory.items.find(i => i.id === selectedForgeItemId) || 
+                            [
+                              character.equipped.weapon,
+                              character.equipped.armor,
+                              character.equipped.helmet,
+                              character.equipped.boots,
+                              character.equipped.accessory
+                            ].find(i => i?.id === selectedForgeItemId) || 
+                            null) as Item | null;
 
   const handleUpgrade = () => {
     if (!selectedForgeItemId) return;
