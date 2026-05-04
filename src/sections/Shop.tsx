@@ -218,7 +218,6 @@ export function Shop() {
                           
                           const currentVal = val + currentBonus;
                           const nextVal = val + nextBonus;
-                          const diff = nextVal - currentVal;
                           
                           const statLabels: Record<string, string> = {
                             attack: 'Ataque',
