@@ -163,11 +163,9 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
   );
 }
 
-interface QuestsProps {
-  onOpenMasterChat?: () => void;
-}
+interface QuestsProps {}
 
-export function Quests({ onOpenMasterChat }: QuestsProps) {
+export function Quests({}: QuestsProps) {
   const { gameState, createQuest, addQuest, completeQuest, deleteQuest } = useGame();
   const { playerProfile } = gameState;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
