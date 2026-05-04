@@ -246,19 +246,24 @@ export function Inventory() {
 
   const equippedItems = character.equipped;
 
-  const getUpgradedStat = (base: number | undefined, level: number) => {
+  const getUpgradedStat = (base: number | undefined, level: number, statKey: string) => {
     if (base === undefined) return null;
-    const bonus = 1 + (level * 0.1);
-    const total = base * bonus;
+    
+    // Forge upgrade bonus: +0.5 per upgrade level (HP +2.0)
+    // This matches the logic in game.ts
+    const multiplier = statKey === 'hpBonus' ? 2.0 : 0.5;
+    const upgradeBonus = level * multiplier;
+    const total = base + upgradeBonus;
+    
     return {
-      base: Math.floor(base),
-      total: Math.floor(total),
-      diff: Math.floor(total) - Math.floor(base)
+      base: base,
+      total: total,
+      diff: total - base
     };
   };
 
-  const StatRow = ({ icon: Icon, label, base, level, color, isPercent = false }: any) => {
-    const stat = getUpgradedStat(base, level);
+  const StatRow = ({ icon: Icon, label, base, level, statKey, color, isPercent = false }: any) => {
+    const stat = getUpgradedStat(base, level, statKey);
     if (!stat) return null;
 
     return (
@@ -268,12 +273,12 @@ export function Inventory() {
           <span className="text-xs font-medium">{label}</span>
         </div>
         <div className="flex items-center gap-1.5 font-mono">
-          <span className="text-gray-400 text-xs">{stat.base}{isPercent ? '%' : ''}</span>
+          <span className="text-gray-400 text-xs">{base.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}</span>
           {stat.diff > 0 && (
-            <span className="text-[10px] text-green-400 font-bold">+{stat.diff}{isPercent ? '%' : ''}</span>
+            <span className="text-[10px] text-green-400 font-bold">+{stat.diff.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}</span>
           )}
           <span className="text-sm font-bold ml-1">
-            {stat.total}{isPercent ? '%' : ''}
+            {stat.total.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}
           </span>
         </div>
       </div>
@@ -523,6 +528,7 @@ export function Inventory() {
                       label="Ataque" 
                       base={selectedItem.stats.attack} 
                       level={selectedItem.upgradeLevel} 
+                      statKey="attack"
                       color="text-red-400" 
                     />
                     <StatRow 
@@ -530,6 +536,7 @@ export function Inventory() {
                       label="Defesa" 
                       base={selectedItem.stats.defense} 
                       level={selectedItem.upgradeLevel} 
+                      statKey="defense"
                       color="text-blue-400" 
                     />
                     <StatRow 
@@ -537,6 +544,7 @@ export function Inventory() {
                       label="HP" 
                       base={selectedItem.stats.hpBonus} 
                       level={selectedItem.upgradeLevel} 
+                      statKey="hpBonus"
                       color="text-green-400" 
                     />
                     <StatRow 
@@ -544,6 +552,7 @@ export function Inventory() {
                       label="XP" 
                       base={selectedItem.stats.xpBonus} 
                       level={selectedItem.upgradeLevel} 
+                      statKey="xpBonus"
                       color="text-purple-400" 
                       isPercent 
                     />
@@ -552,6 +561,7 @@ export function Inventory() {
                       label="Moedas" 
                       base={selectedItem.stats.coinBonus} 
                       level={selectedItem.upgradeLevel} 
+                      statKey="coinBonus"
                       color="text-yellow-400" 
                       isPercent 
                     />
@@ -560,6 +570,7 @@ export function Inventory() {
                       label="Crítico" 
                       base={selectedItem.stats.critChance ? selectedItem.stats.critChance * 100 : undefined} 
                       level={selectedItem.upgradeLevel} 
+                      statKey="critChance"
                       color="text-orange-400" 
                       isPercent 
                     />
@@ -568,6 +579,7 @@ export function Inventory() {
                       label="Esquiva" 
                       base={selectedItem.stats.dodgeChance ? selectedItem.stats.dodgeChance * 100 : undefined} 
                       level={selectedItem.upgradeLevel} 
+                      statKey="dodgeChance"
                       color="text-cyan-400" 
                       isPercent 
                     />
@@ -647,6 +659,7 @@ export function Inventory() {
                             label="Ataque" 
                             base={item.stats.attack} 
                             level={item.upgradeLevel} 
+                            statKey="attack"
                             color="text-red-400" 
                           />
                           <StatRow 
@@ -654,6 +667,7 @@ export function Inventory() {
                             label="Defesa" 
                             base={item.stats.defense} 
                             level={item.upgradeLevel} 
+                            statKey="defense"
                             color="text-blue-400" 
                           />
                           <StatRow 
@@ -661,6 +675,7 @@ export function Inventory() {
                             label="HP" 
                             base={item.stats.hpBonus} 
                             level={item.upgradeLevel} 
+                            statKey="hpBonus"
                             color="text-green-400" 
                           />
                           <StatRow 
@@ -668,6 +683,7 @@ export function Inventory() {
                             label="XP" 
                             base={item.stats.xpBonus} 
                             level={item.upgradeLevel} 
+                            statKey="xpBonus"
                             color="text-purple-400" 
                             isPercent 
                           />
@@ -676,6 +692,7 @@ export function Inventory() {
                             label="Moedas" 
                             base={item.stats.coinBonus} 
                             level={item.upgradeLevel} 
+                            statKey="coinBonus"
                             color="text-yellow-400" 
                             isPercent 
                           />
@@ -684,6 +701,7 @@ export function Inventory() {
                             label="Crítico" 
                             base={item.stats.critChance ? item.stats.critChance * 100 : undefined} 
                             level={item.upgradeLevel} 
+                            statKey="critChance"
                             color="text-orange-400" 
                             isPercent 
                           />
@@ -692,6 +710,7 @@ export function Inventory() {
                             label="Esquiva" 
                             base={item.stats.dodgeChance ? item.stats.dodgeChance * 100 : undefined} 
                             level={item.upgradeLevel} 
+                            statKey="dodgeChance"
                             color="text-cyan-400" 
                             isPercent 
                           />

@@ -783,10 +783,11 @@ export function recalculatePlayerStats(character: Character): Character {
   const equipmentBonuses = calculateEquipmentBonuses(character.equipped);
 
   // Calculate total stats (base + equipment)
+  // Keep decimals for "accumulated rounding" logic during combat
   const totalStats = {
-    attack: Math.floor(character.baseStats.attack + equipmentBonuses.attack),
-    defense: Math.floor(character.baseStats.defense + equipmentBonuses.defense),
-    maxHp: Math.floor(character.baseStats.maxHp + equipmentBonuses.maxHp),
+    attack: character.baseStats.attack + equipmentBonuses.attack,
+    defense: character.baseStats.defense + equipmentBonuses.defense,
+    maxHp: Math.round(character.baseStats.maxHp + equipmentBonuses.maxHp), // HP stays rounded for visual clarity
     dodgeChance: Math.min(character.baseStats.dodgeChance + equipmentBonuses.dodgeChance, 0.35), // 35% cap
     critChance: Math.min(character.baseStats.critChance + equipmentBonuses.critChance, 0.40), // 40% cap
     critMultiplier: character.baseStats.critMultiplier, // 150% base
@@ -1582,6 +1583,8 @@ export interface CombatState {
   specialAttackCooldown: number;
   lastDamageDealt?: number; // For animation
   damageTakenInCurrentBattle: number; // Track total damage to calculate lobby penalty after fight
+  playerAttackRemainder?: number; // For fractional damage accumulation
+  playerDefenseRemainder?: number; // For fractional defense accumulation
   droppedItem?: Item | null;
   xpReward?: number;
   goldReward?: number;

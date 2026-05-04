@@ -452,7 +452,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-xs text-gray-400">Ataque</span>
             </div>
             <p className="text-xl font-mono font-bold text-red-400">
-              {Math.floor(character.totalStats?.attack || character.stats.totalAttack)}
+              {(character.totalStats?.attack || character.stats.totalAttack).toFixed(1).replace(/\.0$/, '')}
             </p>
           </div>
           
@@ -463,7 +463,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-xs text-gray-400">Defesa</span>
             </div>
             <p className="text-xl font-mono font-bold text-blue-400">
-              {Math.floor(character.totalStats?.defense || character.stats.totalDefense)}
+              {(character.totalStats?.defense || character.stats.totalDefense).toFixed(1).replace(/\.0$/, '')}
             </p>
           </div>
           

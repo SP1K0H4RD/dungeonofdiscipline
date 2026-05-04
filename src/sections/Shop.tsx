@@ -210,11 +210,16 @@ export function Shop() {
                       <div className="grid grid-cols-2 gap-x-6 gap-y-1">
                         {Object.entries(selectedForgeItem.stats).map(([stat, val]) => {
                           if (!val) return null;
-                          const currentVal = Math.floor(val * (1 + selectedForgeItem.upgradeLevel * 0.1));
-                          const nextVal = Math.floor(val * (1 + (selectedForgeItem.upgradeLevel + 1) * 0.1));
+                          
+                          // Match logic in game.ts and Inventory.tsx (+0.5 per level, +2.0 for HP)
+                          const bonusMultiplier = stat === 'hpBonus' ? 2.0 : 0.5;
+                          const currentBonus = selectedForgeItem.upgradeLevel * bonusMultiplier;
+                          const nextBonus = (selectedForgeItem.upgradeLevel + 1) * bonusMultiplier;
+                          
+                          const currentVal = val + currentBonus;
+                          const nextVal = val + nextBonus;
                           const diff = nextVal - currentVal;
-                          if (diff === 0 && selectedForgeItem.upgradeLevel < 10) return null; // Avoid showing 0 changes
-
+                          
                           const statLabels: Record<string, string> = {
                             attack: 'Ataque',
                             defense: 'Defesa',
@@ -229,9 +234,9 @@ export function Shop() {
                             <div key={stat} className="flex justify-between items-center">
                               <span className="text-[10px] text-gray-400 font-bold uppercase">{statLabels[stat] || stat}</span>
                               <div className="flex items-center gap-1 font-mono">
-                                <span className="text-xs text-white font-bold">{currentVal}</span>
+                                <span className="text-xs text-white font-bold">{currentVal.toFixed(1).replace(/\.0$/, '')}</span>
                                 <ArrowRight className="w-2.5 h-2.5 text-gray-600" />
-                                <span className="text-xs text-green-400 font-bold">{nextVal}</span>
+                                <span className="text-xs text-green-400 font-bold">{nextVal.toFixed(1).replace(/\.0$/, '')}</span>
                               </div>
                             </div>
                           );

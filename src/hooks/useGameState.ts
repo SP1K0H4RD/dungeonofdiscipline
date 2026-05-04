@@ -1459,6 +1459,8 @@ export function useGameState() {
           showFloorComplete: false,
           lastDamageDealt: 0,
           damageTakenInCurrentBattle: 0,
+          playerAttackRemainder: 0,
+          playerDefenseRemainder: 0,
         },
       };
     });
@@ -1484,12 +1486,18 @@ export function useGameState() {
       
       let damage = 0;
       let log = '';
+      let newPlayerAttackRemainder = prev.combat.playerAttackRemainder || 0;
 
       if (bossDodged) {
         log = `💨 ${enemyName} esquivou!`;
       } else {
+        // Accumulate fractional attack
+        const effectiveAttack = prev.character.totalStats.attack + newPlayerAttackRemainder;
+        const attackToUse = Math.floor(effectiveAttack);
+        newPlayerAttackRemainder = effectiveAttack - attackToUse;
+
         // New damage formula: Attack ± 10% - Enemy Defense
-        const attackWithVariance = prev.character.totalStats.attack * (0.9 + Math.random() * 0.2); // ±10%
+        const attackWithVariance = attackToUse * (0.9 + Math.random() * 0.2); // ±10%
         const defenseReduction = spawnedEnemy?.defense || 0;
         damage = Math.max(1, Math.floor(attackWithVariance - defenseReduction));
         
@@ -1511,6 +1519,7 @@ export function useGameState() {
       
       let bossDamage = 0;
       let bossLog = '';
+      let newPlayerDefenseRemainder = prev.combat.playerDefenseRemainder || 0;
 
       if (newBossHp > 0) {
         if (playerDodged) {
@@ -1524,8 +1533,13 @@ export function useGameState() {
             ? spawnedEnemy.damageMin + Math.floor(Math.random() * (damageRange + 1))
             : 10;
           
-          // Apply player defense (defense reduces damage)
-          bossDamage = Math.max(1, baseDamage - prev.character.totalStats.defense);
+          // Apply player defense with accumulation
+          const effectiveDefense = prev.character.totalStats.defense + newPlayerDefenseRemainder;
+          const defenseToUse = Math.floor(effectiveDefense);
+          newPlayerDefenseRemainder = effectiveDefense - defenseToUse;
+
+          // defense reduces damage
+          bossDamage = Math.max(1, baseDamage - defenseToUse);
           
           if (bossCrit) {
             bossDamage = Math.floor(bossDamage * 1.5);
@@ -1667,6 +1681,8 @@ export function useGameState() {
           specialAttackCooldown: newSpecialCooldown,
           lastDamageDealt: damage,
           damageTakenInCurrentBattle: newDamageTakenInBattle,
+          playerAttackRemainder: newPlayerAttackRemainder,
+          playerDefenseRemainder: newPlayerDefenseRemainder,
         },
       };
     });
@@ -1690,10 +1706,17 @@ export function useGameState() {
       const enemyDodgeChance = (spawnedEnemy?.dodge || 2) / 100;
 
       const bossDodged = attemptDodge(enemyDodgeChance * 0.5); // Harder to dodge special
-      const playerCrit = attemptCrit(prev.character.stats.totalCritChance + 0.10); // Higher crit chance
+      const playerCrit = attemptCrit(prev.character.totalStats.critChance + 0.10); // Higher crit chance
       
+      let newPlayerAttackRemainder = prev.combat.playerAttackRemainder || 0;
+      
+      // Accumulate fractional attack for special
+      const effectiveAttack = prev.character.totalStats.attack + newPlayerAttackRemainder;
+      const attackToUse = Math.floor(effectiveAttack);
+      newPlayerAttackRemainder = effectiveAttack - attackToUse;
+
       let damage = calculateSpecialAttackDamage(
-        prev.character.stats.totalAttack,
+        attackToUse,
         equippedSpecial,
         'fire' // Default element for now
       );
@@ -1709,9 +1732,10 @@ export function useGameState() {
       const newBossHp = Math.max(0, prev.combat.bossHp - (bossDodged ? 0 : damage));
 
       // Enemy counter-attack
-      const playerDodged = attemptDodge(prev.character.stats.totalDodgeChance);
+      const playerDodged = attemptDodge(prev.character.totalStats.dodgeChance);
       let bossDamage = 0;
       let bossLog = '';
+      let newPlayerDefenseRemainder = prev.combat.playerDefenseRemainder || 0;
 
       if (newBossHp > 0) {
         if (playerDodged) {
@@ -1725,8 +1749,13 @@ export function useGameState() {
             ? spawnedEnemy.damageMin + Math.floor(Math.random() * (damageRange + 1))
             : 10;
           
-          // Apply player defense
-          bossDamage = Math.max(1, baseDamage - prev.character.stats.totalDefense);
+          // Apply player defense with accumulation
+          const effectiveDefense = prev.character.totalStats.defense + newPlayerDefenseRemainder;
+          const defenseToUse = Math.floor(effectiveDefense);
+          newPlayerDefenseRemainder = effectiveDefense - defenseToUse;
+
+          // defense reduces damage
+          bossDamage = Math.max(1, baseDamage - defenseToUse);
           bossLog = `👹 ${enemyName} contra-atacou! -${bossDamage} HP`;
         }
       }
@@ -1851,6 +1880,8 @@ export function useGameState() {
           logs: [log, bossLog, ...prev.combat.logs].slice(0, 20),
           specialAttackCooldown: newSpecialCooldown,
           damageTakenInCurrentBattle: newDamageTakenInBattle,
+          playerAttackRemainder: newPlayerAttackRemainder,
+          playerDefenseRemainder: newPlayerDefenseRemainder,
         },
       };
     });
