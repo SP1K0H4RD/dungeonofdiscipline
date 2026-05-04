@@ -273,6 +273,7 @@ const INITIAL_GAME_STATE: GameState = {
   chatHistory: [],
   recoveryMode: false,
   lastLogin: Date.now(),
+  createdAt: Date.now(),
   gameStarted: false,
   showProfileSetup: true,
   showLevelUp: false,
@@ -502,6 +503,11 @@ export function useGameState() {
           migrated.character.stats.totalDefense = 1;
         }
 
+        // Migration: Add createdAt if missing
+        if (!migrated.createdAt) {
+          migrated.createdAt = Date.now() - ((migrated.character.stats.daysSurvived || 1) * 24 * 60 * 60 * 1000);
+        }
+
         setGameState(migrated);
         addDebugLog('Game loaded from save');
       } catch (e) {
@@ -541,13 +547,19 @@ export function useGameState() {
           
           // Calculate new streak
           let newStreak = prev.character.stats.streak;
-          if (hadProgressYesterday) {
-            newStreak += 1;
-            addDebugLog(`Streak increased to ${newStreak}`);
-          } else {
+          if (!hadProgressYesterday) {
             newStreak = 0;
-            addDebugLog(`Streak reset to 0`);
+            addDebugLog(`Streak reset to 0 (No tasks completed yesterday)`);
+          } else {
+            addDebugLog(`Streak maintained: ${newStreak} (Tasks completed yesterday)`);
           }
+
+          // Calculate real days survived based on account creation date
+          const msPerDay = 24 * 60 * 60 * 1000;
+          const creationDate = prev.createdAt || Date.now();
+          const todayMs = getBrazilDate().getTime();
+          const diffMs = todayMs - creationDate;
+          const realDaysSurvived = Math.max(1, Math.floor(diffMs / msPerDay) + 1);
           
           // Get current day of week (0 = Sunday, 1 = Monday, etc.)
           const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
@@ -578,7 +590,14 @@ export function useGameState() {
                 ...prev.character.stats,
                 streak: newStreak,
                 maxStreak: Math.max(prev.character.stats.maxStreak, newStreak),
+                daysSurvived: realDaysSurvived,
               },
+              progression: {
+                ...prev.character.progression,
+                streak: newStreak,
+                maxStreak: Math.max(prev.character.progression.maxStreak, newStreak),
+                daysSurvived: realDaysSurvived,
+              }
             },
             calendar: {
               ...prev.calendar,
@@ -1270,6 +1289,14 @@ export function useGameState() {
       };
 
       // Step 8: Update daily progress for streak calculation
+      let newStreak = prev.character.stats.streak;
+      const isFirstTaskToday = !dailyProg || dailyProg.completedTasks === 0;
+      
+      if (isFirstTaskToday) {
+        newStreak += 1;
+        addDebugLog(`First task of the day! Streak increased to ${newStreak}`);
+      }
+
       const updatedDailyProgress = prev.calendar.dailyProgress.some(dp => dp.date === today)
         ? prev.calendar.dailyProgress.map(dp => 
             dp.date === today 
@@ -1283,6 +1310,16 @@ export function useGameState() {
         character: {
           ...prev.character,
           energy: newEnergy,
+          stats: {
+            ...prev.character.stats,
+            streak: newStreak,
+            maxStreak: Math.max(prev.character.stats.maxStreak, newStreak),
+          },
+          progression: {
+            ...prev.character.progression,
+            streak: newStreak,
+            maxStreak: Math.max(prev.character.progression.maxStreak, newStreak),
+          }
         },
         inventory: { 
           ...prev.inventory, 

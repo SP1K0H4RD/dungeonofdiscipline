@@ -1707,6 +1707,7 @@ export interface GameState {
   chatHistory: ChatMessage[];
   recoveryMode: boolean;
   lastLogin: number;
+  createdAt: number; // Added to track real days survived
   gameStarted: boolean;
   showProfileSetup: boolean;
   showLevelUp: boolean; // Flag to show level up UI
