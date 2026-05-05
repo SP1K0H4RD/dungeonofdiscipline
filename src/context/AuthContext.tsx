@@ -16,6 +16,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check for errors in the URL (like bad_oauth_state)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error')) {
+      console.warn('OAuth Error detected in URL:', params.get('error_description'));
+      // Clear the error from URL without refreshing
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);

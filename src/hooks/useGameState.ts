@@ -381,7 +381,7 @@ export function useGameState() {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
   const lastCloudSync = useRef<number>(0);
-  const syncTimeout = useRef<NodeJS.Timeout | null>(null);
+  const syncTimeout = useRef<any>(null);
 
   // Helper to set showLevelUp
   const setShowLevelUp = useCallback((show: boolean) => {
