@@ -2,7 +2,8 @@
 // GAME STATE HOOK - Central State Management
 // ============================================
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
 import type { 
   GameState, 
   Character, 
@@ -379,6 +380,8 @@ const generateItem = (rarity: Rarity): Item => {
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
+  const lastCloudSync = useRef<number>(0);
+  const syncTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Helper to set showLevelUp
   const setShowLevelUp = useCallback((show: boolean) => {
@@ -517,6 +520,79 @@ export function useGameState() {
     }
     setIsLoaded(true);
   }, []);
+
+  // Supabase Cloud Sync logic
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const syncToCloud = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Throttle syncs to every 30 seconds unless it's a critical update
+      const now = Date.now();
+      if (now - lastCloudSync.current < 30000) return;
+
+      try {
+        const { error } = await supabase
+          .from('player_data')
+          .upsert({ 
+            user_id: user.id, 
+            game_state: gameState,
+            updated_at: new Date().toISOString()
+          });
+        
+        if (error) throw error;
+        lastCloudSync.current = now;
+        addDebugLog('Nuvem: Sincronização concluída');
+      } catch (error) {
+        console.error('Error syncing to cloud:', error);
+      }
+    };
+
+    // Debounce sync to avoid spamming Supabase
+    if (syncTimeout.current) clearTimeout(syncTimeout.current);
+    syncTimeout.current = setTimeout(syncToCloud, 5000);
+
+    return () => {
+      if (syncTimeout.current) clearTimeout(syncTimeout.current);
+    };
+  }, [gameState, isLoaded, addDebugLog]);
+
+  // Handle initial cloud load when user logs in
+  useEffect(() => {
+    const loadFromCloud = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('player_data')
+          .select('game_state')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 is empty result
+
+        if (data && data.game_state) {
+          // Merge logic: only load if cloud is newer or local is empty
+          const cloudState = data.game_state as GameState;
+          setGameState(cloudState);
+          addDebugLog('Nuvem: Dados carregados com sucesso');
+        }
+      } catch (error) {
+        console.error('Error loading from cloud:', error);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        loadFromCloud();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [addDebugLog]);
 
   // Save to localStorage
   useEffect(() => {

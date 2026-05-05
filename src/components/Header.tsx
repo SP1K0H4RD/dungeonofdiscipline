@@ -1,8 +1,10 @@
-import { motion } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, User, LogOut } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
+import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface HeaderProps {
   currentView: string;
@@ -18,7 +20,10 @@ const navItems = [
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
   const { gameState } = useGame();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const { character, economy, recoveryMode } = gameState;
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const hpPercent = (character.hp / character.maxHp) * 100;
   const isCriticalHp = hpPercent < 25;
@@ -85,7 +90,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
             })}
           </nav>
 
-          {/* Stats */}
+          {/* Stats & Profile */}
           <div className="flex items-center gap-3">
             {/* HP Mini */}
             <div className="hidden sm:flex items-center gap-2">
@@ -128,6 +133,71 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 {economy.coins}
               </span>
             </motion.div>
+
+            {/* Profile Section */}
+            <div className="relative">
+              <motion.button
+                onClick={() => user ? setShowProfileMenu(!showProfileMenu) : signInWithGoogle()}
+                className={cn(
+                  'flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all',
+                  user 
+                    ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                )}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    {user.user_metadata.avatar_url && !imgError ? (
+                      <img 
+                        src={user.user_metadata.avatar_url} 
+                        alt="Profile" 
+                        className="w-5 h-5 rounded-full"
+                        referrerPolicy="no-referrer"
+                        onError={() => setImgError(true)}
+                      />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                    <span className="hidden sm:block text-xs font-bold truncate max-w-[80px]">
+                      {user.user_metadata.full_name || user.email}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:block text-xs font-bold">Entrar</span>
+                  </div>
+                )}
+              </motion.button>
+
+              <AnimatePresence>
+                {showProfileMenu && user && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-48 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl shadow-2xl overflow-hidden py-1"
+                  >
+                    <div className="px-4 py-2 border-b border-[#2d2d44]">
+                      <p className="text-xs text-gray-500">Logado como:</p>
+                      <p className="text-sm font-bold text-white truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await signOut();
+                        setShowProfileMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sair
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
