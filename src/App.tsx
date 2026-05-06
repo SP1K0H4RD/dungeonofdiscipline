@@ -2,6 +2,7 @@ import { useState, Component, type ReactNode, type ErrorInfo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameProvider, useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
+import { SyncModal } from '@/components/SyncModal';
 import { DEFAULT_PLAYER_PROFILE, type MapId, type GameState } from '@/types/game';
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/sections/Dashboard';
@@ -128,10 +129,12 @@ function LoadingFallback() {
 
 function StartScreen({ 
   onNewGame, 
-  onLogin 
+  onLogin,
+  user
 }: { 
   onNewGame: () => void; 
   onLogin: () => void;
+  user: any;
 }) {
   return (
     <motion.div
@@ -150,7 +153,9 @@ function StartScreen({
         </div>
 
         <h1 className="text-3xl font-bold text-white font-cinzel mb-2">Dungeon of Discipline</h1>
-        <p className="text-gray-400 mb-8">Escolha como deseja iniciar sua jornada</p>
+        <p className="text-gray-400 mb-8">
+          {user ? `Bem-vindo de volta, ${user.email}` : 'Escolha como deseja iniciar sua jornada'}
+        </p>
 
         <div className="grid grid-cols-1 gap-4">
           <Button 
@@ -159,9 +164,11 @@ function StartScreen({
           >
             <div className="flex items-center gap-2">
               <LogIn className="w-6 h-6" />
-              <span>Entrar com Conta</span>
+              <span>{user ? 'Sincronizar Conta' : 'Entrar com Conta'}</span>
             </div>
-            <span className="text-[10px] opacity-70 uppercase tracking-tighter">Recuperar meu progresso salvo</span>
+            <span className="text-[10px] opacity-70 uppercase tracking-tighter">
+              {user ? 'Verificar progresso na nuvem' : 'Recuperar meu progresso salvo'}
+            </span>
           </Button>
 
           <Button 
@@ -351,49 +358,15 @@ function AppContent() {
     selectMapNode, 
     setShowLevelUp,
     setShowRestOverlay,
+    setShowSyncModal,
     setGameState
   } = useGame();
-  const { signInWithGoogle } = useAuth();
+  const { user, signInWithGoogle } = useAuth();
   const { character, showLevelUp, showRestOverlay, restDetails, isInitialScreen } = gameState;
 
-  // Show Start Screen with Login/New Game options
-  if (isInitialScreen) {
-    return (
-      <StartScreen 
-        onLogin={signInWithGoogle}
-        onNewGame={() => setGameState((prev: GameState) => ({ ...prev, isInitialScreen: false }))}
-      />
-    );
-  }
-
-  // Show welcome screen if name not set
-  if (!character.name) {
-    return <WelcomeScreen onStart={(name) => {
-      setCharacterName(name);
-      // Auto-complete profile setup with defaults - no more Mestre wizard
-      completeProfileSetup(DEFAULT_PLAYER_PROFILE);
-    }} />;
-  }
-
   // Check for death
-  if (character.hp <= 0 && !showDeath) {
+  if (character.hp <= 0 && !showDeath && character.name) {
     setShowDeath(true);
-  }
-
-  if (showDeath) {
-    return (
-      <DeathScreen 
-        onRevive={() => {
-          reviveCharacter();
-          setShowDeath(false);
-          // Return to dashboard after death
-          setInDungeon(false);
-          setCurrentCombat(null);
-          setShowMapSystem(false);
-          setCurrentView('dashboard');
-        }} 
-      />
-    );
   }
 
   // Handle entering dungeon - now opens map system first
@@ -403,7 +376,6 @@ function AppContent() {
 
   // Handle entering combat from map
   const handleEnterCombat = (mapId: MapId, nodeId: string) => {
-    // First select the node in game state (required for combat to work)
     selectMapNode(mapId, nodeId);
     setCurrentCombat({ mapId, nodeId });
     setInDungeon(true);
@@ -413,7 +385,6 @@ function AppContent() {
   const handleExitCombat = () => {
     setInDungeon(false);
     setCurrentCombat(null);
-    // Keep map system open so player can choose next stage
   };
 
   // Handle exiting map system completely
@@ -440,58 +411,77 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black overflow-x-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 bg-gradient-dark pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none" />
-      
-      {/* Header */}
-      <Header 
-        currentView={currentView} 
-        onViewChange={setCurrentView}
-      />
+    <>
+      <SyncModal />
+      {isInitialScreen ? (
+        <StartScreen 
+          onLogin={() => {
+            if (user) {
+              setShowSyncModal(true);
+            } else {
+              signInWithGoogle();
+            }
+          }}
+          onNewGame={() => setGameState((prev: GameState) => ({ ...prev, isInitialScreen: false }))}
+          user={user}
+        />
+      ) : !character.name ? (
+        <WelcomeScreen onStart={(name) => {
+          setCharacterName(name);
+          completeProfileSetup(DEFAULT_PLAYER_PROFILE);
+        }} />
+      ) : (
+        <div className="min-h-screen bg-black text-white flex flex-col">
+          <Header currentView={currentView} onViewChange={setCurrentView} />
+          
+          <main className="flex-1 pt-16 pb-20 md:pb-0 md:pl-0">
+            <AnimatePresence mode="wait">
+              {showDeath ? (
+                <DeathScreen 
+                  onRevive={() => {
+                    reviveCharacter();
+                    setShowDeath(false);
+                    setInDungeon(false);
+                    setCurrentCombat(null);
+                    setShowMapSystem(false);
+                    setCurrentView('dashboard');
+                  }} 
+                />
+              ) : (
+                <motion.div
+                  key={inDungeon ? (showMapSystem ? 'map' : 'combat') : currentView}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="h-full"
+                >
+                  {inDungeon ? (
+                    showMapSystem ? (
+                      <MapSystem 
+                        onEnterCombat={handleEnterCombat} 
+                        onExit={handleExitMapSystem}
+                      />
+                    ) : (
+                      currentCombat && (
+                        <Dungeon 
+                          mapId={currentCombat.mapId}
+                          nodeId={currentCombat.nodeId}
+                          onExit={handleExitCombat} 
+                        />
+                      )
+                    )
+                  ) : (
+                    renderView()
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </main>
 
-      {/* Main Content */}
-      <main className="relative z-10 pt-32 sm:pt-24 pb-24 sm:pb-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentView}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderView()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </main>
-
-      {/* Map System - Stage Selection */}
-      <AnimatePresence>
-        {showMapSystem && !inDungeon && (
-          <MapSystem 
-            onEnterCombat={handleEnterCombat}
-            onExit={handleExitMapSystem}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Dungeon Combat Screen */}
-      <AnimatePresence>
-        {inDungeon && currentCombat && (
-          <Dungeon 
-            mapId={currentCombat.mapId}
-            nodeId={currentCombat.nodeId}
-            onExit={handleExitCombat}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Global Level Up Overlay */}
-      <AnimatePresence>
-        {showLevelUp && (
+          {/* Global Overlays */}
+          <AnimatePresence>
+            {showLevelUp && (
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}

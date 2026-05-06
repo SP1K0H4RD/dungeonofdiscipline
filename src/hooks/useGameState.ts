@@ -375,12 +375,148 @@ const generateItem = (rarity: Rarity): Item => {
 };
 
 // ============================================
+// STATE MIGRATION HELPER
+// ============================================
+
+const migrateGameState = (parsed: any): GameState => {
+  const migrated = {
+    ...INITIAL_GAME_STATE,
+    ...parsed,
+    // CRITICAL: Deep merge character to preserve new fields
+    character: {
+      ...INITIAL_CHARACTER,
+      ...(parsed.character || {}),
+      // Ensure sub-objects are also merged
+      baseStats: {
+        ...INITIAL_CHARACTER.baseStats,
+        ...(parsed.character?.baseStats || {}),
+      },
+      totalStats: {
+        ...INITIAL_CHARACTER.totalStats,
+        ...(parsed.character?.totalStats || {}),
+      },
+      progression: {
+        ...INITIAL_CHARACTER.progression,
+        ...(parsed.character?.progression || {}),
+      },
+      stats: {
+        ...INITIAL_CHARACTER.stats,
+        ...(parsed.character?.stats || {}),
+      },
+      equipped: parsed.character?.equipped || {},
+    },
+    // CRITICAL: Preserve dungeon progress (floor, boss, etc.)
+    dungeon: {
+      ...INITIAL_GAME_STATE.dungeon,
+      ...(parsed.dungeon || {}),
+      // Ensure boss is properly loaded or regenerated for current floor
+      currentBoss: parsed.dungeon?.currentBoss || getBossForFloor(parsed.dungeon?.currentFloor || 1),
+    },
+    inventory: {
+      ...INITIAL_GAME_STATE.inventory,
+      ...(parsed.inventory || {}),
+      specialAttacks: parsed.inventory?.specialAttacks || [],
+      // Filter out rune items (no longer exist)
+      items: (parsed.inventory?.items || []).filter((item: Item) => 
+        (item.type as string) !== 'rune' && (item.type as string) !== 'relic'
+      ),
+      gems: parsed.inventory?.gems || [],
+      lootboxes: parsed.inventory?.lootboxes || [],
+    },
+    // Migrate to new map system or generate new maps
+    maps: parsed.maps || generateAllMaps(),
+    currentMapId: parsed.currentMapId || 'map1',
+    currentNodeId: parsed.currentNodeId || null,
+    totalBossesDefeated: parsed.totalBossesDefeated || 0,
+    quests: {
+      habito: parsed.quests?.habito || parsed.quests?.daily || [],
+      diaria: parsed.quests?.diaria || parsed.quests?.main || [],
+      meta: parsed.quests?.meta || parsed.quests?.scheduled || [],
+    },
+    calendar: {
+      ...INITIAL_GAME_STATE.calendar,
+      ...(parsed.calendar || {}),
+      events: parsed.calendar?.events || [],
+      weeklyGoals: parsed.calendar?.weeklyGoals || [],
+      dailyProgress: parsed.calendar?.dailyProgress || [],
+    },
+    playerProfile: {
+      ...DEFAULT_PLAYER_PROFILE,
+      ...(parsed.playerProfile || {}),
+      // CRITICAL: Ensure questHistory is always an array
+      questHistory: Array.isArray(parsed.playerProfile?.questHistory) 
+        ? parsed.playerProfile.questHistory 
+        : [],
+      focusHistory: Array.isArray(parsed.playerProfile?.focusHistory)
+        ? parsed.playerProfile.focusHistory
+        : [],
+      preferredQuestTypes: Array.isArray(parsed.playerProfile?.preferredQuestTypes)
+        ? parsed.playerProfile.preferredQuestTypes
+        : [],
+      difficultQuestTypes: Array.isArray(parsed.playerProfile?.difficultQuestTypes)
+        ? parsed.playerProfile.difficultQuestTypes
+        : [],
+    },
+    history: {
+      deaths: parsed.history?.deaths || [],
+      bestRuns: {
+        maxDays: parsed.history?.bestRuns?.maxDays || 0,
+        maxFloor: parsed.history?.bestRuns?.maxFloor || 0,
+        maxBosses: parsed.history?.bestRuns?.maxBosses || 0,
+        maxCoins: parsed.history?.bestRuns?.maxCoins || 0,
+      },
+    },
+    debugLogs: [],
+  };
+
+  // Migration: Shards system
+  if (!migrated.economy.shards || typeof migrated.economy.shards === 'number') {
+    const legacyShards = typeof migrated.economy.shards === 'number' ? migrated.economy.shards : 0;
+    migrated.economy.shards = {
+      common: legacyShards,
+      rare: 0,
+      epic: 0,
+      legendary: 0,
+      mythic: 0,
+    };
+  }
+
+  // Migration: Force energy limits
+  migrated.character.maxEnergy = 10;
+  // If it was the old default (10 or 100), or if it's higher than 10, reset to 5
+  if (migrated.character.energy > 5) {
+    migrated.character.energy = 5;
+  }
+
+  // Migration: Force base stats to user's new defaults if level 1
+  if (migrated.character.level === 1) {
+    migrated.character.baseStats.attack = 6;
+    migrated.character.totalStats.attack = 6;
+    migrated.character.baseAttack = 6;
+    migrated.character.stats.totalAttack = 6;
+
+    migrated.character.baseStats.defense = 1;
+    migrated.character.totalStats.defense = 1;
+    migrated.character.baseDefense = 1;
+    migrated.character.stats.totalDefense = 1;
+  }
+
+  // Migration: Add createdAt if missing
+  if (!migrated.createdAt) {
+    migrated.createdAt = Date.now() - ((migrated.character.stats.daysSurvived || 1) * 24 * 60 * 60 * 1000);
+  }
+
+  return migrated as GameState;
+};
+
+// ============================================
 // MAIN HOOK
 // ============================================
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const lastCloudSync = useRef<number>(0);
   const syncTimeout = useRef<any>(null);
 
@@ -407,120 +543,22 @@ export function useGameState() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Migrate old save data - ensure all arrays are initialized
-        const migrated = {
-          ...INITIAL_GAME_STATE,
-          ...parsed,
-          // CRITICAL: Preserve dungeon progress (floor, boss, etc.)
-          dungeon: {
-            ...INITIAL_GAME_STATE.dungeon,
-            ...(parsed.dungeon || {}),
-            // Ensure boss is properly loaded or regenerated for current floor
-            currentBoss: parsed.dungeon?.currentBoss || getBossForFloor(parsed.dungeon?.currentFloor || 1),
-          },
-          inventory: {
-            ...INITIAL_GAME_STATE.inventory,
-            ...(parsed.inventory || {}),
-            specialAttacks: parsed.inventory?.specialAttacks || [],
-            // Filter out rune items (no longer exist)
-            items: (parsed.inventory?.items || []).filter((item: Item) => 
-              (item.type as string) !== 'rune' && (item.type as string) !== 'relic'
-            ),
-            gems: parsed.inventory?.gems || [],
-            lootboxes: parsed.inventory?.lootboxes || [],
-          },
-          // Migrate to new map system or generate new maps
-          maps: parsed.maps || generateAllMaps(),
-          currentMapId: parsed.currentMapId || 'map1',
-          currentNodeId: parsed.currentNodeId || null,
-          totalBossesDefeated: parsed.totalBossesDefeated || 0,
-          quests: {
-            habito: parsed.quests?.habito || parsed.quests?.daily || [],
-            diaria: parsed.quests?.diaria || parsed.quests?.main || [],
-            meta: parsed.quests?.meta || parsed.quests?.scheduled || [],
-          },
-          calendar: {
-            ...INITIAL_GAME_STATE.calendar,
-            ...(parsed.calendar || {}),
-            events: parsed.calendar?.events || [],
-            weeklyGoals: parsed.calendar?.weeklyGoals || [],
-            dailyProgress: parsed.calendar?.dailyProgress || [],
-          },
-          playerProfile: {
-            ...DEFAULT_PLAYER_PROFILE,
-            ...(parsed.playerProfile || {}),
-            // CRITICAL: Ensure questHistory is always an array
-            questHistory: Array.isArray(parsed.playerProfile?.questHistory) 
-              ? parsed.playerProfile.questHistory 
-              : [],
-            focusHistory: Array.isArray(parsed.playerProfile?.focusHistory)
-              ? parsed.playerProfile.focusHistory
-              : [],
-            preferredQuestTypes: Array.isArray(parsed.playerProfile?.preferredQuestTypes)
-              ? parsed.playerProfile.preferredQuestTypes
-              : [],
-            difficultQuestTypes: Array.isArray(parsed.playerProfile?.difficultQuestTypes)
-              ? parsed.playerProfile.difficultQuestTypes
-              : [],
-          },
-          history: {
-            deaths: parsed.history?.deaths || [],
-            bestRuns: {
-              maxDays: parsed.history?.bestRuns?.maxDays || 0,
-              maxFloor: parsed.history?.bestRuns?.maxFloor || 0,
-              maxBosses: parsed.history?.bestRuns?.maxBosses || 0,
-              maxCoins: parsed.history?.bestRuns?.maxCoins || 0,
-            },
-          },
-          debugLogs: [],
-        };
-
-        // Migration: Shards system
-        if (!migrated.economy.shards || typeof migrated.economy.shards === 'number') {
-          const legacyShards = typeof migrated.economy.shards === 'number' ? migrated.economy.shards : 0;
-          migrated.economy.shards = {
-            common: legacyShards,
-            rare: 0,
-            epic: 0,
-            legendary: 0,
-            mythic: 0,
-          };
+        const migrated = migrateGameState(parsed);
+        
+        // Skip initial screen if character already exists
+        if (migrated.character.name) {
+          migrated.isInitialScreen = false;
         }
-
-        // Migration: Force energy limits
-        migrated.character.maxEnergy = 10;
-        // If it was the old default (10 or 100), or if it's higher than 10, reset to 5
-        if (migrated.character.energy > 5) {
-          migrated.character.energy = 5;
-        }
-
-        // Migration: Force base stats to user's new defaults if level 1
-        if (migrated.character.level === 1) {
-          migrated.character.baseStats.attack = 6;
-          migrated.character.totalStats.attack = 6;
-          migrated.character.baseAttack = 6;
-          migrated.character.stats.totalAttack = 6;
-
-          migrated.character.baseStats.defense = 1;
-          migrated.character.totalStats.defense = 1;
-          migrated.character.baseDefense = 1;
-          migrated.character.stats.totalDefense = 1;
-        }
-
-        // Migration: Add createdAt if missing
-        if (!migrated.createdAt) {
-          migrated.createdAt = Date.now() - ((migrated.character.stats.daysSurvived || 1) * 24 * 60 * 60 * 1000);
-        }
-
+        
         setGameState(migrated);
-        addDebugLog('Game loaded from save');
+        addDebugLog('Jogo carregado do dispositivo');
       } catch (e) {
         console.error('Failed to load game state:', e);
-        addDebugLog('Failed to load save: ' + String(e));
+        addDebugLog('Erro ao carregar save local: ' + String(e));
       }
     }
     setIsLoaded(true);
-  }, []);
+  }, [addDebugLog]);
 
   // Supabase Cloud Sync logic
   useEffect(() => {
@@ -2683,6 +2721,8 @@ export function useGameState() {
     // Focus
     setFocusTag,
     // Cloud Sync
+    showSyncModal,
+    setShowSyncModal,
     syncLocalToCloud: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -2704,27 +2744,52 @@ export function useGameState() {
     },
     loadCloudToLocal: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        addDebugLog('Nuvem: Usuário não autenticado');
+        return;
+      }
       
       try {
+        addDebugLog('Nuvem: Buscando dados da conta...');
         const { data, error } = await supabase
           .from('player_data')
           .select('game_state')
           .eq('user_id', user.id)
           .single();
         
-        if (error) throw error;
-        if (data && data.game_state) {
-          const cloudState = data.game_state as GameState;
-          setGameState({
-            ...cloudState,
-            isInitialScreen: false, // Go straight to game
-          });
-          addDebugLog('Nuvem: Progresso da conta carregado com sucesso!');
+        if (error) {
+          if (error.code === 'PGRST116') {
+            addDebugLog('Nuvem: Nenhum dado encontrado nesta conta.');
+            // Even if no data, we should set initial screen to false to allow user to create a character
+            setGameState(prev => ({ ...prev, isInitialScreen: false }));
+          } else {
+            throw error;
+          }
+          return;
         }
-      } catch (error) {
+
+        if (data && data.game_state) {
+          const cloudState = data.game_state as any;
+          // Apply migration to cloud data to ensure it's compatible with current version
+          const migrated = migrateGameState(cloudState);
+          
+          // Verify if character has a name, if not, it might be an empty state
+          if (!migrated.character.name) {
+            addDebugLog('Nuvem: Dados encontrados, mas o personagem não tem nome.');
+          }
+
+          setGameState({
+            ...migrated,
+            isInitialScreen: false, // Go straight to game or welcome screen
+          });
+          addDebugLog(`Nuvem: Dados carregados! Level ${migrated.character.level} ${migrated.character.name}`);
+        } else {
+          addDebugLog('Nuvem: Dados da conta estão vazios.');
+          setGameState(prev => ({ ...prev, isInitialScreen: false }));
+        }
+      } catch (error: any) {
         console.error('Error loading cloud to local:', error);
-        addDebugLog('Nuvem: Erro ao carregar progresso da conta');
+        addDebugLog('Nuvem: Erro ao carregar: ' + (error.message || 'Erro desconhecido'));
       }
     },
     // Debug
