@@ -126,22 +126,6 @@ const getBossForFloor = (floor: number, previousIntelligence?: Boss['intelligenc
 
 const INITIAL_BOSS = getBossForFloor(1);
 
-const INITIAL_COMBAT_STATE: CombatState = {
-  playerHp: 100,
-  bossHp: 100,
-  maxPlayerHp: 100,
-  maxBossHp: 100,
-  isActive: false,
-  turn: 1,
-  specialCooldown: 0,
-  maxSpecialCooldown: 10,
-  logs: [],
-  specialAttackCooldown: 0,
-  damageTakenInCurrentBattle: 0,
-  playerAttackRemainder: 0,
-  playerDefenseRemainder: 0,
-};
-
 const INITIAL_CHARACTER: Character = {
   name: '',
   level: 1,
@@ -461,8 +445,6 @@ const migrateGameState = (parsed: any): GameState => {
     },
     // Migrate to new map system or generate new maps
     maps: parsed.maps || generateAllMaps(),
-    currentMapId: parsed.currentMapId || 'map1',
-    currentNodeId: parsed.currentNodeId || null,
     totalBossesDefeated: parsed.totalBossesDefeated || 0,
     quests: {
       habito: parsed.quests?.habito || parsed.quests?.daily || [],

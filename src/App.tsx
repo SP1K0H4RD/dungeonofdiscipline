@@ -362,7 +362,6 @@ function AppContent() {
 
   const { 
     isInitialScreen, 
-    showProfileSetup, 
     character, 
     currentMapId, 
     currentNodeId, 
@@ -444,7 +443,7 @@ function AppContent() {
           <Header 
             currentView={currentView} 
             onViewChange={(view) => {
-              setCurrentView(view);
+              setCurrentView(view as any);
               // Auto-exit dungeon systems when navigating elsewhere
               if (currentMapId || currentNodeId) {
                 exitMapSystem();
