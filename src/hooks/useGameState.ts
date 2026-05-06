@@ -575,7 +575,7 @@ export function useGameState() {
         if (error && error.code !== 'PGRST116') throw error; // PGRST116 is empty result
 
         if (data && data.game_state) {
-          // Merge logic: only load if cloud is newer or local is empty
+          // Load cloud state
           const cloudState = data.game_state as GameState;
           setGameState(cloudState);
           addDebugLog('Nuvem: Dados carregados com sucesso');
@@ -588,6 +588,11 @@ export function useGameState() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         loadFromCloud();
+      } else if (event === 'SIGNED_OUT') {
+        // Reset to initial state when logging out
+        setGameState(INITIAL_GAME_STATE);
+        localStorage.removeItem('dungeon-of-discipline');
+        addDebugLog('Sessão encerrada: Dados locais limpos');
       }
     });
 
