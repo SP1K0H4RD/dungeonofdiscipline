@@ -561,30 +561,6 @@ export function useGameState() {
 
   // Handle initial cloud load when user logs in
   useEffect(() => {
-    const loadFromCloud = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('player_data')
-          .select('game_state')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') throw error; // PGRST116 is empty result
-
-        if (data && data.game_state) {
-          // Load cloud state
-          const cloudState = data.game_state as GameState;
-          setGameState(cloudState);
-          addDebugLog('Nuvem: Dados carregados com sucesso');
-        }
-      } catch (error) {
-        console.error('Error loading from cloud:', error);
-      }
-    };
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         // We don't load automatically anymore, the user will choose via modal
