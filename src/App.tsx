@@ -2,7 +2,7 @@ import { useState, Component, type ReactNode, type ErrorInfo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameProvider, useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
-import { DEFAULT_PLAYER_PROFILE } from '@/types/game';
+import { DEFAULT_PLAYER_PROFILE, type MapId, type GameState } from '@/types/game';
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/sections/Dashboard';
 import { Quests } from '@/sections/Quests';
@@ -11,7 +11,6 @@ import { MapSystem } from '@/sections/MapSystem';
 import { Inventory } from '@/sections/Inventory';
 import { Shop } from '@/sections/Shop';
 // ProfileSetup removed - onboarding simplified to just name input
-import type { MapId } from '@/types/game';
 import { 
   Swords, 
   User, 
@@ -22,8 +21,6 @@ import {
   Crown, 
   Star, 
   FlameKindling,
-  CloudUpload,
-  CloudDownload,
   LogIn,
   PlusCircle 
 } from 'lucide-react';
@@ -356,7 +353,7 @@ function AppContent() {
     setShowRestOverlay,
     setGameState
   } = useGame();
-  const { user, signInWithGoogle } = useAuth();
+  const { signInWithGoogle } = useAuth();
   const { character, showLevelUp, showRestOverlay, restDetails, isInitialScreen } = gameState;
 
   // Show Start Screen with Login/New Game options
@@ -364,7 +361,7 @@ function AppContent() {
     return (
       <StartScreen 
         onLogin={signInWithGoogle}
-        onNewGame={() => setGameState(prev => ({ ...prev, isInitialScreen: false }))}
+        onNewGame={() => setGameState((prev: GameState) => ({ ...prev, isInitialScreen: false }))}
       />
     );
   }

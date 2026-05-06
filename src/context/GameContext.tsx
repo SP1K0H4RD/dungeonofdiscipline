@@ -64,6 +64,7 @@ interface GameContextType {
   
   // Reset
   resetProgress: () => void;
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   
   // Lootbox
   buyLootbox: (lootboxId: string) => boolean;
