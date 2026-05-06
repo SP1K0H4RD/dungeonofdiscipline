@@ -21,7 +21,6 @@ import type {
   CalendarEvent,
   FocusTag,
   MapId,
-  CombatState,
 } from '@/types/game';
 import { 
   attemptDodge, 
