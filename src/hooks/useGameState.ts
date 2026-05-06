@@ -379,9 +379,28 @@ const generateItem = (rarity: Rarity): Item => {
 // ============================================
 
 const migrateGameState = (parsed: any): GameState => {
+  // CRITICAL: Ensure economy is merged first to avoid data loss
+  const baseEconomy = {
+    ...INITIAL_GAME_STATE.economy,
+    ...(parsed.economy || {}),
+  };
+
+  // Migration: Shards system
+  if (!baseEconomy.shards || typeof baseEconomy.shards === 'number') {
+    const legacyShards = typeof baseEconomy.shards === 'number' ? baseEconomy.shards : 0;
+    baseEconomy.shards = {
+      common: legacyShards,
+      rare: 0,
+      epic: 0,
+      legendary: 0,
+      mythic: 0,
+    };
+  }
+
   const migrated = {
     ...INITIAL_GAME_STATE,
     ...parsed,
+    economy: baseEconomy,
     // CRITICAL: Deep merge character to preserve new fields
     character: {
       ...INITIAL_CHARACTER,
@@ -469,23 +488,17 @@ const migrateGameState = (parsed: any): GameState => {
     debugLogs: [],
   };
 
-  // Migration: Shards system
-  if (!migrated.economy.shards || typeof migrated.economy.shards === 'number') {
-    const legacyShards = typeof migrated.economy.shards === 'number' ? migrated.economy.shards : 0;
-    migrated.economy.shards = {
-      common: legacyShards,
-      rare: 0,
-      epic: 0,
-      legendary: 0,
-      mythic: 0,
-    };
-  }
-
   // Migration: Force energy limits
   migrated.character.maxEnergy = 10;
-  // If it was the old default (10 or 100), or if it's higher than 10, reset to 5
-  if (migrated.character.energy > 5) {
-    migrated.character.energy = 5;
+
+  // Migration: Fix maps if missing
+  if (!migrated.maps || Object.keys(migrated.maps).length === 0) {
+    migrated.maps = generateAllMaps();
+  }
+
+  // Ensure name is present, otherwise it's an initial screen
+  if (!migrated.character.name && parsed.character?.name) {
+    migrated.character.name = parsed.character.name;
   }
 
   // Migration: Force base stats to user's new defaults if level 1
@@ -773,6 +786,35 @@ export function useGameState() {
   // Select a map node to fight
   const selectMapNode = useCallback((mapId: MapId, nodeId: string) => {
     setGameState(prev => {
+      // CRITICAL: Ensure maps exist before accessing
+      if (!prev.maps || !prev.maps[mapId]) {
+        console.error(`Map ${mapId} not found in state`, prev.maps);
+        addDebugLog(`Erro: Mapa ${mapId} não encontrado. Recriando mapas...`);
+        
+        const freshMaps = generateAllMaps();
+        const map = freshMaps[mapId];
+        const node = map?.nodes.find(n => n.id === nodeId);
+
+        if (!node) return { ...prev, maps: freshMaps };
+
+        return {
+          ...prev,
+          maps: freshMaps,
+          character: {
+            ...prev.character,
+            energy: Math.max(0, prev.character.energy - 1),
+          },
+          currentMapId: mapId,
+          currentNodeId: nodeId,
+          combat: {
+            ...INITIAL_COMBAT_STATE,
+            isActive: true,
+            playerHp: prev.character.hp,
+            bossHp: node.isBoss ? 100 : 50,
+          },
+        };
+      }
+
       const map = prev.maps[mapId];
       const node = map.nodes.find(n => n.id === nodeId);
       
@@ -2760,7 +2802,6 @@ export function useGameState() {
         if (error) {
           if (error.code === 'PGRST116') {
             addDebugLog('Nuvem: Nenhum dado encontrado nesta conta.');
-            // Even if no data, we should set initial screen to false to allow user to create a character
             setGameState(prev => ({ ...prev, isInitialScreen: false }));
           } else {
             throw error;
@@ -2770,17 +2811,17 @@ export function useGameState() {
 
         if (data && data.game_state) {
           const cloudState = data.game_state as any;
-          // Apply migration to cloud data to ensure it's compatible with current version
+          // Apply migration to cloud data
           const migrated = migrateGameState(cloudState);
           
-          // Verify if character has a name, if not, it might be an empty state
-          if (!migrated.character.name) {
-            addDebugLog('Nuvem: Dados encontrados, mas o personagem não tem nome.');
+          // CRITICAL: Ensure maps are generated if they are missing or old
+          if (!migrated.maps || Object.keys(migrated.maps).length === 0) {
+            migrated.maps = generateAllMaps();
           }
 
           setGameState({
             ...migrated,
-            isInitialScreen: false, // Go straight to game or welcome screen
+            isInitialScreen: false,
           });
           addDebugLog(`Nuvem: Dados carregados! Level ${migrated.character.level} ${migrated.character.name}`);
         } else {
