@@ -587,7 +587,8 @@ export function useGameState() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        loadFromCloud();
+        // We don't load automatically anymore, the user will choose via modal
+        addDebugLog('Usuário logado. Escolha entre sincronizar ou carregar dados.');
       } else if (event === 'SIGNED_OUT') {
         // Reset to initial state when logging out
         setGameState(INITIAL_GAME_STATE);
@@ -2699,6 +2700,47 @@ export function useGameState() {
     addCalendarEvent,
     // Focus
     setFocusTag,
+    // Cloud Sync
+    syncLocalToCloud: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      try {
+        const { error } = await supabase
+          .from('player_data')
+          .upsert({ 
+            user_id: user.id, 
+            game_state: gameState,
+            updated_at: new Date().toISOString()
+          });
+        if (error) throw error;
+        addDebugLog('Nuvem: Progresso local sincronizado com sucesso!');
+      } catch (error) {
+        console.error('Error syncing local to cloud:', error);
+        addDebugLog('Nuvem: Erro ao sincronizar progresso local');
+      }
+    },
+    loadCloudToLocal: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('player_data')
+          .select('game_state')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error) throw error;
+        if (data && data.game_state) {
+          setGameState(data.game_state as GameState);
+          addDebugLog('Nuvem: Progresso da conta carregado com sucesso!');
+        }
+      } catch (error) {
+        console.error('Error loading cloud to local:', error);
+        addDebugLog('Nuvem: Erro ao carregar progresso da conta');
+      }
+    },
     // Debug
     addDebugLog,
   };

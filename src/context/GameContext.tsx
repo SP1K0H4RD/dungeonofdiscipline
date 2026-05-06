@@ -88,6 +88,10 @@ interface GameContextType {
   // Focus
   setFocusTag: (tag: FocusTag) => void;
   
+  // Cloud Sync Choice
+  syncLocalToCloud: () => Promise<void>;
+  loadCloudToLocal: () => Promise<void>;
+  
   // Debug
   addDebugLog: (message: string) => void;
 }
