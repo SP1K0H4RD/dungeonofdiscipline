@@ -277,6 +277,7 @@ const INITIAL_GAME_STATE: GameState = {
   createdAt: Date.now(),
   gameStarted: false,
   showProfileSetup: true,
+  isInitialScreen: true,
   showLevelUp: false,
   showRestOverlay: false,
   restDetails: null,
@@ -529,6 +530,11 @@ export function useGameState() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // CRITICAL: Block auto-sync if an auth choice is pending
+      if (localStorage.getItem('auth-choice-made') !== 'true') {
+        return;
+      }
+
       // Throttle syncs to every 30 seconds unless it's a critical update
       const now = Date.now();
       if (now - lastCloudSync.current < 30000) return;
@@ -569,6 +575,7 @@ export function useGameState() {
         // Reset to initial state when logging out
         setGameState(INITIAL_GAME_STATE);
         localStorage.removeItem('dungeon-of-discipline');
+        localStorage.removeItem('auth-choice-made'); // Reset choice flag
         addDebugLog('Sessão encerrada: Dados locais limpos');
       }
     });
@@ -2299,15 +2306,13 @@ export function useGameState() {
   }, []);
 
   const resetProgress = useCallback(() => {
-    setGameState(prev => ({
+    setGameState({
       ...INITIAL_GAME_STATE,
-      character: {
-        ...INITIAL_CHARACTER,
-        name: prev.character.name,
-      },
-      unlockedSkins: prev.unlockedSkins,
-      achievements: prev.achievements,
-    }));
+      isInitialScreen: true,
+      showProfileSetup: true,
+    });
+    localStorage.removeItem('dungeon-of-discipline');
+    localStorage.removeItem('auth-choice-made');
   }, []);
 
   // ============================================
@@ -2663,6 +2668,7 @@ export function useGameState() {
     convertShards,
     // Reset
     resetProgress,
+    setGameState,
     // Lootbox
     buyLootbox,
     openLootbox,
@@ -2709,7 +2715,11 @@ export function useGameState() {
         
         if (error) throw error;
         if (data && data.game_state) {
-          setGameState(data.game_state as GameState);
+          const cloudState = data.game_state as GameState;
+          setGameState({
+            ...cloudState,
+            isInitialScreen: false, // Go straight to game
+          });
           addDebugLog('Nuvem: Progresso da conta carregado com sucesso!');
         }
       } catch (error) {

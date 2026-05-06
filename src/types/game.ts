@@ -1710,6 +1710,7 @@ export interface GameState {
   createdAt: number; // Added to track real days survived
   gameStarted: boolean;
   showProfileSetup: boolean;
+  isInitialScreen: boolean; // Added to handle start screen
   showLevelUp: boolean; // Flag to show level up UI
   showRestOverlay: boolean; // Flag to show rest overlay
   restDetails: {

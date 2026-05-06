@@ -1,6 +1,7 @@
 import { useState, Component, type ReactNode, type ErrorInfo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameProvider, useGame } from '@/context/GameContext';
+import { useAuth } from '@/context/AuthContext';
 import { DEFAULT_PLAYER_PROFILE } from '@/types/game';
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/sections/Dashboard';
@@ -11,7 +12,21 @@ import { Inventory } from '@/sections/Inventory';
 import { Shop } from '@/sections/Shop';
 // ProfileSetup removed - onboarding simplified to just name input
 import type { MapId } from '@/types/game';
-import { Swords, User, Play, AlertTriangle, RefreshCw, Sparkles, Crown, Star, FlameKindling } from 'lucide-react';
+import { 
+  Swords, 
+  User, 
+  Play, 
+  AlertTriangle, 
+  RefreshCw, 
+  Sparkles, 
+  Crown, 
+  Star, 
+  FlameKindling,
+  CloudUpload,
+  CloudDownload,
+  LogIn,
+  PlusCircle 
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -107,6 +122,68 @@ function LoadingFallback() {
         <p className="text-gray-400">Carregando...</p>
       </div>
     </div>
+  );
+}
+
+// ============================================
+// START SCREEN - Login or New Game Choice
+// ============================================
+
+function StartScreen({ 
+  onNewGame, 
+  onLogin 
+}: { 
+  onNewGame: () => void; 
+  onLogin: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen flex items-center justify-center bg-gradient-dark p-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="card-dungeon p-8 max-w-md w-full text-center"
+      >
+        <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center glow-purple mb-6">
+          <Swords className="w-12 h-12 text-white" />
+        </div>
+
+        <h1 className="text-3xl font-bold text-white font-cinzel mb-2">Dungeon of Discipline</h1>
+        <p className="text-gray-400 mb-8">Escolha como deseja iniciar sua jornada</p>
+
+        <div className="grid grid-cols-1 gap-4">
+          <Button 
+            onClick={onLogin}
+            className="w-full py-8 text-lg bg-blue-600 hover:bg-blue-700 border-blue-500/50 flex flex-col items-center gap-1"
+          >
+            <div className="flex items-center gap-2">
+              <LogIn className="w-6 h-6" />
+              <span>Entrar com Conta</span>
+            </div>
+            <span className="text-[10px] opacity-70 uppercase tracking-tighter">Recuperar meu progresso salvo</span>
+          </Button>
+
+          <Button 
+            onClick={onNewGame}
+            className="w-full py-8 text-lg bg-purple-600 hover:bg-purple-700 border-purple-500/50 flex flex-col items-center gap-1"
+          >
+            <div className="flex items-center gap-2">
+              <PlusCircle className="w-6 h-6" />
+              <span>Criar Novo Boneco</span>
+            </div>
+            <span className="text-[10px] opacity-70 uppercase tracking-tighter">Começar uma jornada do zero</span>
+          </Button>
+        </div>
+
+        <p className="mt-8 text-[10px] text-gray-500 uppercase tracking-widest leading-relaxed">
+          O uso de conta permite salvar seu progresso na nuvem<br />e jogar em múltiplos dispositivos.
+        </p>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -276,9 +353,21 @@ function AppContent() {
     completeProfileSetup, 
     selectMapNode, 
     setShowLevelUp,
-    setShowRestOverlay
+    setShowRestOverlay,
+    setGameState
   } = useGame();
-  const { character, showLevelUp, showRestOverlay, restDetails } = gameState;
+  const { user, signInWithGoogle } = useAuth();
+  const { character, showLevelUp, showRestOverlay, restDetails, isInitialScreen } = gameState;
+
+  // Show Start Screen with Login/New Game options
+  if (isInitialScreen) {
+    return (
+      <StartScreen 
+        onLogin={signInWithGoogle}
+        onNewGame={() => setGameState(prev => ({ ...prev, isInitialScreen: false }))}
+      />
+    );
+  }
 
   // Show welcome screen if name not set
   if (!character.name) {
