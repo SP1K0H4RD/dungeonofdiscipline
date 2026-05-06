@@ -345,53 +345,62 @@ function DeathScreen({ onRevive }: { onRevive: () => void }) {
 // ============================================
 
 function AppContent() {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [inDungeon, setInDungeon] = useState(false);
-  const [showMapSystem, setShowMapSystem] = useState(false);
-  const [currentCombat, setCurrentCombat] = useState<{ mapId: MapId; nodeId: string } | null>(null);
-  const [showDeath, setShowDeath] = useState(false);
   const { 
     gameState, 
     setCharacterName, 
     reviveCharacter, 
     completeProfileSetup, 
     selectMapNode, 
+    enterMapSystem,
+    exitMapSystem,
+    leaveCombat,
     setShowLevelUp,
     setShowRestOverlay,
     setShowSyncModal,
     setGameState
   } = useGame();
+
+  const { 
+    isInitialScreen, 
+    showProfileSetup, 
+    character, 
+    currentMapId, 
+    currentNodeId, 
+    showLevelUp,
+    showRestOverlay,
+    restDetails
+  } = gameState;
+
   const { user, signInWithGoogle } = useAuth();
-  const { character, showLevelUp, showRestOverlay, restDetails, isInitialScreen } = gameState;
+
+  // Local state for non-gameplay UI
+  const [currentView, setCurrentView] = useState<'dashboard' | 'quests' | 'inventory' | 'shop'>('dashboard');
+  const [showDeath, setShowDeath] = useState(false);
 
   // Check for death
   if (character.hp <= 0 && !showDeath && character.name) {
     setShowDeath(true);
   }
 
-  // Handle entering dungeon - now opens map system first
+  // Navigation handlers
   const handleEnterDungeon = () => {
-    setShowMapSystem(true);
+    console.log("NAV: Entering Map System");
+    enterMapSystem();
   };
 
-  // Handle entering combat from map
   const handleEnterCombat = (mapId: MapId, nodeId: string) => {
+    console.log(`NAV: Entering Combat: ${mapId} -> ${nodeId}`);
     selectMapNode(mapId, nodeId);
-    setCurrentCombat({ mapId, nodeId });
-    setInDungeon(true);
   };
 
-  // Handle exiting combat - return to map
-  const handleExitCombat = () => {
-    setInDungeon(false);
-    setCurrentCombat(null);
-  };
-
-  // Handle exiting map system completely
   const handleExitMapSystem = () => {
-    setShowMapSystem(false);
-    setCurrentCombat(null);
-    setInDungeon(false);
+    console.log("NAV: Exiting Map System");
+    exitMapSystem();
+  };
+
+  const handleExitCombat = () => {
+    console.log("NAV: Exiting Combat");
+    leaveCombat();
   };
 
   // Render current view
@@ -432,7 +441,16 @@ function AppContent() {
         }} />
       ) : (
         <div className="min-h-screen bg-black text-white flex flex-col">
-          <Header currentView={currentView} onViewChange={setCurrentView} />
+          <Header 
+            currentView={currentView} 
+            onViewChange={(view) => {
+              setCurrentView(view);
+              // Auto-exit dungeon systems when navigating elsewhere
+              if (currentMapId || currentNodeId) {
+                exitMapSystem();
+              }
+            }} 
+          />
           
           <main className="flex-1 pt-16 pb-20 md:pb-0 md:pl-0">
             <AnimatePresence mode="wait">
@@ -441,40 +459,58 @@ function AppContent() {
                   onRevive={() => {
                     reviveCharacter();
                     setShowDeath(false);
-                    setInDungeon(false);
-                    setCurrentCombat(null);
-                    setShowMapSystem(false);
+                    exitMapSystem();
                     setCurrentView('dashboard');
                   }} 
                 />
               ) : (
-                <motion.div
-                  key={inDungeon ? (showMapSystem ? 'map' : 'combat') : currentView}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className="h-full"
-                >
-                  {inDungeon ? (
-                    showMapSystem ? (
-                      <MapSystem 
-                        onEnterCombat={handleEnterCombat} 
-                        onExit={handleExitMapSystem}
-                      />
-                    ) : (
-                      currentCombat && (
+                <div className="flex-1 h-full">
+                  {/* Overlay Views (Full Screen) */}
+                  <AnimatePresence>
+                    {currentNodeId && currentMapId && (
+                      <motion.div
+                        key="combat-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] overflow-hidden"
+                      >
                         <Dungeon 
-                          mapId={currentCombat.mapId}
-                          nodeId={currentCombat.nodeId}
+                          mapId={currentMapId}
+                          nodeId={currentNodeId}
                           onExit={handleExitCombat} 
                         />
-                      )
-                    )
-                  ) : (
-                    renderView()
-                  )}
-                </motion.div>
+                      </motion.div>
+                    )}
+
+                    {currentMapId && !currentNodeId && (
+                      <motion.div
+                        key="map-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] overflow-hidden"
+                      >
+                        <MapSystem 
+                          onEnterCombat={handleEnterCombat} 
+                          onExit={handleExitMapSystem}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Standard Views */}
+                  <motion.div
+                    key={currentView}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 h-full overflow-auto"
+                  >
+                    {renderView()}
+                  </motion.div>
+                </div>
               )}
             </AnimatePresence>
           </main>

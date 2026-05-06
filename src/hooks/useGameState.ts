@@ -21,6 +21,7 @@ import type {
   CalendarEvent,
   FocusTag,
   MapId,
+  CombatState,
 } from '@/types/game';
 import { 
   attemptDodge, 
@@ -124,6 +125,22 @@ const getBossForFloor = (floor: number, previousIntelligence?: Boss['intelligenc
 };
 
 const INITIAL_BOSS = getBossForFloor(1);
+
+const INITIAL_COMBAT_STATE: CombatState = {
+  playerHp: 100,
+  bossHp: 100,
+  maxPlayerHp: 100,
+  maxBossHp: 100,
+  isActive: false,
+  turn: 1,
+  specialCooldown: 0,
+  maxSpecialCooldown: 10,
+  logs: [],
+  specialAttackCooldown: 0,
+  damageTakenInCurrentBattle: 0,
+  playerAttackRemainder: 0,
+  playerDefenseRemainder: 0,
+};
 
 const INITIAL_CHARACTER: Character = {
   name: '',
@@ -485,6 +502,9 @@ const migrateGameState = (parsed: any): GameState => {
         maxCoins: parsed.history?.bestRuns?.maxCoins || 0,
       },
     },
+    // Reset navigation on load to hub
+    currentMapId: null,
+    currentNodeId: null,
     debugLogs: [],
   };
 
@@ -783,19 +803,49 @@ export function useGameState() {
   // MAP SYSTEM - Path of Exile style progression
   // ============================================
   
-  // Select a map node to fight
+  const enterMapSystem = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      currentMapId: prev.currentMapId || 'map1',
+      currentNodeId: null,
+    }));
+  }, []);
+
+  const exitMapSystem = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      currentMapId: null,
+      currentNodeId: null,
+    }));
+  }, []);
+
+  const leaveCombat = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      currentNodeId: null,
+      combat: prev.combat ? { ...prev.combat, isActive: false } : null,
+    }));
+  }, []);
+
   const selectMapNode = useCallback((mapId: MapId, nodeId: string) => {
     setGameState(prev => {
-      // CRITICAL: Ensure maps exist before accessing
+      // ...CRITICAL: Ensure maps exist before accessing
       if (!prev.maps || !prev.maps[mapId]) {
         console.error(`Map ${mapId} not found in state`, prev.maps);
         addDebugLog(`Erro: Mapa ${mapId} não encontrado. Recriando mapas...`);
         
         const freshMaps = generateAllMaps();
         const map = freshMaps[mapId];
-        const node = map?.nodes.find(n => n.id === nodeId);
+        const nodeIndex = map?.nodes.findIndex(n => n.id === nodeId);
 
-        if (!node) return { ...prev, maps: freshMaps };
+        if (nodeIndex === -1 || nodeIndex === undefined) return { ...prev, maps: freshMaps };
+
+        const node = map.nodes[nodeIndex];
+        // Spawn enemy immediately for fresh map
+        const spawnedEnemy = spawnMonster({ stage: node.stage, spawns: node.possibleSpawns });
+        const updatedNodes = [...map.nodes];
+        updatedNodes[nodeIndex] = { ...node, currentEnemy: spawnedEnemy };
+        freshMaps[mapId] = { ...map, nodes: updatedNodes };
 
         return {
           ...prev,
@@ -806,27 +856,35 @@ export function useGameState() {
           },
           currentMapId: mapId,
           currentNodeId: nodeId,
-          combat: {
-            ...INITIAL_COMBAT_STATE,
-            isActive: true,
-            playerHp: prev.character.hp,
-            bossHp: node.isBoss ? 100 : 50,
-          },
         };
       }
 
       const map = prev.maps[mapId];
-      const node = map.nodes.find(n => n.id === nodeId);
+      const nodeIndex = map.nodes.findIndex(n => n.id === nodeId);
+      
+      if (nodeIndex === -1) {
+        console.error(`Node ${nodeId} not found in map ${mapId}`);
+        return prev;
+      }
+
+      const node = map.nodes[nodeIndex];
       
       if (!node || !node.isUnlocked) {
         addDebugLog(`Node ${nodeId} is locked`);
         return prev;
       }
+
+      // CRITICAL: Spawn enemy BEFORE starting combat if not already spawned
+      const spawnedEnemy = spawnMonster({ stage: node.stage, spawns: node.possibleSpawns });
+      const updatedNodes = [...map.nodes];
+      updatedNodes[nodeIndex] = { ...node, currentEnemy: spawnedEnemy };
+      const updatedMaps = { ...prev.maps, [mapId]: { ...map, nodes: updatedNodes } };
       
       addDebugLog(`Selected node: Map ${mapId}, Stage ${node.stage} (${node.difficulty})`);
       
       return {
         ...prev,
+        maps: updatedMaps,
         character: {
           ...prev.character,
           // Deduct 1 energy here (only once per user click)
@@ -1590,6 +1648,11 @@ export function useGameState() {
       }
 
       const currentMap = prev.maps[prev.currentMapId];
+      if (!currentMap) {
+        addDebugLog(`Map ${prev.currentMapId} not found`);
+        return prev;
+      }
+
       const currentNode = currentMap.nodes.find(n => n.id === prev.currentNodeId);
       
       if (!currentNode) {
@@ -1597,12 +1660,12 @@ export function useGameState() {
         return prev;
       }
 
-      // Get spawned enemy (should be spawned before calling startCombat)
-      const spawnedEnemy = currentNode.currentEnemy;
+      // Get spawned enemy
+      let spawnedEnemy = currentNode.currentEnemy;
       
+      // FALLBACK: Spawn if missing (should already be spawned by selectMapNode)
       if (!spawnedEnemy) {
-        addDebugLog('No enemy spawned for this node');
-        return prev;
+        spawnedEnemy = spawnMonster({ stage: currentNode.stage, spawns: currentNode.possibleSpawns });
       }
 
       const equippedSpecial = prev.character.equipped.specialAttack;
@@ -2699,6 +2762,9 @@ export function useGameState() {
     reviveCharacter,
     // Map System
     selectMapNode,
+    enterMapSystem,
+    exitMapSystem,
+    leaveCombat,
     completeMapNode,
     resetMaps,
     spawnEnemyForNode,

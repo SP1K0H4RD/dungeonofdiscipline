@@ -56,6 +56,9 @@ interface GameContextType {
   
   // Map System
   selectMapNode: (mapId: MapId, nodeId: string) => void;
+  enterMapSystem: () => void;
+  exitMapSystem: () => void;
+  leaveCombat: () => void;
   completeMapNode: (mapId: MapId, nodeId: string) => void;
   resetMaps: () => void;
   spawnEnemyForNode: (mapId: MapId, nodeId: string) => void;
