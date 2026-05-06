@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, User, LogOut, CloudUpload, CloudDownload, X } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, User, LogOut } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface HeaderProps {
   currentView: string;
@@ -20,8 +20,8 @@ const navItems = [
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
   const { gameState } = useGame();
-  const { user, signOut } = useAuth();
-  const { character, recoveryMode } = gameState;
+  const { user, signOut, signInWithGoogle } = useAuth();
+  const { character, economy, recoveryMode } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [imgError, setImgError] = useState(false);
 

@@ -3,6 +3,7 @@ import { CloudUpload, CloudDownload, X } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export function SyncModal() {
   const { syncLocalToCloud, loadCloudToLocal, showSyncModal, setShowSyncModal } = useGame();
