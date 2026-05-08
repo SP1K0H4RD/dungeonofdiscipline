@@ -226,7 +226,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden flex items-center justify-around py-1 border-t border-[#2d2d44] -mx-4 px-1">
+        <div className="md:hidden flex items-center justify-around py-1 border-t border-[#2d2d44] px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
