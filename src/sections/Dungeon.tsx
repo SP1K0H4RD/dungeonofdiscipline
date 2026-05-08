@@ -128,7 +128,7 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
   }
 
   // Victory Screen
-  if (showVictory || (combat && !combat.isActive && combat.bossHp <= 0)) {
+  if (showVictory) {
     return (
       <motion.div
         initial={{ opacity: 0 }}

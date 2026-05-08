@@ -965,7 +965,6 @@ export function useGameState() {
       return {
         ...prev,
         maps: updatedMaps,
-        currentNodeId: null,
         totalBossesDefeated: totalBosses,
       };
     });
