@@ -226,7 +226,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden flex items-center justify-around py-1 border-t border-[#2d2d44]">
+        <div className="md:hidden flex items-center justify-around py-1 border-t border-[#2d2d44] -mx-4 px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -236,15 +236,15 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
                 className={cn(
-                  'flex flex-col items-center gap-1 p-1 rounded-lg transition-all',
+                  'flex flex-col items-center gap-0.5 p-1 rounded-lg transition-all flex-1 min-w-0',
                   isActive 
                     ? 'text-purple-400' 
                     : 'text-gray-400'
                 )}
                 whileTap={{ scale: 0.9 }}
               >
-                <Icon className={cn('w-5 h-5', isActive && 'text-glow-purple')} />
-                <span className="text-[10px]">{item.label}</span>
+                <Icon className={cn('w-4 h-4', isActive && 'text-glow-purple')} />
+                <span className="text-[9px] truncate w-full text-center">{item.label}</span>
               </motion.button>
             );
           })}

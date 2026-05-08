@@ -1,4 +1,4 @@
-import { useState, Component, type ReactNode, type ErrorInfo } from 'react';
+import { useState, Component, type ReactNode, type ErrorInfo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameProvider, useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
@@ -353,8 +353,18 @@ function AppContent() {
 
   const { user, signInWithGoogle } = useAuth();
 
+  // Reference for scroll reset
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   // Local state for non-gameplay UI
   const [currentView, setCurrentView] = useState<'dashboard' | 'quests' | 'inventory' | 'shop'>('dashboard');
+
+  // Reset scroll when view changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentView]);
   const [showDeath, setShowDeath] = useState(false);
 
   // Check for death
@@ -476,6 +486,7 @@ function AppContent() {
                   {/* Standard Views */}
                   <motion.div
                     key={currentView}
+                    ref={scrollContainerRef}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
