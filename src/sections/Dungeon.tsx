@@ -58,23 +58,23 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
 
   // Monitor combat state for victory/defeat
   useEffect(() => {
-    if (combat && !combat.isActive && battleInitialized) {
+    if (combat && !combat.isActive && battleInitialized && !showVictory && !showDefeat) {
       if (combat.bossHp <= 0) {
         // Victory! - Delay showing victory screen for a better feel
         const timer = setTimeout(() => {
           setShowVictory(true);
           completeMapNode(mapId, nodeId);
-        }, 800);
+        }, 500);
         return () => clearTimeout(timer);
       } else if (combat.playerHp <= 0) {
         // Defeat
         const timer = setTimeout(() => {
           setShowDefeat(true);
-        }, 800);
+        }, 500);
         return () => clearTimeout(timer);
       }
     }
-  }, [combat, mapId, nodeId, completeMapNode, battleInitialized]);
+  }, [combat, mapId, nodeId, completeMapNode, battleInitialized, showVictory, showDefeat]);
 
   const handleAttack = () => {
     if (!combat?.isActive) return;
@@ -128,56 +128,51 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
   }
 
   // Victory Screen
-  if (showVictory) {
+  if (showVictory || (combat && !combat.isActive && combat.bossHp <= 0)) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-[#0a0a0f] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[70] bg-[#0a0a0f] flex items-center justify-center p-4 overflow-y-auto"
       >
-        <div className="card-dungeon p-8 max-w-md w-full text-center">
+        <div className="card-dungeon p-8 max-w-md w-full text-center my-auto">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', delay: 0.2 }}
-            className="text-8xl mb-6"
+            className="text-7xl sm:text-8xl mb-4 sm:mb-6"
           >
             🏆
           </motion.div>
-          <h1 className="text-4xl font-bold text-green-400 font-cinzel mb-4">
+          <h1 className="text-3xl sm:text-4xl font-bold text-green-400 font-cinzel mb-2 sm:mb-4">
             VITÓRIA!
           </h1>
-          <p className="text-gray-400 mb-6">
+          <p className="text-gray-400 mb-4 sm:mb-6">
             Você derrotou <span className="text-white font-semibold">{enemyName}</span>!
           </p>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="grid grid-cols-2 gap-4 mb-6"
-          >
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex flex-col items-center">
                <div className="flex items-center gap-1.5 mb-1">
                  <Coins className="w-3 h-3 text-yellow-500" />
                  <span className="text-[10px] text-yellow-500 uppercase font-black tracking-widest">Ouro</span>
                </div>
-               <span className="text-xl font-black text-yellow-500">+{combat.goldReward || 0}</span>
+               <span className="text-xl font-black text-yellow-400">+{combat.goldReward || 0}</span>
              </div>
              <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 flex flex-col items-center">
                <div className="flex items-center gap-1.5 mb-1">
                  <Star className="w-3 h-3 text-blue-500" />
                  <span className="text-[10px] text-blue-500 uppercase font-black tracking-widest">XP</span>
                </div>
-               <span className="text-xl font-black text-blue-500">+{combat.xpReward || 0}</span>
+               <span className="text-xl font-black text-blue-400">+{combat.xpReward || 0}</span>
              </div>
-           </motion.div>
+           </div>
           
           {currentNode.isBoss && (
-            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
-              <p className="text-purple-400 font-semibold">🎉 BOSS DERROTADO!</p>
-              <p className="text-sm text-gray-400 mt-1">
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+              <p className="text-purple-400 font-semibold text-sm sm:text-base">🎉 BOSS DERROTADO!</p>
+              <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
                 {currentMap.id === 'map5' 
                   ? 'Parabéns! Você completou todos os mapas!' 
                   : 'Próximo mapa desbloqueado!'}
@@ -189,16 +184,16 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
             <motion.div 
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6"
+              transition={{ delay: 0.4 }}
+              className="bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6"
             >
-              <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-3">Item Encontrado!</p>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-4xl shadow-inner">
+              <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2 sm:mb-3">Item Encontrado!</p>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-3xl sm:text-4xl shadow-inner">
                   {combat.droppedItem.icon}
                 </div>
                 <div className="text-left">
-                  <p className="text-white font-bold leading-tight">{combat.droppedItem.name}</p>
+                  <p className="text-white font-bold leading-tight text-sm sm:text-base">{combat.droppedItem.name}</p>
                   <p className="text-[10px] text-orange-400 uppercase font-black tracking-tighter mt-1">
                     {combat.droppedItem.rarity}
                   </p>
@@ -207,7 +202,7 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
             </motion.div>
           )}
           
-          <Button onClick={handleReturnToMap} className="w-full btn-primary py-4">
+          <Button onClick={handleReturnToMap} className="w-full btn-primary py-4 sm:py-6 text-base sm:text-lg">
             <ChevronLeft className="w-5 h-5 mr-2" />
             Voltar ao Mapa
           </Button>
