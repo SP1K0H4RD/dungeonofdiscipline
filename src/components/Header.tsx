@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, User, LogOut } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, User, LogOut, RefreshCw } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
@@ -19,16 +19,25 @@ const navItems = [
 ];
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
-  const { gameState } = useGame();
+  const { gameState, syncLocalToCloud } = useGame();
   const { user, signOut, signInWithGoogle } = useAuth();
   const { character, economy, recoveryMode } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    await syncLocalToCloud();
+    setIsSyncing(false);
+  };
 
   const handleSignOut = async () => {
+    setIsSyncing(true);
+    await syncLocalToCloud(); // Auto-sync before sign out
     await signOut();
-    localStorage.removeItem('auth-choice-made');
     setShowProfileMenu(false);
+    setIsSyncing(false);
   };
 
   const hpPercent = (character.hp / character.maxHp) * 100;
@@ -191,9 +200,20 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                       <p className="text-xs text-gray-500">Logado como:</p>
                       <p className="text-sm font-bold text-white truncate">{user.email}</p>
                     </div>
+
+                    <button
+                      onClick={handleSync}
+                      disabled={isSyncing}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+                      {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+                    </button>
+
                     <button
                       onClick={handleSignOut}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                      disabled={isSyncing}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                     >
                       <LogOut className="w-4 h-4" />
                       Sair

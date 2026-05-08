@@ -2,7 +2,6 @@ import { useState, Component, type ReactNode, type ErrorInfo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameProvider, useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
-import { SyncModal } from '@/components/SyncModal';
 import { DEFAULT_PLAYER_PROFILE, type MapId, type GameState } from '@/types/game';
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/sections/Dashboard';
@@ -124,15 +123,13 @@ function LoadingFallback() {
 }
 
 // ============================================
-// START SCREEN - Login or New Game Choice
+// START SCREEN - Login Only
 // ============================================
 
 function StartScreen({ 
-  onNewGame, 
   onLogin,
   user
 }: { 
-  onNewGame: () => void; 
   onLogin: () => void;
   user: any;
 }) {
@@ -154,7 +151,7 @@ function StartScreen({
 
         <h1 className="text-3xl font-bold text-white font-cinzel mb-2">Dungeon of Discipline</h1>
         <p className="text-gray-400 mb-8">
-          {user ? `Bem-vindo de volta, ${user.email}` : 'Escolha como deseja iniciar sua jornada'}
+          {user ? `Bem-vindo de volta, ${user.email}` : 'Conecte sua conta para iniciar sua jornada'}
         </p>
 
         <div className="grid grid-cols-1 gap-4">
@@ -164,22 +161,8 @@ function StartScreen({
           >
             <div className="flex items-center gap-2">
               <LogIn className="w-6 h-6" />
-              <span>{user ? 'Sincronizar Conta' : 'Entrar com Conta'}</span>
+              <span>{user ? 'Entrar no Jogo' : 'Fazer Login'}</span>
             </div>
-            <span className="text-[10px] opacity-70 uppercase tracking-tighter">
-              {user ? 'Verificar progresso na nuvem' : 'Recuperar meu progresso salvo'}
-            </span>
-          </Button>
-
-          <Button 
-            onClick={onNewGame}
-            className="w-full py-8 text-lg bg-purple-600 hover:bg-purple-700 border-purple-500/50 flex flex-col items-center gap-1"
-          >
-            <div className="flex items-center gap-2">
-              <PlusCircle className="w-6 h-6" />
-              <span>Criar Novo Boneco</span>
-            </div>
-            <span className="text-[10px] opacity-70 uppercase tracking-tighter">Começar uma jornada do zero</span>
           </Button>
         </div>
 
@@ -354,10 +337,13 @@ function AppContent() {
     enterMapSystem,
     exitMapSystem,
     leaveCombat,
+    showLevelUp,
     setShowLevelUp,
+    showRestOverlay,
     setShowRestOverlay,
-    setShowSyncModal,
-    setGameState
+    restDetails,
+    setGameState,
+    loadCloudToLocal
   } = useGame();
 
   const { 
@@ -365,9 +351,6 @@ function AppContent() {
     character, 
     currentMapId, 
     currentNodeId, 
-    showLevelUp,
-    showRestOverlay,
-    restDetails
   } = gameState;
 
   const { user, signInWithGoogle } = useAuth();
@@ -383,22 +366,18 @@ function AppContent() {
 
   // Navigation handlers
   const handleEnterDungeon = () => {
-    console.log("NAV: Entering Map System");
     enterMapSystem();
   };
 
   const handleEnterCombat = (mapId: MapId, nodeId: string) => {
-    console.log(`NAV: Entering Combat: ${mapId} -> ${nodeId}`);
     selectMapNode(mapId, nodeId);
   };
 
   const handleExitMapSystem = () => {
-    console.log("NAV: Exiting Map System");
     exitMapSystem();
   };
 
   const handleExitCombat = () => {
-    console.log("NAV: Exiting Combat");
     leaveCombat();
   };
 
@@ -420,17 +399,15 @@ function AppContent() {
 
   return (
     <>
-      <SyncModal />
       {isInitialScreen ? (
         <StartScreen 
           onLogin={() => {
             if (user) {
-              setShowSyncModal(true);
+              loadCloudToLocal();
             } else {
               signInWithGoogle();
             }
           }}
-          onNewGame={() => setGameState((prev: GameState) => ({ ...prev, isInitialScreen: false }))}
           user={user}
         />
       ) : !character.name ? (
@@ -451,7 +428,7 @@ function AppContent() {
             }} 
           />
           
-          <main className="flex-1 pt-16 pb-20 md:pb-0 md:pl-0">
+          <main className="flex-1 pt-32 md:pt-16 pb-20 md:pb-0 md:pl-0">
             <AnimatePresence mode="wait">
               {showDeath ? (
                 <DeathScreen 

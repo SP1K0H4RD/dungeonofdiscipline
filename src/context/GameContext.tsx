@@ -19,8 +19,7 @@ interface GameContextType {
   setShowLevelUp: (show: boolean) => void;
   showRestOverlay: boolean;
   setShowRestOverlay: (show: boolean) => void;
-  showSyncModal: boolean;
-  setShowSyncModal: (show: boolean) => void;
+  restDetails: any;
   LOOTBOX_TYPES: Lootbox[];
   DIFFICULTY_CONFIG: typeof DIFFICULTY_CONFIG;
   

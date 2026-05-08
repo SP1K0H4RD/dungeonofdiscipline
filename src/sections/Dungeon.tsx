@@ -60,12 +60,18 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
   useEffect(() => {
     if (combat && !combat.isActive && battleInitialized) {
       if (combat.bossHp <= 0) {
-        // Victory!
-        setShowVictory(true);
-        completeMapNode(mapId, nodeId);
+        // Victory! - Delay showing victory screen for a better feel
+        const timer = setTimeout(() => {
+          setShowVictory(true);
+          completeMapNode(mapId, nodeId);
+        }, 800);
+        return () => clearTimeout(timer);
       } else if (combat.playerHp <= 0) {
         // Defeat
-        setShowDefeat(true);
+        const timer = setTimeout(() => {
+          setShowDefeat(true);
+        }, 800);
+        return () => clearTimeout(timer);
       }
     }
   }, [combat, mapId, nodeId, completeMapNode, battleInitialized]);
@@ -146,7 +152,12 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
             Você derrotou <span className="text-white font-semibold">{enemyName}</span>!
           </p>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="grid grid-cols-2 gap-4 mb-6"
+          >
              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex flex-col items-center">
                <div className="flex items-center gap-1.5 mb-1">
                  <Coins className="w-3 h-3 text-yellow-500" />
@@ -161,7 +172,7 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
                </div>
                <span className="text-xl font-black text-blue-500">+{combat.xpReward || 0}</span>
              </div>
-           </div>
+           </motion.div>
           
           {currentNode.isBoss && (
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">

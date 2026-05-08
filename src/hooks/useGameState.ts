@@ -530,20 +530,12 @@ const migrateGameState = (parsed: any): GameState => {
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showSyncModal, setShowSyncModal] = useState(false);
   const lastCloudSync = useRef<number>(0);
   const syncTimeout = useRef<any>(null);
+  const lastSavedStateRef = useRef<string>('');
+  const autosaveTimeoutRef = useRef<any>(null);
 
-  // Helper to set showLevelUp
-  const setShowLevelUp = useCallback((show: boolean) => {
-    setGameState(prev => ({ ...prev, showLevelUp: show }));
-  }, []);
-
-  const setShowRestOverlay = useCallback((show: boolean) => {
-    setGameState(prev => ({ ...prev, showRestOverlay: show }));
-  }, []);
-
-  // Debug logger
+  // Helper to add debug logs
   const addDebugLog = useCallback((message: string) => {
     setGameState(prev => ({
       ...prev,
@@ -551,7 +543,89 @@ export function useGameState() {
     }));
   }, []);
 
-  // Load from localStorage
+  // Sync Local to Cloud (Save)
+  const syncLocalToCloud = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('player_data')
+        .upsert({ 
+          user_id: user.id, 
+          game_state: gameState,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      lastCloudSync.current = Date.now();
+      lastSavedStateRef.current = JSON.stringify(gameState);
+      addDebugLog('Sincronização com a nuvem concluída');
+    } catch (error) {
+      console.error('Error syncing to cloud:', error);
+      addDebugLog('Erro ao sincronizar com a nuvem');
+    }
+  }, [gameState, addDebugLog]);
+
+  // Load Cloud to Local (Load)
+  const loadCloudToLocal = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('player_data')
+        .select('game_state')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+
+      if (data?.game_state) {
+        const migrated = migrateGameState(data.game_state);
+        // If we have a character name, we go straight to the game
+        if (migrated.character.name) {
+          migrated.isInitialScreen = false;
+        } else {
+          // If no name, show welcome screen (character creation)
+          migrated.isInitialScreen = false;
+        }
+        setGameState(migrated);
+        lastSavedStateRef.current = JSON.stringify(migrated);
+        addDebugLog('Dados carregados da nuvem com sucesso');
+        return true;
+      } else {
+        // No data found - this is a new player
+        setGameState(prev => ({ ...prev, isInitialScreen: false }));
+        addDebugLog('Nenhum dado encontrado na nuvem. Iniciando novo personagem.');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error loading from cloud:', error);
+      addDebugLog('Erro ao carregar dados da nuvem');
+      return false;
+    }
+  }, [addDebugLog]);
+
+  // Autosave logic (3 minutes)
+  useEffect(() => {
+    const currentStateStr = JSON.stringify(gameState);
+    
+    // Only autosave if game has started and state has changed
+    if (gameState.character.name && currentStateStr !== lastSavedStateRef.current && !gameState.isInitialScreen) {
+      if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+      
+      autosaveTimeoutRef.current = setTimeout(() => {
+        syncLocalToCloud();
+      }, 3 * 60 * 1000); // 3 minutes
+    }
+
+    return () => {
+      if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+    };
+  }, [gameState, syncLocalToCloud]);
+
+  // Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('dungeon-of-discipline');
     if (saved) {
@@ -565,6 +639,7 @@ export function useGameState() {
         }
         
         setGameState(migrated);
+        lastSavedStateRef.current = JSON.stringify(migrated);
         addDebugLog('Jogo carregado do dispositivo');
       } catch (e) {
         console.error('Failed to load game state:', e);
@@ -574,73 +649,39 @@ export function useGameState() {
     setIsLoaded(true);
   }, [addDebugLog]);
 
-  // Supabase Cloud Sync logic
+  // Handle auth changes (Auto-load on login)
   useEffect(() => {
-    if (!isLoaded) return;
-
-    const syncToCloud = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // CRITICAL: Block auto-sync if an auth choice is pending
-      if (localStorage.getItem('auth-choice-made') !== 'true') {
-        return;
-      }
-
-      // Throttle syncs to every 30 seconds unless it's a critical update
-      const now = Date.now();
-      if (now - lastCloudSync.current < 30000) return;
-
-      try {
-        const { error } = await supabase
-          .from('player_data')
-          .upsert({ 
-            user_id: user.id, 
-            game_state: gameState,
-            updated_at: new Date().toISOString()
-          });
-        
-        if (error) throw error;
-        lastCloudSync.current = now;
-        addDebugLog('Nuvem: Sincronização concluída');
-      } catch (error) {
-        console.error('Error syncing to cloud:', error);
-      }
-    };
-
-    // Debounce sync to avoid spamming Supabase
-    if (syncTimeout.current) clearTimeout(syncTimeout.current);
-    syncTimeout.current = setTimeout(syncToCloud, 5000);
-
-    return () => {
-      if (syncTimeout.current) clearTimeout(syncTimeout.current);
-    };
-  }, [gameState, isLoaded, addDebugLog]);
-
-  // Handle initial cloud load when user logs in
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        // We don't load automatically anymore, the user will choose via modal
-        addDebugLog('Usuário logado. Escolha entre sincronizar ou carregar dados.');
+        addDebugLog('Usuário logado. Carregando dados...');
+        await loadCloudToLocal();
       } else if (event === 'SIGNED_OUT') {
         // Reset to initial state when logging out
         setGameState(INITIAL_GAME_STATE);
         localStorage.removeItem('dungeon-of-discipline');
-        localStorage.removeItem('auth-choice-made'); // Reset choice flag
+        lastSavedStateRef.current = '';
         addDebugLog('Sessão encerrada: Dados locais limpos');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [addDebugLog]);
+  }, [addDebugLog, loadCloudToLocal]);
 
-  // Save to localStorage
+  // Save to localStorage whenever state changes
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem('dungeon-of-discipline', JSON.stringify(gameState));
     }
   }, [gameState, isLoaded]);
+
+  // Helper to set showLevelUp
+  const setShowLevelUp = useCallback((show: boolean) => {
+    setGameState(prev => ({ ...prev, showLevelUp: show }));
+  }, []);
+
+  const setShowRestOverlay = useCallback((show: boolean) => {
+    setGameState(prev => ({ ...prev, showRestOverlay: show }));
+  }, []);
 
   // Check for daily/weekly resets (Brazil timezone)
   useEffect(() => {
@@ -2714,6 +2755,7 @@ export function useGameState() {
     setShowLevelUp,
     showRestOverlay: gameState.showRestOverlay,
     setShowRestOverlay,
+    restDetails: gameState.restDetails,
     LOOTBOX_TYPES,
     DIFFICULTY_CONFIG,
     // Character
@@ -2810,76 +2852,8 @@ export function useGameState() {
     // Focus
     setFocusTag,
     // Cloud Sync
-    showSyncModal,
-    setShowSyncModal,
-    syncLocalToCloud: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      try {
-        const { error } = await supabase
-          .from('player_data')
-          .upsert({ 
-            user_id: user.id, 
-            game_state: gameState,
-            updated_at: new Date().toISOString()
-          });
-        if (error) throw error;
-        addDebugLog('Nuvem: Progresso local sincronizado com sucesso!');
-      } catch (error) {
-        console.error('Error syncing local to cloud:', error);
-        addDebugLog('Nuvem: Erro ao sincronizar progresso local');
-      }
-    },
-    loadCloudToLocal: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        addDebugLog('Nuvem: Usuário não autenticado');
-        return;
-      }
-      
-      try {
-        addDebugLog('Nuvem: Buscando dados da conta...');
-        const { data, error } = await supabase
-          .from('player_data')
-          .select('game_state')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (error) {
-          if (error.code === 'PGRST116') {
-            addDebugLog('Nuvem: Nenhum dado encontrado nesta conta.');
-            setGameState(prev => ({ ...prev, isInitialScreen: false }));
-          } else {
-            throw error;
-          }
-          return;
-        }
-
-        if (data && data.game_state) {
-          const cloudState = data.game_state as any;
-          // Apply migration to cloud data
-          const migrated = migrateGameState(cloudState);
-          
-          // CRITICAL: Ensure maps are generated if they are missing or old
-          if (!migrated.maps || Object.keys(migrated.maps).length === 0) {
-            migrated.maps = generateAllMaps();
-          }
-
-          setGameState({
-            ...migrated,
-            isInitialScreen: false,
-          });
-          addDebugLog(`Nuvem: Dados carregados! Level ${migrated.character.level} ${migrated.character.name}`);
-        } else {
-          addDebugLog('Nuvem: Dados da conta estão vazios.');
-          setGameState(prev => ({ ...prev, isInitialScreen: false }));
-        }
-      } catch (error: any) {
-        console.error('Error loading cloud to local:', error);
-        addDebugLog('Nuvem: Erro ao carregar: ' + (error.message || 'Erro desconhecido'));
-      }
-    },
+    syncLocalToCloud,
+    loadCloudToLocal,
     // Debug
     addDebugLog,
   };
