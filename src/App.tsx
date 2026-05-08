@@ -424,7 +424,7 @@ function AppContent() {
           completeProfileSetup(DEFAULT_PLAYER_PROFILE);
         }} />
       ) : (
-        <div className="min-h-screen bg-black text-white flex flex-col overflow-x-hidden max-w-[100vw]">
+        <div className="min-h-screen bg-black text-white flex flex-col overflow-x-hidden">
           <Header 
             currentView={currentView} 
             onViewChange={(view) => {
@@ -436,7 +436,7 @@ function AppContent() {
             }} 
           />
           
-          <main className="flex-1 pt-32 md:pt-16 pb-20 md:pb-0 md:pl-0 border-x border-white/10 mx-auto w-full max-w-7xl relative shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          <main className="flex-1 pt-32 md:pt-16 pb-20 md:pb-0 md:pl-0 border-x border-white/10 mx-auto w-full max-w-7xl relative shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-x-hidden">
             <AnimatePresence mode="wait">
               {showDeath ? (
                 <DeathScreen 

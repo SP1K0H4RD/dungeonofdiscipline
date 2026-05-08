@@ -323,7 +323,7 @@ export function Inventory() {
       className="space-y-6 pt-0 pb-24"
     >
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">Inventário</h2>
         <p className="text-xs text-gray-400 mt-1">
           Gerencie seus equipamentos e ataques especiais
@@ -331,13 +331,13 @@ export function Inventory() {
       </div>
 
       <Tabs defaultValue="equipment" className="w-full">
-        <TabsList className="bg-[#1a1a2e] border border-[#2d2d44] h-8">
-          <TabsTrigger value="equipment" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 text-xs px-3 py-1 h-6">
-            <Sword className="w-3 h-3 mr-1" />
+        <TabsList className="bg-[#1a1a2e] border border-[#2d2d44] h-10 w-full flex">
+          <TabsTrigger value="equipment" className="flex-1 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 text-xs px-3 py-1">
+            <Sword className="w-4 h-4 mr-1 sm:mr-2" />
             Equipamentos
           </TabsTrigger>
-          <TabsTrigger value="special" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 text-xs px-3 py-1 h-6">
-            <Zap className="w-3 h-3 mr-1" />
+          <TabsTrigger value="special" className="flex-1 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 text-xs px-3 py-1">
+            <Zap className="w-4 h-4 mr-1 sm:mr-2" />
             Ataques ({inventory.specialAttacks.length})
           </TabsTrigger>
         </TabsList>
@@ -354,7 +354,7 @@ export function Inventory() {
               Equipados
             </h3>
             
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full">
               <EquipmentSlot
                 type="weapon"
                 item={equippedItems.weapon}
@@ -406,7 +406,7 @@ export function Inventory() {
                 <p className="text-sm">Complete missões para ganhar itens!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full">
                 {unequippedItems.map((item) => (
                   <ItemCard
                     key={item.id}

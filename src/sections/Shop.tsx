@@ -71,7 +71,7 @@ export function Shop() {
   const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 
   return (
-    <div className="space-y-6 pt-0 pb-24 px-4 sm:px-0 overflow-x-hidden">
+    <div className="space-y-6 pt-0 pb-24 overflow-x-hidden">
       {/* Header Mobile Sticky */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">Forja</h2>
@@ -124,10 +124,10 @@ export function Shop() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start justify-center">
         {/* Forge Slot Area */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-orange-950/20 border-2 border-orange-500/30 p-8 rounded-[2.5rem] relative overflow-hidden group">
+        <div className="lg:col-span-2 space-y-6 w-full flex flex-col items-center">
+          <div className="bg-orange-950/20 border-2 border-orange-500/30 p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] relative overflow-hidden group w-full max-w-2xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent)] group-hover:scale-110 transition-transform duration-1000" />
             
             <div className="relative flex flex-col items-center w-full overflow-hidden">
@@ -136,36 +136,36 @@ export function Shop() {
                 <p className="text-gray-400 text-xs sm:text-sm font-medium italic opacity-70">"O poder reside no aço refinado, não apenas no portador."</p>
               </div>
 
-              <div className="w-full flex flex-col sm:flex-row justify-center gap-6 sm:gap-8 mb-8 items-center">
+              <div className="w-full flex flex-col sm:flex-row justify-center gap-6 sm:gap-12 mb-8 items-center">
                 {/* Main Upgrade Slot */}
-                <div className="relative group/slot">
+                <div className="relative group/slot flex flex-col items-center">
                   <div className={cn(
-                    "w-28 h-28 sm:w-36 sm:h-36 rounded-[1.5rem] sm:rounded-[2rem] border-4 border-dashed flex items-center justify-center transition-all duration-500",
+                    "w-32 h-32 sm:w-44 sm:h-44 rounded-[2rem] sm:rounded-[2.5rem] border-4 border-dashed flex items-center justify-center transition-all duration-500",
                     selectedForgeItem 
                       ? cn("border-orange-500 bg-orange-500/10 scale-105 shadow-2xl", rarityColors[selectedForgeItem.rarity].glow)
                       : "border-orange-500/20 bg-black/40 hover:border-orange-500/40"
                   )}>
                     {selectedForgeItem ? (
-                      <div className="text-5xl sm:text-7xl drop-shadow-2xl filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                      <div className="text-6xl sm:text-8xl drop-shadow-2xl filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
                         {selectedForgeItem.icon}
                       </div>
                     ) : (
-                      <Hammer className="w-10 h-10 sm:w-14 sm:h-14 text-orange-500/10 animate-pulse" />
+                      <Hammer className="w-12 h-12 sm:w-16 sm:h-16 text-orange-500/10 animate-pulse" />
                     )}
                   </div>
                   {selectedForgeItem && (
-                    <div className="absolute -top-3 -right-3 w-10 h-10 sm:w-12 sm:h-12 bg-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-base sm:text-lg shadow-2xl rotate-12">
+                    <div className="absolute -top-3 -right-3 w-11 h-11 sm:w-14 sm:h-14 bg-orange-600 rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-lg sm:text-xl shadow-2xl rotate-12">
                       +{selectedForgeItem.upgradeLevel}
                     </div>
                   )}
-                  <div className="mt-5 text-center space-y-1 px-2">
+                  <div className="mt-6 text-center space-y-1 px-2">
                     <h3 className={cn(
-                      "text-[10px] sm:text-xs font-black uppercase tracking-widest",
+                      "text-xs sm:text-sm font-black uppercase tracking-widest",
                       selectedForgeItem ? rarityColors[selectedForgeItem.rarity as Rarity].text : "text-gray-500"
                     )}>
                       {selectedForgeItem ? (
                         <>
-                          <span className="truncate block max-w-[150px] mx-auto">
+                          <span className="truncate block max-w-[180px] mx-auto">
                             {selectedForgeItem.name}
                             {selectedForgeItem.upgradeLevel > 0 && (
                               <span className="ml-1 text-yellow-500">+{selectedForgeItem.upgradeLevel}</span>
@@ -182,15 +182,15 @@ export function Shop() {
                 {selectedForgeItem && selectedForgeItem.upgradeLevel < 10 && (
                   <>
                     <div className="flex flex-row sm:flex-col items-center gap-3">
-                      <ArrowRight className="w-6 h-6 text-orange-500 animate-pulse rotate-90 sm:rotate-0" />
+                      <ArrowRight className="w-8 h-8 text-orange-500 animate-pulse rotate-90 sm:rotate-0" />
                       <span className="text-[10px] font-black text-orange-500/50 uppercase tracking-tighter">Refinando</span>
                     </div>
 
-                    <div className="relative group/slot opacity-40 grayscale scale-90 blur-[1px]">
-                      <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-[1.5rem] sm:rounded-[2rem] border-4 border-orange-500/40 bg-orange-500/5 flex items-center justify-center">
-                        <div className="text-5xl sm:text-7xl">{selectedForgeItem.icon}</div>
+                    <div className="relative group/slot opacity-40 grayscale scale-90 blur-[1px] flex flex-col items-center">
+                      <div className="w-32 h-32 sm:w-44 sm:h-44 rounded-[2rem] sm:rounded-[2.5rem] border-4 border-orange-500/40 bg-orange-500/5 flex items-center justify-center">
+                        <div className="text-6xl sm:text-8xl">{selectedForgeItem.icon}</div>
                       </div>
-                      <div className="absolute -top-3 -right-3 w-10 h-10 sm:w-12 sm:h-12 bg-green-600 rounded-xl sm:rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-base sm:text-lg shadow-2xl -rotate-12">
+                      <div className="absolute -top-3 -right-3 w-11 h-11 sm:w-14 sm:h-14 bg-green-600 rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-lg sm:text-xl shadow-2xl -rotate-12">
                         +{selectedForgeItem.upgradeLevel + 1}
                       </div>
                     </div>

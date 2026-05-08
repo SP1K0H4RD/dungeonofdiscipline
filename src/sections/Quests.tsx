@@ -264,7 +264,7 @@ export function Quests({}: QuestsProps) {
       className="space-y-6 pt-0 pb-24"
     >
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel mb-3">Missões</h2>
         
         <div className="flex gap-2">
@@ -587,18 +587,18 @@ export function Quests({}: QuestsProps) {
 
       {/* Quest Tabs */}
       <Tabs defaultValue="diaria" className="w-full">
-        <TabsList className="bg-[#1a1a2e] border border-[#2d2d44]">
-          <TabsTrigger value="habito" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
-            <Flame className="w-4 h-4 mr-2" />
-            Hábitos ({activeHabitos.length})
+        <TabsList className="bg-[#1a1a2e] border border-[#2d2d44] w-full flex">
+          <TabsTrigger value="habito" className="flex-1 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 text-[10px] sm:text-xs">
+            <Flame className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="truncate">Hábitos ({activeHabitos.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="diaria" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-            <Calendar className="w-4 h-4 mr-2" />
-            Diárias ({activeDiarias.length})
+          <TabsTrigger value="diaria" className="flex-1 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-[10px] sm:text-xs">
+            <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="truncate">Diárias ({activeDiarias.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="meta" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">
-            <Target className="w-4 h-4 mr-2" />
-            Metas ({activeMetas.length})
+          <TabsTrigger value="meta" className="flex-1 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 text-[10px] sm:text-xs">
+            <Target className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="truncate">Metas ({activeMetas.length})</span>
           </TabsTrigger>
         </TabsList>
 
