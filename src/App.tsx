@@ -2,7 +2,7 @@ import { useState, Component, type ReactNode, type ErrorInfo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameProvider, useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
-import { DEFAULT_PLAYER_PROFILE, type MapId, type GameState } from '@/types/game';
+import { DEFAULT_PLAYER_PROFILE, type MapId } from '@/types/game';
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/sections/Dashboard';
 import { Quests } from '@/sections/Quests';
@@ -21,8 +21,7 @@ import {
   Crown, 
   Star, 
   FlameKindling,
-  LogIn,
-  PlusCircle 
+  LogIn 
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -342,7 +341,6 @@ function AppContent() {
     showRestOverlay,
     setShowRestOverlay,
     restDetails,
-    setGameState,
     loadCloudToLocal
   } = useGame();
 

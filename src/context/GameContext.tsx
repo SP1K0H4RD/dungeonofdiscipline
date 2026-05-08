@@ -95,7 +95,7 @@ interface GameContextType {
   
   // Cloud Sync Choice
   syncLocalToCloud: () => Promise<void>;
-  loadCloudToLocal: () => Promise<void>;
+  loadCloudToLocal: () => Promise<boolean | undefined>;
   
   // Debug
   addDebugLog: (message: string) => void;
