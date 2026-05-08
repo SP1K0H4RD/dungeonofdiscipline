@@ -91,16 +91,16 @@ export const FORGE_DOWNGRADE_CHANCES: Record<number, number> = {
 };
 
 export const FORGE_BASE_COSTS: Record<number, { shards: number; gold: number }> = {
-  1: { shards: 1, gold: 10 },
-  2: { shards: 2, gold: 20 },
-  3: { shards: 3, gold: 30 },
-  4: { shards: 4, gold: 40 },
-  5: { shards: 5, gold: 60 },
-  6: { shards: 6, gold: 80 },
-  7: { shards: 7, gold: 100 },
-  8: { shards: 8, gold: 130 },
-  9: { shards: 9, gold: 160 },
-  10: { shards: 10, gold: 200 },
+  1: { shards: 1, gold: 25 },
+  2: { shards: 1, gold: 50 },
+  3: { shards: 1, gold: 75 },
+  4: { shards: 1, gold: 100 },
+  5: { shards: 1, gold: 125 },
+  6: { shards: 1, gold: 150 },
+  7: { shards: 1, gold: 175 },
+  8: { shards: 1, gold: 200 },
+  9: { shards: 1, gold: 225 },
+  10: { shards: 1, gold: 250 },
 };
 
 export const FORGE_RARITY_MULTIPLIERS: Record<Rarity, number> = {

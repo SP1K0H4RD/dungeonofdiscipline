@@ -2333,8 +2333,8 @@ export function useGameState() {
       }
 
       const rarity = itemToDestroy.rarity;
-      // Item +10 gives 10 shards, others give 1
-      const shardAmount = itemToDestroy.upgradeLevel >= 10 ? 10 : 1;
+      // Drop fragments equal to upgrade level, or 1 if it's a base item (+0)
+      const shardAmount = Math.max(1, itemToDestroy.upgradeLevel);
       
       const shards = prev.economy?.shards || { common: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
       const newShards = { ...shards };

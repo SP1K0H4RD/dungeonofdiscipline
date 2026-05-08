@@ -416,13 +416,13 @@ export function Shop() {
               <div className="flex items-start gap-3">
                 <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
                 <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">MELHORIA:</span> Cada nível concede <span className="text-white">+0.5</span> fixo ao atributo base.
+                  <span className="text-orange-500/80">MELHORIA:</span> Custo fixo de <span className="text-white">1 Fragmento</span> por nível. Ouro aumenta +25 a cada nível.
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
                 <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">DESMANTELAR:</span> Itens +0~9 rendem 1 Fragmento. Itens <span className="text-white">+10</span> rendem 10 Fragmentos.
+                  <span className="text-orange-500/80">DESMANTELAR:</span> Recupera fragmentos igual ao nível de upgrade do item (Mínimo 1).
                 </p>
               </div>
               <div className="flex items-start gap-3">
