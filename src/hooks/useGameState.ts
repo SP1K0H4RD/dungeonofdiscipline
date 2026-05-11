@@ -52,6 +52,8 @@ import {
   FORGE_RARITY_MULTIPLIERS,
   FORGE_SUCCESS_CHANCES,
   FORGE_DOWNGRADE_CHANCES,
+  PETS,
+  type PetId,
   type DayOfWeek,
   type QuestType,
 } from '@/types/game';
@@ -214,6 +216,7 @@ const INITIAL_CHARACTER: Character = {
 
 const INITIAL_GAME_STATE: GameState = {
   character: INITIAL_CHARACTER,
+  selectedPetId: null,
   // New map system
   maps: generateAllMaps(),
   currentMapId: 'map1',
@@ -1747,7 +1750,14 @@ export function useGameState() {
 
       // Check if enemy dodges
       const bossDodged = attemptDodge(enemyDodgeChance);
-      const playerCrit = attemptCrit(prev.character.totalStats.critChance);
+      let playerDodged = attemptDodge(prev.character.stats.totalDodgeChance);
+      
+      // PET ABILITY: Check for guaranteed dodge from previous turn
+      if (prev.combat.nextPlayerDodge) {
+        playerDodged = true;
+      }
+
+      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(prev.character.totalStats.critChance);
       
       let damage = 0;
       let log = '';
@@ -1766,9 +1776,10 @@ export function useGameState() {
         const defenseReduction = spawnedEnemy?.defense || 0;
         damage = Math.max(1, Math.floor(attackWithVariance - defenseReduction));
         
-        // Apply crit multiplier (150% base)
+        // Apply crit multiplier (150% base or 1.3x for pet)
         if (playerCrit) {
-          damage = Math.floor(damage * prev.character.totalStats.critMultiplier);
+          const critMult = prev.combat.nextPlayerAttackCrit ? 1.3 : prev.character.totalStats.critMultiplier;
+          damage = Math.floor(damage * critMult);
         }
 
         log = playerCrit 
@@ -1778,8 +1789,13 @@ export function useGameState() {
 
       const newBossHp = Math.max(0, prev.combat.bossHp - damage);
 
+      // PET ABILITY: Heal from previous turn's effect
+      let petHeal = 0;
+      if (prev.combat.nextPlayerHealMultiplier && damage > 0) {
+        petHeal = Math.floor(damage * prev.combat.nextPlayerHealMultiplier);
+      }
+
       // Enemy counter-attack
-      const playerDodged = attemptDodge(prev.character.stats.totalDodgeChance);
       const bossCrit = attemptCrit(0.05);
       
       let bossDamage = 0;
@@ -1816,10 +1832,32 @@ export function useGameState() {
         }
       }
 
-      const newPlayerHp = Math.max(0, prev.combat.playerHp - bossDamage);
+      const newPlayerHp = Math.min(prev.combat.maxPlayerHp, Math.max(0, prev.combat.playerHp - bossDamage + petHeal));
       
+      // PET ACTION: Check for new pet trigger
+      let nextPetAction: any = undefined;
+      let nextCrit = false;
+      let nextHeal = 0;
+      let nextDodge = false;
+
+      if (prev.selectedPetId && newBossHp > 0) {
+        const pet = PETS[prev.selectedPetId];
+        if (Math.random() < pet.chance) {
+          nextPetAction = {
+            petId: pet.id,
+            type: 'ability',
+            target: 'player',
+            icon: pet.abilityIcon
+          };
+
+          if (pet.id === 'lobo-arcano') nextCrit = true;
+          if (pet.id === 'morcego-vampirico') nextHeal = 0.5;
+          if (pet.id === 'raposa-astral') nextDodge = true;
+        }
+      }
+
       // Track damage taken in this battle for post-fight lobby penalty
-      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage;
+      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage - petHeal;
       
       // Reduce special attack cooldown
       const newSpecialCooldown = Math.max(0, prev.combat.specialAttackCooldown - 1);
@@ -1948,6 +1986,10 @@ export function useGameState() {
           damageTakenInCurrentBattle: newDamageTakenInBattle,
           playerAttackRemainder: newPlayerAttackRemainder,
           playerDefenseRemainder: newPlayerDefenseRemainder,
+          petAction: nextPetAction,
+          nextPlayerAttackCrit: nextCrit,
+          nextPlayerHealMultiplier: nextHeal,
+          nextPlayerDodge: nextDodge,
         },
       };
     });
@@ -1971,7 +2013,7 @@ export function useGameState() {
       const enemyDodgeChance = (spawnedEnemy?.dodge || 2) / 100;
 
       const bossDodged = attemptDodge(enemyDodgeChance * 0.5); // Harder to dodge special
-      const playerCrit = attemptCrit(prev.character.totalStats.critChance + 0.10); // Higher crit chance
+      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(prev.character.totalStats.critChance + 0.10); // Higher crit chance
       
       let newPlayerAttackRemainder = prev.combat.playerAttackRemainder || 0;
       
@@ -1986,7 +2028,11 @@ export function useGameState() {
         'fire' // Default element for now
       );
       
-      if (playerCrit) damage = Math.floor(damage * 1.5);
+      // Apply crit multiplier (150% base or 1.3x for pet)
+      if (playerCrit) {
+        const critMult = prev.combat.nextPlayerAttackCrit ? 1.3 : 1.5;
+        damage = Math.floor(damage * critMult);
+      }
 
       const log = bossDodged
         ? `💨 ${enemyName} esquivou do especial!`
@@ -1996,8 +2042,20 @@ export function useGameState() {
 
       const newBossHp = Math.max(0, prev.combat.bossHp - (bossDodged ? 0 : damage));
 
+      // PET ABILITY: Heal from previous turn's effect
+      let petHeal = 0;
+      if (prev.combat.nextPlayerHealMultiplier && damage > 0 && !bossDodged) {
+        petHeal = Math.floor(damage * prev.combat.nextPlayerHealMultiplier);
+      }
+
       // Enemy counter-attack
-      const playerDodged = attemptDodge(prev.character.totalStats.dodgeChance);
+      let playerDodged = attemptDodge(prev.character.totalStats.dodgeChance);
+      
+      // PET ABILITY: Check for guaranteed dodge from previous turn
+      if (prev.combat.nextPlayerDodge) {
+        playerDodged = true;
+      }
+
       let bossDamage = 0;
       let bossLog = '';
       let newPlayerDefenseRemainder = prev.combat.playerDefenseRemainder || 0;
@@ -2025,10 +2083,32 @@ export function useGameState() {
         }
       }
 
-      const newPlayerHp = Math.max(0, prev.combat.playerHp - bossDamage);
+      const newPlayerHp = Math.min(prev.combat.maxPlayerHp, Math.max(0, prev.combat.playerHp - bossDamage + petHeal));
+
+      // PET ACTION: Check for new pet trigger
+      let nextPetAction: any = undefined;
+      let nextCrit = false;
+      let nextHeal = 0;
+      let nextDodge = false;
+
+      if (prev.selectedPetId && newBossHp > 0) {
+        const pet = PETS[prev.selectedPetId];
+        if (Math.random() < pet.chance) {
+          nextPetAction = {
+            petId: pet.id,
+            type: 'ability',
+            target: 'player',
+            icon: pet.abilityIcon
+          };
+
+          if (pet.id === 'lobo-arcano') nextCrit = true;
+          if (pet.id === 'morcego-vampirico') nextHeal = 0.5;
+          if (pet.id === 'raposa-astral') nextDodge = true;
+        }
+      }
 
       // Track damage taken in this battle for post-fight lobby penalty
-      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage;
+      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage - petHeal;
 
       // Set special attack cooldown
       const newSpecialCooldown = equippedSpecial.maxCooldown;
@@ -2147,6 +2227,10 @@ export function useGameState() {
           damageTakenInCurrentBattle: newDamageTakenInBattle,
           playerAttackRemainder: newPlayerAttackRemainder,
           playerDefenseRemainder: newPlayerDefenseRemainder,
+          petAction: nextPetAction,
+          nextPlayerAttackCrit: nextCrit,
+          nextPlayerHealMultiplier: nextHeal,
+          nextPlayerDodge: nextDodge,
         },
       };
     });
@@ -2828,6 +2912,13 @@ export function useGameState() {
           },
         };
       });
+    },
+    // Pet System
+    selectPet: (petId: PetId | null) => {
+      setGameState(prev => ({
+        ...prev,
+        selectedPetId: petId
+      }));
     },
     // Forge
     destroyItem,

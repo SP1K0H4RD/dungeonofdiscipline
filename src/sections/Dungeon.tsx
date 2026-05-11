@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Swords, Zap, ChevronLeft, Coins, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Swords, Zap, ChevronLeft, Coins, Star, Sparkles, Heart } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import type { MapId } from '@/types/game';
+import { PETS, type MapId } from '@/types/game';
 
 interface DungeonProps {
   mapId: MapId;
@@ -23,12 +23,22 @@ const difficultyColors: Record<string, string> = {
 
 export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
   const { gameState, startCombat, playerAttack, playerSpecialAttack, completeMapNode, spawnEnemyForNode } = useGame();
-  const { character, combat, maps } = gameState;
+  const { character, combat, maps, selectedPetId } = gameState;
   
   const [playerAnim, setPlayerAnim] = useState<'idle' | 'attack' | 'hit' | 'dodge'>('idle');
+  const [petAnim, setPetAnim] = useState<'idle' | 'attack' | 'ability'>('idle');
   const [showVictory, setShowVictory] = useState(false);
   const [showDefeat, setShowDefeat] = useState(false);
   const [battleInitialized, setBattleInitialized] = useState(false);
+
+  // Monitor Pet Action
+  useEffect(() => {
+    if (combat?.petAction) {
+      setPetAnim(combat.petAction.type);
+      const timer = setTimeout(() => setPetAnim('idle'), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [combat?.petAction]);
 
   // Get current node info
   const currentMap = maps[mapId];
@@ -280,26 +290,88 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
         {/* Battle Scene */}
         <div className="relative bg-gradient-to-b from-[#1a1a2e] to-[#0a0a0f] rounded-2xl border border-[#2d2d44] p-8 min-h-[400px] flex items-center justify-between">
           {/* Player */}
-          <motion.div 
-            className="flex flex-col items-center"
-            animate={{
-              x: playerAnim === 'attack' ? 50 : 0,
-              scale: playerAnim === 'hit' ? 0.9 : 1,
-            }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="text-6xl mb-4">🧙‍♂️</div>
-            <div className="w-32">
-              <ProgressBar 
-                value={combat.playerHp} 
-                max={combat.maxPlayerHp} 
-                type="hp" 
-                size="sm"
-                showValue
-              />
-            </div>
-            <p className="text-sm text-gray-400 mt-2">{character.name}</p>
-          </motion.div>
+          <div className="relative flex flex-col items-center">
+            {/* Pet */}
+            {selectedPetId && (
+              <motion.div
+                className="absolute -top-12 -left-8 text-4xl z-20 pointer-events-none"
+                animate={{
+                  y: petAnim === 'idle' ? [0, -5, 0] : 0,
+                  scale: petAnim === 'ability' ? [1, 1.3, 1] : 1,
+                  x: petAnim === 'attack' ? [0, 20, 0] : 0,
+                }}
+                transition={{ 
+                  duration: petAnim === 'idle' ? 2 : 0.5, 
+                  repeat: petAnim === 'idle' ? Infinity : 0 
+                }}
+              >
+                <div className="relative">
+                  {petAnim === 'attack' ? PETS[selectedPetId].attackSprite : PETS[selectedPetId].idleSprite}
+                  
+                  {/* Pet Ability Indicator */}
+                  {combat.petAction && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, y: -40, scale: 1.5 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute -top-8 left-1/2 -translate-x-1/2 text-2xl"
+                    >
+                      {combat.petAction.icon}
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Character Effect Indicator */}
+            <AnimatePresence>
+              {(combat.nextPlayerAttackCrit || combat.nextPlayerDodge || combat.nextPlayerHealMultiplier) && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  className="absolute -top-16 z-30 flex gap-2"
+                >
+                  {combat.nextPlayerAttackCrit && (
+                    <div className="bg-purple-500/80 p-1 rounded-full shadow-lg shadow-purple-500/50" title="Crítico Garantido!">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                  {combat.nextPlayerDodge && (
+                    <div className="bg-blue-500/80 p-1 rounded-full shadow-lg shadow-blue-500/50" title="Esquiva Garantida!">
+                      <Star className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                  {combat.nextPlayerHealMultiplier && (
+                    <div className="bg-red-500/80 p-1 rounded-full shadow-lg shadow-red-500/50" title="Cura no Próximo Ataque!">
+                      <Heart className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.div 
+              className="flex flex-col items-center"
+              animate={{
+                x: playerAnim === 'attack' ? 50 : 0,
+                scale: playerAnim === 'hit' ? 0.9 : 1,
+              }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="text-6xl mb-4">🧙‍♂️</div>
+              <div className="w-32">
+                <ProgressBar 
+                  value={combat.playerHp} 
+                  max={combat.maxPlayerHp} 
+                  type="hp" 
+                  size="sm"
+                  showValue
+                />
+              </div>
+              <p className="text-sm text-gray-400 mt-2">{character.name}</p>
+            </motion.div>
+          </div>
 
           {/* VS */}
           <div className="text-4xl font-bold text-gray-600 font-cinzel">VS</div>

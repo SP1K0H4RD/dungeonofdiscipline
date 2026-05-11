@@ -27,6 +27,68 @@ export type ElementType = 'fire' | 'water' | 'lightning' | 'ice' | 'earth' | 'sh
 export type FocusTag = 'estudos' | 'trabalho' | 'saude' | 'fitness' | 'leitura' | 'produtividade' | 'criatividade' | 'organizacao' | null;
 
 // ============================================
+// PET SYSTEM
+// ============================================
+
+export type PetId = 'lobo-arcano' | 'morcego-vampirico' | 'raposa-astral';
+
+export interface Pet {
+  id: PetId;
+  name: string;
+  description: string;
+  icon: string;
+  attackSprite: string;
+  idleSprite: string;
+  abilityIcon: string;
+  color: string;
+  abilityName: string;
+  abilityDescription: string;
+  chance: number;
+}
+
+export const PETS: Record<PetId, Pet> = {
+  'lobo-arcano': {
+    id: 'lobo-arcano',
+    name: 'Lobo Arcano',
+    description: 'Um lobo sombrio envolto em energia arcana roxa.',
+    icon: '🐺',
+    idleSprite: '🐺',
+    attackSprite: '🐾',
+    abilityIcon: '⚡',
+    color: '#a855f7', // purple-500
+    abilityName: 'Mordida Crítica',
+    abilityDescription: '5% de chance de atacar. Garante crítico (1.3x) no próximo ataque do player.',
+    chance: 0.05
+  },
+  'morcego-vampirico': {
+    id: 'morcego-vampirico',
+    name: 'Morcego Vampírico',
+    description: 'Um morcego das sombras com sede de sangue.',
+    icon: '🦇',
+    idleSprite: '🦇',
+    attackSprite: '🩸',
+    abilityIcon: '❤️',
+    color: '#ef4444', // red-500
+    abilityName: 'Dreno de Sangue',
+    abilityDescription: '5% de chance de atacar. Recupera 50% do dano causado no próximo ataque.',
+    chance: 0.05
+  },
+  'raposa-astral': {
+    id: 'raposa-astral',
+    name: 'Raposa Astral',
+    description: 'Uma raposa cósmica que brilha com a luz das estrelas.',
+    icon: '🦊',
+    idleSprite: '🦊',
+    attackSprite: '✨',
+    abilityIcon: '🌟',
+    color: '#3b82f6', // blue-500
+    abilityName: 'Esquiva Estelar',
+    abilityDescription: '5% de chance de atacar. Garante esquiva no próximo ataque inimigo.',
+    chance: 0.05
+  }
+};
+
+// ============================================
 // ELEMENT SYSTEM
 // ============================================
 
@@ -1590,6 +1652,17 @@ export interface CombatState {
   goldReward?: number;
   // Floor progression (legacy)
   showFloorComplete?: boolean;
+  // Pet Combat State
+  petAction?: {
+    petId: PetId;
+    type: 'attack' | 'ability';
+    target: 'boss' | 'player';
+    value?: number;
+    icon: string;
+  };
+  nextPlayerAttackCrit?: boolean;
+  nextPlayerHealMultiplier?: number;
+  nextPlayerDodge?: boolean;
 }
 
 export interface CombatResult {
@@ -1678,6 +1751,7 @@ export interface RunHistory {
 
 export interface GameState {
   character: Character;
+  selectedPetId: PetId | null;
   // Map system
   maps: Record<MapId, GameMap>;
   currentMapId: MapId | null;

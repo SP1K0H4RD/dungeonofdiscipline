@@ -4,7 +4,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
-import type { GameState, Quest, Item, Gem, PlayerProfile, Lootbox, SpecialAttack, FocusTag, QuestType, Difficulty, DayOfWeek, MapId, Rarity } from '@/types/game';
+import type { GameState, Quest, Item, Gem, PlayerProfile, Lootbox, SpecialAttack, FocusTag, QuestType, Difficulty, DayOfWeek, MapId, Rarity, PetId } from '@/types/game';
 import { DIFFICULTY_CONFIG } from '@/types/game';
 
 // ============================================
@@ -92,6 +92,9 @@ interface GameContextType {
   
   // Focus
   setFocusTag: (tag: FocusTag) => void;
+  
+  // Pet
+  selectPet: (petId: PetId | null) => void;
   
   // Cloud Sync Choice
   syncLocalToCloud: () => Promise<void>;

@@ -20,6 +20,7 @@ import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PETS } from '@/types/game';
 import {
   Dialog,
   DialogContent,
@@ -171,9 +172,10 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onEnterDungeon }: DashboardProps) {
-  const { gameState, resetProgress, restCharacter, recoverEnergy } = useGame();
-  const { character, recoveryMode } = gameState;
+  const { gameState, resetProgress, restCharacter, recoverEnergy, selectPet } = useGame();
+  const { character, recoveryMode, selectedPetId } = gameState;
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showPetSelector, setShowPetSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [resetStep, setResetStep] = useState(1);
   const [showCriticalHpWarning, setShowCriticalHpWarning] = useState(false);
@@ -279,26 +281,46 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Character Avatar */}
           <div className="flex flex-col items-center">
-            <motion.div
-              className={cn(
-                'w-32 h-32 rounded-full bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center text-6xl relative',
-                isCriticalHp && 'animate-pulse ring-4 ring-red-500'
-              )}
-              animate={{ scale: [1, 1.02, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              🧙‍♂️
-              {character.element && (
-                <span className="absolute -top-2 -right-2 text-2xl">
-                  {character.element === 'fire' ? '🔥' :
-                   character.element === 'water' ? '💧' :
-                   character.element === 'lightning' ? '⚡' :
-                   character.element === 'ice' ? '❄️' :
-                   character.element === 'earth' ? '🌍' :
-                   character.element === 'shadow' ? '🌑' : '✨'}
-                </span>
-              )}
-            </motion.div>
+            <div className="relative group">
+              <motion.div
+                className={cn(
+                  'w-32 h-32 rounded-full bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center text-6xl relative z-10',
+                  isCriticalHp && 'animate-pulse ring-4 ring-red-500'
+                )}
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                onClick={() => setShowPetSelector(true)}
+              >
+                🧙‍♂️
+                {character.element && (
+                  <span className="absolute -top-2 -right-2 text-2xl">
+                    {character.element === 'fire' ? '🔥' :
+                     character.element === 'water' ? '💧' :
+                     character.element === 'lightning' ? '⚡' :
+                     character.element === 'ice' ? '❄️' :
+                     character.element === 'earth' ? '🌍' :
+                     character.element === 'shadow' ? '🌑' : '✨'}
+                  </span>
+                )}
+              </motion.div>
+
+              {/* Pet Overlay Icon */}
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPetSelector(true);
+                }}
+                className={cn(
+                  "absolute bottom-0 right-0 w-10 h-10 rounded-full border-4 border-[#0a0a0a] z-20 flex items-center justify-center text-xl transition-all shadow-xl",
+                  selectedPetId ? "bg-[#1a1a2e]" : "bg-gray-800 hover:bg-gray-700"
+                )}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {selectedPetId ? PETS[selectedPetId].icon : '🐾'}
+              </motion.button>
+            </div>
+            
             <div className="mt-4 text-center">
               <h2 className="text-xl font-bold text-white font-cinzel">{character.name}</h2>
               <div className="flex items-center justify-center gap-2">
@@ -732,6 +754,63 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 Entrar Mesmo Assim
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pet Selector Dialog */}
+      <Dialog open={showPetSelector} onOpenChange={setShowPetSelector}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              Escolha seu Pet
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Selecione um companheiro para te ajudar nas batalhas.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 gap-4 py-4">
+            {(Object.values(PETS) as any[]).map((pet) => (
+              <motion.button
+                key={pet.id}
+                onClick={() => {
+                  selectPet(selectedPetId === pet.id ? null : pet.id);
+                  setShowPetSelector(false);
+                }}
+                className={cn(
+                  "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                  selectedPetId === pet.id 
+                    ? "bg-purple-500/20 border-purple-500" 
+                    : "bg-black/40 border-[#2d2d44] hover:border-gray-600"
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="text-4xl">{pet.icon}</div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-white flex items-center gap-2">
+                    {pet.name}
+                    {selectedPetId === pet.id && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded-full uppercase">Ativo</span>}
+                  </h4>
+                  <p className="text-[10px] text-gray-400 mt-1 leading-tight">{pet.abilityDescription}</p>
+                </div>
+              </motion.button>
+            ))}
+            
+            {selectedPetId && (
+              <Button 
+                onClick={() => {
+                  selectPet(null);
+                  setShowPetSelector(false);
+                }}
+                variant="ghost"
+                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 mt-2"
+              >
+                Remover Pet Atual
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
