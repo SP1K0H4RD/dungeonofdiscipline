@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, 
@@ -9,7 +9,6 @@ import {
   Calendar,
   Sparkles,
   RotateCcw,
-  Coins,
   Skull,
   Star,
   FlameKindling,
