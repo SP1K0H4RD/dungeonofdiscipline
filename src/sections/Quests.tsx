@@ -138,12 +138,17 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
           </p>
 
           {/* Rewards */}
-          {/* Rewards */}
           <div className="flex items-center gap-4 flex-wrap">
             {quest.energyReward > 0 && (
-              <div className="flex items-center gap-1 text-cyan-400">
-                <Zap className="w-4 h-4 fill-cyan-400/50" />
-                <span className="text-sm font-mono">+{quest.energyReward.toFixed(2).replace(/\.?0+$/, '')} NRG</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 text-yellow-500">
+                  <Zap className="w-3.5 h-3.5 fill-yellow-500/50" />
+                  <span className="text-xs font-bold">+{quest.energyReward.toFixed(2).replace(/\.?0+$/, '')} NRG</span>
+                </div>
+                <div className="flex items-center gap-1 text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
+                  <span className="text-[10px]">💎</span>
+                  <span className="text-xs font-bold">+{Math.round(quest.energyReward * 5)} Frag.</span>
+                </div>
               </div>
             )}
           </div>
@@ -455,71 +460,83 @@ export function Quests({}: QuestsProps) {
               )}
 
               {/* Energy Reward Selector */}
-              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                <label className="text-sm text-cyan-400 mb-2 block flex items-center justify-between">
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4" />
                     Ganho de Energia
                   </div>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="5"
-                      value={newQuest.energyReward}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) {
-                          setNewQuest(prev => ({ ...prev, energyReward: val }));
-                        } else if (e.target.value === '') {
-                          setNewQuest(prev => ({ ...prev, energyReward: 0 }));
-                        }
-                      }}
-                      className="w-20 bg-black/40 border border-cyan-500/30 rounded-lg px-2 py-1 text-right font-black text-cyan-400 focus:outline-none focus:border-cyan-500 transition-colors"
-                    />
-                    <span className="text-lg font-black text-cyan-400">NRG</span>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="5"
+                          value={newQuest.energyReward}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val)) {
+                              setNewQuest(prev => ({ ...prev, energyReward: val }));
+                            } else if (e.target.value === '') {
+                              setNewQuest(prev => ({ ...prev, energyReward: 0 }));
+                            }
+                          }}
+                          className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                        />
+                        <span className="text-sm font-black text-yellow-500">NRG</span>
+                      </div>
+                      <div className="text-[10px] text-purple-400 font-bold mt-1">
+                        ≈ {Math.round(newQuest.energyReward * 5)} Fragmentos
+                      </div>
+                    </div>
                   </div>
                 </label>
                 <div className="flex items-center gap-3">
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
-                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: Math.max(0, prev.energyReward - 0.5) }))}
+                    className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
+                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: Math.max(0, prev.energyReward - 0.2) }))}
                   >
                     -
                   </Button>
                   <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
                     <div 
-                      className="h-full bg-cyan-500 transition-all" 
+                      className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all" 
                       style={{ width: `${Math.min(100, (newQuest.energyReward / 5) * 100)}%` }}
                     />
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 h-8 w-8 p-0"
-                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: prev.energyReward + 0.5 }))}
+                    className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
+                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: prev.energyReward + 0.2 }))}
                   >
                     +
                   </Button>
                 </div>
                 <p className="text-[10px] text-gray-500 mt-2 text-center">
-                  Cada 1.0 de energia permite uma nova batalha no mapa
+                  1.0 NRG = 5 Fragmentos de Cristal
                 </p>
               </div>
 
               {/* Difficulty Info */}
               <div className="bg-[#16213e] rounded-lg p-3 text-sm">
-                <p className="text-gray-400 mb-2">Resumo da Missão:</p>
-                <div className="flex items-center gap-4">
-                  <div className="text-cyan-400">
-                    <Zap className="w-4 h-4 inline mr-1 fill-cyan-400/50" />
-                    Energia: +{newQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')}
+                <p className="text-gray-400 mb-2 font-medium">Resumo da Missão:</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="text-yellow-500 font-bold flex items-center gap-1">
+                      <Zap className="w-4 h-4 fill-yellow-500/50" />
+                      NRG: +{newQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')}
+                    </div>
+                    <div className="text-purple-400 font-bold flex items-center gap-1 ml-2">
+                      💎 +{Math.round(newQuest.energyReward * 5)}
+                    </div>
                   </div>
-                  <div className="text-gray-400">
-                    Dificuldade: {difficultyConfig[newQuest.difficulty].label}
+                  <div className="text-gray-400 font-medium bg-black/20 px-2 py-1 rounded">
+                    {difficultyConfig[newQuest.difficulty].label}
                   </div>
                 </div>
               </div>

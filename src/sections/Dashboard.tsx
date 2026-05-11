@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, 
   Zap, 
@@ -9,6 +9,7 @@ import {
   Calendar,
   Sparkles,
   RotateCcw,
+  Coins,
   Skull,
   Star,
   FlameKindling,
@@ -378,27 +379,108 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             </div>
 
             {/* Energy Bar */}
-            <div>
+            <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <Zap className={cn(
-                  'w-5 h-5',
-                  character.energy === 0 ? 'text-red-500' : 'text-yellow-400'
-                )} />
+                <motion.div
+                  animate={character.energyFragments >= 4.5 ? { 
+                    scale: [1, 1.2, 1],
+                    filter: ["drop-shadow(0 0 2px #fbbf24)", "drop-shadow(0 0 8px #fbbf24)", "drop-shadow(0 0 2px #fbbf24)"]
+                  } : {}}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  <Zap className={cn(
+                    'w-5 h-5',
+                    character.energy === 0 ? 'text-red-500' : 'text-yellow-400'
+                  )} />
+                </motion.div>
                 <span className="text-sm font-medium text-gray-300">Energia</span>
-                {character.energy === 0 && <span className="text-xs text-red-400 font-bold">ESGOTADA!</span>}
-                <span className="text-xs text-gray-500 ml-auto">
+                {character.energy === 0 && <span className="text-xs text-red-400 font-bold tracking-tighter">ESGOTADA!</span>}
+                <span className="text-xs font-mono font-bold text-yellow-400 ml-auto">
                   {character.energy} / {character.maxEnergy}
                 </span>
               </div>
-              <ProgressBar
-                value={character.energy}
-                max={character.maxEnergy}
-                type="xp" // Use XP type for blue/purple energy color
-                size="md"
-                showValue={false}
-              />
-              <p className="text-[10px] text-gray-500 mt-1">
-                Gasta 1 de energia por batalha. Complete missões para recuperar.
+              
+              <div className="relative">
+                <ProgressBar
+                  value={character.energy}
+                  max={character.maxEnergy}
+                  type="energy"
+                  size="md"
+                  showValue={false}
+                  className="shadow-[0_0_20px_rgba(245,158,11,0.1)]"
+                />
+                
+                {/* Energy Fragments UI */}
+                <div className="mt-3 flex items-center justify-between bg-black/20 rounded-lg p-2 border border-purple-500/10">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      {[...Array(5)].map((_, i) => {
+                        const isFilled = i < Math.floor(character.energyFragments);
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={false}
+                            animate={{
+                              scale: isFilled ? [1, 1.3, 1] : 1,
+                              backgroundColor: isFilled ? '#a855f7' : 'rgba(168, 85, 247, 0.05)',
+                              borderColor: isFilled ? '#c084fc' : 'rgba(168, 85, 247, 0.2)',
+                              boxShadow: isFilled ? '0 0 10px rgba(168, 85, 247, 0.5)' : 'none'
+                            }}
+                            className={cn(
+                              "w-2.5 h-4 rounded-[2px] border transition-colors",
+                              isFilled ? "bg-purple-500" : "bg-purple-900/10"
+                            )}
+                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <span className="text-[10px] font-black text-purple-400 uppercase tracking-tighter">
+                      Fragmentos: {Math.floor(character.energyFragments)}/5
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                    <span className="text-[9px] text-gray-500 font-medium">Auto-Conversão</span>
+                  </div>
+                </div>
+
+                {/* Particle Effect Layer */}
+                 <AnimatePresence>
+                   {character.energyFragments >= 4.9 && (
+                     <motion.div 
+                       initial={{ opacity: 0 }}
+                       animate={{ opacity: [0, 1, 0] }}
+                       exit={{ opacity: 0 }}
+                       className="absolute inset-0 pointer-events-none overflow-hidden"
+                     >
+                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-yellow-400/20 blur-2xl rounded-full animate-ping" />
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
+
+                 {/* Conversion Explosion Effect */}
+                 <AnimatePresence>
+                   {character.energyFragments < 0.5 && character.energy > 0 && (
+                     <motion.div
+                       key={`conv-${character.energy}`}
+                       initial={{ scale: 0.5, opacity: 0 }}
+                       animate={{ 
+                         scale: [1, 2.5], 
+                         opacity: [0, 1, 0],
+                         filter: ["brightness(1)", "brightness(2)", "brightness(1)"]
+                       }}
+                       transition={{ duration: 0.8, ease: "easeOut" }}
+                       className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-white rounded-full blur-xl pointer-events-none z-10"
+                     />
+                   )}
+                 </AnimatePresence>
+               </div>
+              
+              <p className="text-[10px] text-gray-500 mt-2 italic flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-yellow-600" />
+                Complete missões para ganhar fragmentos de cristal.
               </p>
             </div>
 

@@ -198,6 +198,21 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
               size="sm"
               showValue={false}
             />
+            {/* Fragments Mini Counter */}
+            <div className="flex gap-0.5 mt-1">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-1.5 h-2 rounded-[1px]",
+                    i < Math.floor(character.energyFragments) 
+                      ? "bg-purple-500 shadow-[0_0_5px_rgba(168,85,247,0.5)]" 
+                      : "bg-purple-900/20"
+                  )}
+                  style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>

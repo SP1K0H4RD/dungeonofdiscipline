@@ -1378,6 +1378,7 @@ export interface Character {
   // Energy system - limits gameplay
   energy: number;
   maxEnergy: number;
+  energyFragments: number; // 0 to 5
   // Currency
   gold: number;
   totalGoldEarned: number;

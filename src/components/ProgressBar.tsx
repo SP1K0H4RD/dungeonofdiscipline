@@ -40,7 +40,7 @@ export function ProgressBar({
     hp: percentage < 30 ? 'text-red-400' : percentage < 60 ? 'text-yellow-400' : 'text-green-400',
     xp: 'text-purple-400',
     boss: 'text-red-400',
-    energy: 'text-yellow-400',
+    energy: 'text-yellow-500 font-black',
     default: 'text-purple-400',
   };
 

@@ -138,6 +138,7 @@ const INITIAL_CHARACTER: Character = {
   // Energy system - limits gameplay (starts at 5, max 10 per day)
   energy: 5,
   maxEnergy: 10,
+  energyFragments: 0,
   // Currency
   gold: 0,
   totalGoldEarned: 0,
@@ -746,6 +747,7 @@ export function useGameState() {
             character: {
               ...prev.character,
               energy: 5, // Daily reset to 5 base energy
+              energyFragments: 0,
               stats: {
                 ...prev.character.stats,
                 streak: newStreak,
@@ -1484,20 +1486,28 @@ export function useGameState() {
       const energyCanGain = Math.max(0, Math.min(quest.energyReward, 5 - currentExtraEnergy));
       const newExtraEnergy = currentExtraEnergy + energyCanGain;
 
-      // Update energy with precision handling (3x 0.33 = 0.99 -> 1.0)
-      let rawNewEnergy = prev.character.energy + energyCanGain;
-      
-      // If it's very close to an integer (within 0.05), round it
-      if (Math.abs(rawNewEnergy - Math.round(rawNewEnergy)) < 0.05) {
-        rawNewEnergy = Math.round(rawNewEnergy);
+      // FRAGMENT SYSTEM: Convert energy reward to fragments (1 energy = 5 fragments)
+      const fragmentsToAdd = energyCanGain * 5;
+      let newFragments = prev.character.energyFragments + fragmentsToAdd;
+      let energyToGain = 0;
+
+      // Check for conversion
+      while (newFragments >= 5) {
+        newFragments -= 5;
+        energyToGain += 1;
       }
+
+      // Update energy with conversion result
+      const newEnergy = Math.min(10, prev.character.energy + energyToGain);
       
-      const newEnergy = Math.min(10, rawNewEnergy);
-      
-      if (energyCanGain < quest.energyReward) {
-        addDebugLog(`Limite diário de energia extra atingido. Ganho: ${energyCanGain.toFixed(2)} NRG`);
-      } else if (energyCanGain > 0) {
-        addDebugLog(`Energia conquistada: +${energyCanGain.toFixed(2)} NRG`);
+      if (energyToGain > 0) {
+        addDebugLog(`Conversão de Fragmentos! +${energyToGain} NRG`);
+      } else if (fragmentsToAdd > 0) {
+        addDebugLog(`Fragmentos de Energia obtidos: +${fragmentsToAdd.toFixed(1)}`);
+      }
+
+      if (energyCanGain < quest.energyReward && energyCanGain <= 0) {
+        addDebugLog(`Limite diário de energia extra atingido.`);
       }
 
       // Step 7: Update profile - CRITICAL: Ensure questHistory is always an array
@@ -1536,6 +1546,7 @@ export function useGameState() {
         character: {
           ...prev.character,
           energy: newEnergy,
+          energyFragments: newFragments,
           stats: {
             ...prev.character.stats,
             streak: newStreak,
@@ -2880,6 +2891,7 @@ export function useGameState() {
         character: {
           ...prev.character,
           energy: prev.character.maxEnergy,
+          energyFragments: 0,
         },
       }));
       addDebugLog('Energia totalmente recuperada!');
