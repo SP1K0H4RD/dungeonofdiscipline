@@ -2703,7 +2703,7 @@ export function useGameState() {
       return {
         id: generateId(),
         role: 'master',
-        content: `Analisando seu perfil${newFocusTag ? ` e foco em ${newFocusTag}` : ''}, sugiro esta quest: "${suggestedQuest.title}". ${suggestedQuest.description}`,
+        content: `Analisando seu perfil${newFocusTag ? ` e foco em ${newFocusTag}` : ''}, sugiro esta tarefa: "${suggestedQuest.title}". ${suggestedQuest.description}`,
         timestamp: Date.now(),
         suggestedQuest,
         actions: [
@@ -2731,12 +2731,12 @@ export function useGameState() {
         id: generateId(),
         role: 'master',
         content: `🧙 Como posso ajudar? Me diga:
-• Qual objetivo real dessa missão?
+• Qual objetivo real dessa tarefa?
 • Qual dificuldade você prefere?
-• Quer que eu crie missões auxiliares?`,
+• Quer que eu crie tarefas auxiliares?`,
         timestamp: Date.now(),
         actions: [
-          { label: '🎯 Gerar Quests', type: 'generate' },
+          { label: '🎯 Gerar Tarefas', type: 'generate' },
           { label: '📊 Análise', type: 'generate' },
           { label: '💡 Dicas', type: 'generate' },
         ],

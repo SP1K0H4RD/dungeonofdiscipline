@@ -13,7 +13,7 @@ interface HeaderProps {
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Sword },
-  { id: 'quests', label: 'Missões', icon: Scroll },
+  { id: 'quests', label: 'Tarefas', icon: Scroll },
   { id: 'inventory', label: 'Inventário', icon: Backpack },
   { id: 'shop', label: 'Loja', icon: Store },
 ];

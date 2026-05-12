@@ -369,7 +369,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
           <div className="py-4">
             <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
             <p className="text-gray-300 mb-6">
-              Você está exausto aventureiro! Recupere suas energias completando missões na aba de Quests ou descansando.
+              Você está exausto aventureiro! Recupere suas energias completando tarefas na aba de Tarefas ou descansando.
             </p>
             <Button 
               onClick={() => setShowEnergyWarning(false)}

@@ -10,7 +10,9 @@ import {
   FlameKindling,
   Settings,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  Scroll,
+  Plus
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -124,11 +126,34 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
           <div>
             <p className="text-red-400 font-semibold">⚠️ HP CRÍTICO!</p>
             <p className="text-sm text-red-300">
-              Complete quests urgentemente para recuperar vida. Evite a dungeon!
+              Complete tarefas urgentemente para recuperar vida. Evite a dungeon!
             </p>
           </div>
         </motion.div>
       )}
+
+      {/* Missões Diárias Section */}
+      <motion.div variants={itemVariants} className="card-dungeon p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-white font-cinzel flex items-center gap-2">
+            <Scroll className="w-5 h-5 text-purple-400" />
+            Missões Diárias
+          </h3>
+          <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+            Novas Missões em 12h
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {/* Placeholder for Daily Missions - User will provide content later */}
+          <div className="p-4 bg-purple-500/5 border border-purple-500/10 rounded-xl flex items-center justify-center border-dashed min-h-[100px]">
+            <div className="text-center">
+              <Sparkles className="w-6 h-6 text-purple-500/50 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">As missões diárias de hoje serão liberadas em breve...</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Header Actions */}
       <div className="flex justify-end gap-2">
@@ -355,7 +380,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               
               <p className="text-[10px] text-gray-500 mt-2 italic flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-yellow-600" />
-                Complete missões para ganhar fragmentos de cristal.
+                Complete tarefas para ganhar fragmentos de cristal.
               </p>
             </div>
 

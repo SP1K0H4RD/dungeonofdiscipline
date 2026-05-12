@@ -270,7 +270,7 @@ export function Quests({}: QuestsProps) {
     >
       {/* Header */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
-        <h2 className="text-2xl font-bold text-white font-cinzel mb-3">Missões</h2>
+        <h2 className="text-2xl font-bold text-white font-cinzel mb-3">Tarefas</h2>
         
         <div className="flex gap-2">
           <motion.button
@@ -291,19 +291,19 @@ export function Quests({}: QuestsProps) {
               whileTap={{ scale: 0.98 }}
             >
               <Plus className="w-3.5 h-3.5" />
-              Nova Missão
+              Nova Tarefa
             </motion.button>
           </DialogTrigger>
           <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-cinzel text-xl">
-                Criar Nova Missão
+                Criar Nova Tarefa
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4 mt-4">
               <div>
-                <label className="text-sm text-gray-400 mb-2 block">Título da Missão</label>
+                <label className="text-sm text-gray-400 mb-2 block">Título da Tarefa</label>
                 <Input
                   placeholder="Ex: Treino de perna, Estudar React..."
                   value={newQuest.title}
@@ -315,7 +315,7 @@ export function Quests({}: QuestsProps) {
               <div>
                 <label className="text-sm text-gray-400 mb-2 block">Descrição (opcional)</label>
                 <Textarea
-                  placeholder="Detalhes sobre a missão..."
+                  placeholder="Detalhes sobre a tarefa..."
                   value={newQuest.description}
                   onChange={(e) => setNewQuest(prev => ({ ...prev, description: e.target.value }))}
                   className="bg-black/40 border-gray-700 resize-none h-20"
@@ -524,7 +524,7 @@ export function Quests({}: QuestsProps) {
 
               {/* Difficulty Info */}
               <div className="bg-[#16213e] rounded-lg p-3 text-sm">
-                <p className="text-gray-400 mb-2 font-medium">Resumo da Missão:</p>
+                <p className="text-gray-400 mb-2 font-medium">Resumo da Tarefa:</p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="text-yellow-500 font-bold flex items-center gap-1">
@@ -547,7 +547,7 @@ export function Quests({}: QuestsProps) {
                   className="flex-1 bg-purple-600 hover:bg-purple-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Criar Missão
+                  Criar Tarefa
                 </Button>
               </div>
             </div>
@@ -684,8 +684,8 @@ export function Quests({}: QuestsProps) {
                 className="text-center py-12 text-gray-500"
               >
                 <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhuma missão diária ativa</p>
-                <p className="text-sm">Crie uma nova missão para começar!</p>
+                <p>Nenhuma tarefa diária ativa</p>
+                <p className="text-sm">Crie uma nova tarefa para começar!</p>
               </motion.div>
             ) : (
               <div className="space-y-3">
@@ -794,7 +794,7 @@ export function Quests({}: QuestsProps) {
           <DialogHeader className="p-6 pb-4 border-b border-[#2d2d44]">
             <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
               <Calendar className="w-5 h-5 text-purple-400" />
-              Calendário de Missões
+              Calendário de Tarefas
             </DialogTitle>
           </DialogHeader>
           
@@ -1036,11 +1036,11 @@ function CalendarView({ quests, onSelectDate, selectedDate, onQuestClick }: Cale
       {selectedDate && (
         <div className="mt-4 p-4 bg-[#16213e] rounded-lg">
           <h4 className="font-semibold mb-3">
-            Missões de {selectedDate.split('-').reverse().join('/')}
+            Tarefas de {selectedDate.split('-').reverse().join('/')}
           </h4>
-          <p className="text-xs text-gray-500 mb-2">Clique em uma missão para gerenciar</p>
+          <p className="text-xs text-gray-500 mb-2">Clique em uma tarefa para gerenciar</p>
           {getQuestsForDate(selectedDate).length === 0 ? (
-            <p className="text-gray-500 text-sm">Nenhuma missão para este dia</p>
+            <p className="text-gray-500 text-sm">Nenhuma tarefa para este dia</p>
           ) : (
             <div className="space-y-2">
               {getQuestsForDate(selectedDate).map(q => (

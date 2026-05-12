@@ -468,7 +468,7 @@ export function Inventory() {
               <div className="text-center py-12 text-gray-500">
                 <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>Seu inventário está vazio</p>
-                <p className="text-sm">Complete missões para ganhar itens!</p>
+                <p className="text-sm">Complete tarefas para ganhar itens!</p>
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full">
