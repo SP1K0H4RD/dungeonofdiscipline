@@ -113,7 +113,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-3 pt-2 pb-12"
+      className="space-y-3 pt-10 pb-12"
     >
       {/* Top Section: Profile (Left 50%) + Resources (Right 50%) */}
       <div className="grid grid-cols-2 gap-2">
@@ -133,11 +133,11 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
             {/* Content below the avatar */}
             <div className="p-2 flex flex-col flex-1 justify-between">
-              <div className="text-right mb-1">
-                <h2 className="text-xs font-bold text-white font-cinzel truncate w-full">
+              <div className="flex flex-col items-end mb-1">
+                <h2 className="text-xs font-bold text-white font-cinzel truncate w-full text-right">
                   {character.name || 'A'}
                 </h2>
-                <p className="text-purple-400 font-bold uppercase tracking-widest text-[6px] mt-0">
+                <p className="text-purple-400 font-bold uppercase tracking-widest text-[6px] mt-0 text-right">
                   {recoveryMode ? 'Em Recuperação' : 'Persistente'}
                 </p>
               </div>
@@ -252,7 +252,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 );
               })}
             </div>
-            <p className="text-[5.5px] text-gray-600 font-bold uppercase tracking-tight leading-none">a cada 5 fragmentos vocÊ ganha +1 energia</p>
+            <p className="text-[5.5px] text-gray-600 font-bold uppercase tracking-widest leading-none font-cinzel">a cada 5 fragmentos vocÊ ganha +1 energia</p>
           </motion.div>
 
           {/* Rest Card */}
@@ -272,7 +272,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <div className="relative z-10 p-2 flex flex-col justify-center items-center text-center gap-2">
                 <div className="w-full space-y-1">
                   <p className="text-[10px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">DESCANSAR</p>
-                  <p className="text-[7px] text-gray-400 font-bold uppercase leading-tight">3 energias para recuperar 20% da vida</p>
+                  <p className="text-[6px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">3 energias para recuperar 20% da vida</p>
                 </div>
                 
                 <Button 
@@ -281,9 +281,12 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-6 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center group/rest py-0"
                 >
                   {isResting ? (
-                    <span className="text-[8px] animate-pulse">...</span>
+                    <span className="text-[8px] animate-pulse font-cinzel">...</span>
                   ) : (
-                    <FlameKindling className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1">
+                      <FlameKindling className="w-3.5 h-3.5" />
+                      <span className="text-[7px] font-black uppercase font-cinzel tracking-widest">Descansar</span>
+                    </div>
                   )}
                 </Button>
               </div>
@@ -461,7 +464,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             </div>
             <div className="flex items-center gap-1.5 mt-1 relative z-10">
               <Zap className="w-3.5 h-3.5 text-yellow-500/70" />
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Custo: 1 Energia</span>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
             </div>
           </div>
         </motion.button>
