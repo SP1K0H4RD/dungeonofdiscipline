@@ -10,7 +10,10 @@ import {
   Zap,
   Flame,
   Gem,
-  Heart
+  Heart,
+  Swords,
+  Wind,
+  Star as StarIcon
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -329,6 +332,68 @@ export function Inventory() {
           Gerencie seus equipamentos e ataques especiais
         </p>
       </div>
+
+      {/* Character Stats Bar */}
+      <motion.div 
+        className="card-dungeon p-4 flex justify-between items-center"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        {/* ATK */}
+        <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-1 mb-1">
+            <Swords className="w-5 h-5 text-red-500" />
+            <span className="text-[10px] font-bold text-gray-500">ATK</span>
+          </div>
+          <span className="text-sm font-mono font-bold text-white">
+            {(character.totalStats?.attack || character.stats.totalAttack).toFixed(1).replace(/\.0$/, '')}
+          </span>
+        </div>
+
+        {/* DEF */}
+        <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-1 mb-1">
+            <Shield className="w-5 h-5 text-blue-500" />
+            <span className="text-[10px] font-bold text-gray-500">DEF</span>
+          </div>
+          <span className="text-sm font-mono font-bold text-white">
+            {(character.totalStats?.defense || character.stats.totalDefense).toFixed(1).replace(/\.0$/, '')}
+          </span>
+        </div>
+
+        {/* HP */}
+        <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-1 mb-1">
+            <Heart className="w-5 h-5 text-green-500" />
+            <span className="text-[10px] font-bold text-gray-500">HP</span>
+          </div>
+          <span className="text-sm font-mono font-bold text-white">
+            {character.totalStats?.maxHp || character.maxHp}
+          </span>
+        </div>
+
+        {/* CRIT */}
+        <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-1 mb-1">
+            <StarIcon className="w-5 h-5 text-yellow-500" />
+            <span className="text-[10px] font-bold text-gray-500">CRIT</span>
+          </div>
+          <span className="text-sm font-mono font-bold text-white">
+            {Math.round((character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%
+          </span>
+        </div>
+
+        {/* ESQ */}
+        <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-1 mb-1">
+            <Wind className="w-5 h-5 text-cyan-400" />
+            <span className="text-[10px] font-bold text-gray-500">ESQ</span>
+          </div>
+          <span className="text-sm font-mono font-bold text-white">
+            {Math.round((character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%
+          </span>
+        </div>
+      </motion.div>
 
       <Tabs defaultValue="equipment" className="w-full">
         <TabsList className="bg-[#1a1a2e] border border-[#2d2d44] h-10 w-full flex">

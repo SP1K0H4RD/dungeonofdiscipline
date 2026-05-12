@@ -484,132 +484,14 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             </div>
 
             {/* Equipment */}
-            <div className="pt-4">
-              <p className="text-sm font-medium text-gray-400 mb-3">Equipamento</p>
-              <div className="flex gap-4 flex-wrap">
-                <EquipmentSlot 
-                  type="weapon" 
-                  item={character.equipped.weapon ? {
-                    icon: character.equipped.weapon.icon,
-                    name: character.equipped.weapon.name,
-                    rarity: character.equipped.weapon.rarity,
-                    element: character.equipped.weapon.element,
-                    stats: character.equipped.weapon.stats,
-                    gemSlot: character.equipped.weapon.gemSlot,
-                  } : undefined}
-                />
-                <EquipmentSlot 
-                  type="armor" 
-                  item={character.equipped.armor ? { 
-                    icon: character.equipped.armor.icon, 
-                    name: character.equipped.armor.name, 
-                    rarity: character.equipped.armor.rarity,
-                    stats: character.equipped.armor.stats,
-                    gemSlot: character.equipped.armor.gemSlot,
-                  } : undefined} 
-                />
-                <EquipmentSlot 
-                  type="helmet" 
-                  item={character.equipped.helmet ? { 
-                    icon: character.equipped.helmet.icon, 
-                    name: character.equipped.helmet.name, 
-                    rarity: character.equipped.helmet.rarity,
-                    stats: character.equipped.helmet.stats,
-                    gemSlot: character.equipped.helmet.gemSlot,
-                  } : undefined} 
-                />
-                <EquipmentSlot 
-                  type="boots" 
-                  item={character.equipped.boots ? { 
-                    icon: character.equipped.boots.icon, 
-                    name: character.equipped.boots.name, 
-                    rarity: character.equipped.boots.rarity,
-                    stats: character.equipped.boots.stats,
-                    gemSlot: character.equipped.boots.gemSlot,
-                  } : undefined} 
-                />
-                <EquipmentSlot 
-                  type="accessory" 
-                  item={character.equipped.accessory ? { 
-                    icon: character.equipped.accessory.icon, 
-                    name: character.equipped.accessory.name, 
-                    rarity: character.equipped.accessory.rarity,
-                    stats: character.equipped.accessory.stats,
-                    gemSlot: character.equipped.accessory.gemSlot,
-                  } : undefined} 
-                />
-              </div>
-            </div>
+            {/* Removido do Dashboard */}
           </div>
         </div>
       </motion.div>
 
-      {/* Stats Grid - Base + Equipment */}
-      <motion.div variants={itemVariants} className="card-dungeon p-4">
-        <h4 className="text-sm font-semibold text-gray-400 mb-3">Atributos do Personagem</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Attack */}
-          <div className="bg-[#16213e] rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Swords className="w-4 h-4 text-red-400" />
-              <span className="text-xs text-gray-400">Ataque</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-red-400">
-              {(character.totalStats?.attack || character.stats.totalAttack).toFixed(1).replace(/\.0$/, '')}
-            </p>
-          </div>
-          
-          {/* Defense */}
-          <div className="bg-[#16213e] rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-4 h-4 text-blue-400" />
-              <span className="text-xs text-gray-400">Defesa</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-blue-400">
-              {(character.totalStats?.defense || character.stats.totalDefense).toFixed(1).replace(/\.0$/, '')}
-            </p>
-          </div>
-          
-          {/* Crit */}
-          <div className="bg-[#16213e] rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-xs text-gray-400">Crítico</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-yellow-400">
-              {Math.round((character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%
-            </p>
-          </div>
+      {/* Stats Grid - Base + Equipment - Removido do Dashboard */}
 
-          {/* Dodge */}
-          <div className="bg-[#16213e] rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Star className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs text-gray-400">Esquiva</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-cyan-400">
-              {Math.round((character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%
-            </p>
-          </div>
-
-          {/* HP (Span 2) */}
-          <div className="bg-[#16213e] rounded-lg p-3 col-span-2 md:col-span-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Heart className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-gray-400">Vida Máxima</span>
-            </div>
-            <p className="text-xl font-mono font-bold text-green-400">
-              {character.totalStats?.maxHp || character.maxHp}
-            </p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Progression Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-        <StatCard icon={Flame} label="Streak" value={`${character.progression?.streak || character.stats.streak} dias`} color="#f59e0b" />
-        <StatCard icon={Calendar} label="Dias Sobrevividos" value={character.progression?.daysSurvived || character.stats.daysSurvived} color="#22c55e" />
-      </div>
+      {/* Progression Stats - Removido do Dashboard */}
 
       {/* Special Attack Info */}
       {character.equipped.specialAttack && (
