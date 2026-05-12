@@ -2865,6 +2865,42 @@ export function useGameState() {
     return () => clearInterval(timer);
   }, [addDebugLog]);
 
+  const startUnlockingChest = useCallback((slotIndex: number) => {
+    setGameState(prev => {
+      const chest = prev.chests[slotIndex];
+      if (!chest || chest.status !== 'locked') return prev;
+
+      const isAnyUnlocking = prev.chests.some(c => c?.status === 'unlocking');
+      if (isAnyUnlocking) {
+        addDebugLog('Já existe um baú sendo destrancado!');
+        return prev;
+      }
+
+      const newChests = [...prev.chests];
+      newChests[slotIndex] = {
+        ...chest,
+        status: 'unlocking',
+        unlockStartedAt: Date.now(),
+      };
+
+      addDebugLog(`Iniciado desbloqueio de baú ${chest.rarity}`);
+      return { ...prev, chests: newChests };
+    });
+  }, [addDebugLog]);
+
+  const collectChestRewards = useCallback((slotIndex: number) => {
+    setGameState(prev => {
+      const chest = prev.chests[slotIndex];
+      if (!chest || chest.status !== 'unlocked') return prev;
+
+      const newChests = [...prev.chests];
+      newChests[slotIndex] = null;
+
+      addDebugLog(`Baú ${chest.rarity} aberto! Recompensas em breve...`);
+      return { ...prev, chests: newChests };
+    });
+  }, [addDebugLog]);
+
   const acceptSuggestedQuest = useCallback((quest: Quest) => {
     addQuest(quest);
   }, [addQuest]);
@@ -2925,40 +2961,8 @@ export function useGameState() {
       addDebugLog('Energia totalmente recuperada!');
     },
     // Chest System
-    startUnlockingChest: (slotIndex: number) => {
-      setGameState(prev => {
-        const chest = prev.chests[slotIndex];
-        if (!chest || chest.status !== 'locked') return prev;
-
-        const isAnyUnlocking = prev.chests.some(c => c?.status === 'unlocking');
-        if (isAnyUnlocking) {
-          addDebugLog('Já existe um baú sendo destrancado!');
-          return prev;
-        }
-
-        const newChests = [...prev.chests];
-        newChests[slotIndex] = {
-          ...chest,
-          status: 'unlocking',
-          unlockStartedAt: Date.now(),
-        };
-
-        addDebugLog(`Iniciado desbloqueio de baú ${chest.rarity}`);
-        return { ...prev, chests: newChests };
-      });
-    },
-    collectChestRewards: (slotIndex: number) => {
-      setGameState(prev => {
-        const chest = prev.chests[slotIndex];
-        if (!chest || chest.status !== 'unlocked') return prev;
-
-        const newChests = [...prev.chests];
-        newChests[slotIndex] = null;
-
-        addDebugLog(`Baú ${chest.rarity} aberto! Recompensas em breve...`);
-        return { ...prev, chests: newChests };
-      });
-    },
+    startUnlockingChest,
+    collectChestRewards,
     restCharacter: () => {
       setGameState(prev => {
         if (prev.character.energy < 3) {
@@ -3007,8 +3011,6 @@ export function useGameState() {
     openLootbox,
     // Chest System
     openChest,
-    startUnlockingChest,
-    collectChestRewards,
     // Chat
     sendChatMessage,
     acceptSuggestedQuest,

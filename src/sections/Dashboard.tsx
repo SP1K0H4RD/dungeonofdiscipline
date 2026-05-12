@@ -14,14 +14,13 @@ import {
   Scroll,
   Clock,
   Unlock,
-  Package,
-  ArrowRight
+  Package
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PETS, DungeonChest, CHEST_UNLOCK_TIMES } from '@/types/game';
+import { PETS, CHEST_UNLOCK_TIMES } from '@/types/game';
 import {
   Dialog,
   DialogContent,
