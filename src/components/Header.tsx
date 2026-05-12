@@ -155,12 +155,6 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 onClick={() => user ? setShowProfileMenu(!showProfileMenu) : signInWithGoogle()}
                 className="flex items-center gap-2 p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
-                {/* Gold Counter - Following layout image */}
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-500/10 rounded-md border border-yellow-500/30 mr-2">
-                  <Coins className="w-3.5 h-3.5 text-yellow-500" />
-                  <span className="text-xs font-mono font-bold text-yellow-500">{economy.coins}</span>
-                </div>
-                
                 <div className="w-8 h-8 rounded-md bg-purple-600 flex items-center justify-center text-sm font-bold text-white uppercase">
                   {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
                 </div>

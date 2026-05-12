@@ -274,21 +274,21 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col justify-center items-center text-center gap-2">
                 <div className="w-full space-y-1">
-                  <p className="text-[10px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">DESCANSAR</p>
-                  <p className="text-[6px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">3 energias para recuperar 20% da vida</p>
+                  <p className="text-[10px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
+                  <p className="text-[5px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">3 energias para recuperar 20% da vida</p>
                 </div>
                 
                 <Button 
                   onClick={handleRest}
                   disabled={character.energy < 3 || isResting}
-                  className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-8 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center group/rest py-0"
+                  className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-7 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center group/rest py-0"
                 >
                   {isResting ? (
                     <span className="text-[8px] animate-pulse font-cinzel">...</span>
                   ) : (
                     <div className="flex items-center gap-1">
-                      <FlameKindling className="w-4 h-4" />
-                      <span className="text-[8px] font-black uppercase font-cinzel tracking-widest">Descansar</span>
+                      <FlameKindling className="w-3 h-3" />
+                      <span className="text-[7px] font-black uppercase font-cinzel tracking-widest">Descansar</span>
                     </div>
                   )}
                 </Button>
@@ -301,7 +301,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       {/* Missões Diárias Section */}
       <motion.div variants={itemVariants} className="card-dungeon p-1.5">
         <div className="flex items-center justify-between mb-1.5">
-          <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">TAREFAS DIÁRIAS</h3>
+          <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">MISSÕES DIÁRIAS</h3>
           <span className="text-[5px] text-gray-500 font-bold uppercase">11h 32m</span>
         </div>
 
@@ -314,10 +314,10 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Derrote 3 Elites</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
-                  <span className="text-purple-400 font-black text-[7px] font-cinzel">2</span>
+                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">2</span>
                 </div>
               </div>
               <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
@@ -334,10 +334,10 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Ganhe 500 Ouro</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
-                  <span className="text-purple-400 font-black text-[7px] font-cinzel">1</span>
+                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">1</span>
                 </div>
               </div>
               <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
@@ -354,10 +354,10 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Gaste Energia</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
-                  <span className="text-purple-400 font-black text-[7px] font-cinzel">3</span>
+                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">3</span>
                 </div>
               </div>
               <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
@@ -374,10 +374,10 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Derrote Bosses</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
-                  <span className="text-purple-400 font-black text-[7px] font-cinzel">5</span>
+                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">5</span>
                 </div>
               </div>
               <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
@@ -389,7 +389,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       </motion.div>
 
       {/* Baús Section */}
-      <motion.div variants={itemVariants} className="card-dungeon p-1 flex flex-col justify-center min-h-[50px]">
+      <motion.div variants={itemVariants} className="card-dungeon p-1 flex flex-col justify-center min-h-[35px]">
         <div className="flex items-center justify-between mb-0.5 px-2">
           <h3 className="text-[8px] font-bold text-white font-cinzel tracking-widest uppercase">BAÚS</h3>
           <span className="text-[5px] text-gray-500 font-bold uppercase tracking-widest font-cinzel">3/4</span>
