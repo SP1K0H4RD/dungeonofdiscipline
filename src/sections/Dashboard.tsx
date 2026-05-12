@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Clock,
+  FlameKindling,
   Heart,
   RotateCcw,
   Settings,
@@ -112,15 +113,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-3 pt-4 pb-12"
+      className="space-y-3 pt-1 pb-12"
     >
-      {/* Top Section: Profile (Left 40%) + Resources (Right 60%) */}
-      <div className="grid grid-cols-5 gap-2">
+      {/* Top Section: Profile (Left 50%) + Resources (Right 50%) */}
+      <div className="grid grid-cols-2 gap-2">
         
-        {/* LEFT COLUMN: Profile (40%) */}
-        <motion.div variants={itemVariants} className="col-span-2 card-dungeon p-2 flex flex-col h-full">
-          <div className="flex flex-col items-center text-center mb-2">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 flex items-center justify-center text-3xl shadow-xl border border-white/5 relative overflow-hidden mb-1.5">
+        {/* LEFT COLUMN: Profile (50%) */}
+        <motion.div variants={itemVariants} className="col-span-1 card-dungeon p-2 flex flex-col h-full">
+          <div className="flex flex-col items-center text-center mb-1">
+            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 flex items-center justify-center text-3xl shadow-xl border border-white/5 relative overflow-hidden mb-1">
               <img 
                 src="https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg" 
                 alt="Avatar" 
@@ -129,24 +130,24 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
             
-            <h2 className="text-xl font-bold text-white font-cinzel truncate w-full">
+            <h2 className="text-sm font-bold text-white font-cinzel truncate w-full">
               {character.name || 'A'}
             </h2>
-            <p className="text-purple-400 font-bold uppercase tracking-widest text-[8px] mt-0.5">
+            <p className="text-purple-400 font-bold uppercase tracking-widest text-[7px] mt-0">
               {recoveryMode ? 'Em Recuperação' : 'Persistente'}
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-1.5">
             {/* HP Bar */}
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <Heart className={cn("w-3 h-3", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
-                <span className="text-[10px] font-mono font-bold text-green-400">
+              <div className="flex justify-between items-center mb-0.5">
+                <Heart className={cn("w-2.5 h-2.5", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
+                <span className="text-[9px] font-mono font-bold text-green-400">
                   {Math.round(character.hp)} / {character.maxHp}
                 </span>
               </div>
-              <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
                 <motion.div 
                   className="h-full bg-gradient-to-r from-green-600 to-green-400"
                   initial={{ width: 0 }}
@@ -157,13 +158,13 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
             {/* Level/XP Bar */}
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <Star className="w-3 h-3 text-yellow-500" />
-                <span className="text-[10px] font-mono font-bold text-purple-400">
+              <div className="flex justify-between items-center mb-0.5">
+                <Star className="w-2.5 h-2.5 text-yellow-500" />
+                <span className="text-[9px] font-mono font-bold text-purple-400">
                   {character.xp} / {character.maxXp}
                 </span>
               </div>
-              <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
                 <motion.div 
                   className="h-full bg-gradient-to-r from-purple-600 to-purple-400"
                   initial={{ width: 0 }}
@@ -175,23 +176,23 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             {/* Pet Info Line */}
             <button 
               onClick={() => setShowPetSelector(true)}
-              className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/5 w-full group hover:border-purple-500/30 transition-all"
+              className="flex items-center gap-1.5 bg-black/40 p-1.5 rounded-lg border border-white/5 w-full group hover:border-purple-500/30 transition-all"
             >
-              <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+              <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
                 {selectedPetId ? PETS[selectedPetId].icon : '🐾'}
               </div>
               <div className="text-left overflow-hidden">
-                <h4 className="text-[10px] font-bold text-purple-400 font-cinzel truncate">
+                <h4 className="text-[9px] font-bold text-purple-400 font-cinzel truncate">
                   {selectedPetId ? PETS[selectedPetId].name : 'Nenhum Pet'}
                 </h4>
-                <p className="text-[8px] text-gray-500 font-bold uppercase">Lvl 1</p>
+                <p className="text-[7px] text-gray-500 font-bold uppercase">Lvl 1</p>
               </div>
             </button>
           </div>
         </motion.div>
 
-        {/* RIGHT COLUMN: Resources (60%) */}
-        <div className="col-span-3 space-y-2 flex flex-col h-full">
+        {/* RIGHT COLUMN: Resources (50%) */}
+        <div className="col-span-1 space-y-2 flex flex-col h-full">
           
           {/* Energy Card */}
           <motion.div variants={itemVariants} className="card-dungeon p-2 bg-gradient-to-br from-yellow-900/10 to-transparent flex-1">
@@ -214,20 +215,25 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
           {/* Fragments Card */}
           <motion.div variants={itemVariants} className="card-dungeon p-2 bg-gradient-to-br from-purple-900/10 to-transparent flex-1">
-            <div className="flex items-center gap-1 mb-1">
-              <Sparkles className="w-2.5 h-2.5 text-purple-400" />
-              <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter font-cinzel">FRAGMENTOS</span>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-purple-400" />
+                <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter font-cinzel">FRAGMENTOS DE ENERGIA</span>
+              </div>
+              <span className="text-[9px] font-bold text-purple-400 font-mono">
+                {Math.floor(character.energyFragments)} / 5
+              </span>
             </div>
-            <div className="flex gap-0.5 mb-1">
+            <div className="flex gap-1 mb-1">
               {[...Array(5)].map((_, i) => {
                 const isFilled = i < Math.floor(character.energyFragments);
                 return (
                   <div 
                     key={i} 
                     className={cn(
-                      "w-2.5 h-4 rounded-[1px] border transition-all duration-300",
+                      "w-4 h-6 rounded-[1px] border transition-all duration-300",
                       isFilled 
-                        ? "bg-purple-500 border-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.5)]" 
+                        ? "bg-purple-500 border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.5)]" 
                         : "bg-purple-900/10 border-white/5"
                     )}
                     style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
@@ -240,23 +246,37 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
           {/* Rest Card */}
           <motion.div variants={itemVariants} className="card-dungeon p-0 overflow-hidden group relative flex-1 min-h-[60px]">
-            <div className="absolute inset-0">
-              <img 
-                src="https://img.freepik.com/premium-photo/camp-fire-forest-night_863013-108.jpg" 
-                alt="Campfire" 
-                className="w-full h-full object-cover opacity-30"
-              />
-              <div className="absolute inset-0 bg-black/40" />
-            </div>
-            <div className="relative z-10 p-1.5 flex flex-col justify-center items-center h-full text-center">
-              <p className="text-[5px] text-yellow-500/80 font-bold uppercase mb-1 leading-none">3 energias = 20% vida</p>
-              <Button 
-                onClick={handleRest}
-                disabled={character.energy < 3 || isResting}
-                className="bg-yellow-500 hover:bg-yellow-400 text-black font-black text-[8px] h-4 w-1/2 rounded-sm shadow-lg p-0"
-              >
-                {isResting ? '...' : 'DESCANSAR'}
-              </Button>
+            <div className="grid grid-cols-2 h-full">
+              {/* Left: Image */}
+              <div className="relative overflow-hidden border-r border-white/5">
+                <img 
+                  src="https://img.freepik.com/premium-photo/camp-fire-forest-night_863013-108.jpg" 
+                  alt="Campfire" 
+                  className="w-full h-full object-cover opacity-60"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/40" />
+              </div>
+              
+              {/* Right: Content */}
+              <div className="relative z-10 p-1.5 flex flex-col justify-between items-center text-center">
+                <div className="w-full">
+                  <p className="text-[8px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">DESCANSAR</p>
+                  <p className="text-[5px] text-gray-500 font-bold uppercase leading-tight mt-0.5">3 energias para recuperar 20% da vida</p>
+                </div>
+                
+                <Button 
+                  onClick={handleRest}
+                  disabled={character.energy < 3 || isResting}
+                  className="bg-transparent hover:bg-yellow-500/10 text-yellow-500 p-0 h-8 w-8 rounded-full border border-yellow-500/30 flex items-center justify-center group/rest"
+                >
+                  {isResting ? (
+                    <span className="text-[8px] animate-pulse">...</span>
+                  ) : (
+                    <FlameKindling className="w-5 h-5 group-hover/rest:scale-110 transition-transform" />
+                  )}
+                </Button>
+                <div className="h-2" /> {/* Spacer */}
+              </div>
             </div>
           </motion.div>
         </div>
@@ -264,91 +284,91 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
       {/* Missões Diárias Section */}
       <motion.div variants={itemVariants} className="card-dungeon p-1.5">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-1.5">
           <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">TAREFAS DIÁRIAS</h3>
           <span className="text-[5px] text-gray-500 font-bold uppercase">11h 32m</span>
         </div>
 
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-2 gap-1.5">
           {/* Mission 1 */}
-          <div className="p-1 bg-black/40 rounded-sm border border-white/5 flex flex-col gap-1 min-h-[100px] justify-between">
-            <div className="flex items-center justify-between gap-0.5">
-              <Skull className="w-1.5 h-1.5 text-gray-500 flex-shrink-0" />
-              <div 
-                className="w-1.5 h-2.5 bg-purple-500 border border-purple-400 flex-shrink-0"
-                style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-              />
-              <span className="text-purple-400 font-black text-[6px]">2</span>
-            </div>
-            <p className="text-[5px] font-bold text-gray-500 truncate leading-none text-center">3 Elites</p>
-            <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 w-[66%]" />
+          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
+            <Skull className="w-3 h-3 text-gray-500 flex-shrink-0" />
+            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[6px] font-bold text-gray-400 truncate leading-none">Derrote 3 Elites</p>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <div 
+                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                  />
+                  <span className="text-purple-400 font-black text-[7px]">2</span>
+                </div>
+              </div>
+              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500 w-[66%]" />
+              </div>
             </div>
           </div>
 
           {/* Mission 2 */}
-          <div className="p-1 bg-black/40 rounded-sm border border-white/5 flex flex-col gap-1 min-h-[100px] justify-between">
-            <div className="flex items-center justify-between gap-0.5">
-              <Target className="w-1.5 h-1.5 text-orange-500 flex-shrink-0" />
-              <div 
-                className="w-1.5 h-2.5 bg-purple-500 border border-purple-400 flex-shrink-0"
-                style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-              />
-              <span className="text-purple-400 font-black text-[6px]">1</span>
-            </div>
-            <p className="text-[5px] font-bold text-gray-500 truncate leading-none text-center">500 Ouro</p>
-            <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 w-[50%]" />
+          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
+            <Target className="w-3 h-3 text-orange-500 flex-shrink-0" />
+            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[6px] font-bold text-gray-400 truncate leading-none">Ganhe 500 Ouro</p>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <div 
+                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                  />
+                  <span className="text-purple-400 font-black text-[7px]">1</span>
+                </div>
+              </div>
+              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500 w-[50%]" />
+              </div>
             </div>
           </div>
 
           {/* Mission 3 */}
-          <div className="p-1 bg-black/40 rounded-sm border border-white/5 flex flex-col gap-1 min-h-[100px] justify-between">
-            <div className="flex items-center justify-between gap-0.5">
-              <Zap className="w-1.5 h-1.5 text-yellow-500 flex-shrink-0" />
-              <div 
-                className="w-1.5 h-2.5 bg-purple-500 border border-purple-400 flex-shrink-0"
-                style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-              />
-              <span className="text-purple-400 font-black text-[6px]">3</span>
-            </div>
-            <p className="text-[5px] font-bold text-gray-500 truncate leading-none text-center">Gaste Eng</p>
-            <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 w-[20%]" />
+          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
+            <Zap className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[6px] font-bold text-gray-400 truncate leading-none">Gaste Energia</p>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <div 
+                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                  />
+                  <span className="text-purple-400 font-black text-[7px]">3</span>
+                </div>
+              </div>
+              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500 w-[20%]" />
+              </div>
             </div>
           </div>
 
           {/* Mission 4 */}
-          <div className="p-1 bg-black/40 rounded-sm border border-white/5 flex flex-col gap-1 min-h-[100px] justify-between">
-            <div className="flex items-center justify-between gap-0.5">
-              <Sword className="w-1.5 h-1.5 text-red-500 flex-shrink-0" />
-              <div 
-                className="w-1.5 h-2.5 bg-purple-500 border border-purple-400 flex-shrink-0"
-                style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-              />
-              <span className="text-purple-400 font-black text-[6px]">5</span>
-            </div>
-            <p className="text-[5px] font-bold text-gray-500 truncate leading-none text-center">Bosses</p>
-            <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 w-[0%]" />
+          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
+            <Sword className="w-3 h-3 text-red-500 flex-shrink-0" />
+            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[6px] font-bold text-gray-400 truncate leading-none">Derrote Bosses</p>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <div 
+                    className="w-1.5 h-2 bg-purple-500 border border-purple-400"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                  />
+                  <span className="text-purple-400 font-black text-[7px]">5</span>
+                </div>
+              </div>
+              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500 w-[0%]" />
+              </div>
             </div>
           </div>
-
-          {/* Row 2-4 Placeholders (Total 12 more to make it 4x4) */}
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className="p-1 bg-black/40 rounded-sm border border-white/5 flex flex-col gap-1 min-h-[100px] justify-between opacity-20">
-              <div className="flex items-center justify-between gap-0.5">
-                <Star className="w-1.5 h-1.5 text-purple-500 flex-shrink-0" />
-                <div 
-                  className="w-1.5 h-2.5 bg-purple-500 border border-purple-400 flex-shrink-0"
-                  style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-                />
-                <span className="text-purple-400 font-black text-[6px]">?</span>
-              </div>
-              <p className="text-[5px] font-bold text-gray-500 truncate leading-none text-center">---</p>
-              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden" />
-            </div>
-          ))}
         </div>
       </motion.div>
 

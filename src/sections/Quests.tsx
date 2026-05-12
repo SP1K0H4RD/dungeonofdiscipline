@@ -269,7 +269,7 @@ export function Quests({}: QuestsProps) {
       className="space-y-6 pt-0 pb-24"
     >
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-4 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-1 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel mb-3">Tarefas</h2>
         
         <div className="flex gap-2">
