@@ -3,10 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, 
   Zap, 
-  Swords, 
-  Shield, 
-  Flame, 
-  Calendar,
   Sparkles,
   RotateCcw,
   Skull,
@@ -46,126 +42,6 @@ const itemVariants = {
     transition: { duration: 0.5, ease: 'easeOut' as const },
   },
 };
-
-interface StatCardProps {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  color: string;
-}
-
-function StatCard({ icon: Icon, label, value, color }: StatCardProps) {
-  return (
-    <motion.div
-      variants={itemVariants}
-      className="card-dungeon p-4 flex items-center gap-4"
-      whileHover={{ scale: 1.02, borderColor: color }}
-    >
-      <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
-        <Icon className="w-6 h-6" style={{ color }} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className="text-xl font-mono font-bold text-white">{value}</p>
-      </div>
-    </motion.div>
-  );
-}
-
-interface EquipmentSlotProps {
-  type: string;
-  item?: { 
-    icon: string; 
-    name: string; 
-    rarity: string; 
-    element?: string;
-    stats?: {
-      attack?: number;
-      defense?: number;
-      hpBonus?: number;
-      xpBonus?: number;
-      coinBonus?: number;
-      critChance?: number;
-      dodgeChance?: number;
-    };
-    gemSlot?: { name: string; stats: Record<string, number> } | null;
-  };
-}
-
-function EquipmentSlot({ type, item }: EquipmentSlotProps) {
-  const slotIcons: Record<string, string> = {
-    weapon: '⚔️', armor: '🛡️', helmet: '🪖', boots: '👢', accessory: '💍',
-  };
-
-  // Format stat value for display
-  const formatStat = (value: number | undefined, isPercent = false) => {
-    if (value === undefined || value === 0) return null;
-    return isPercent ? `${Math.round(value * 100)}%` : `+${value}`;
-  };
-
-  // Get all stats from item
-  const getItemStats = () => {
-    if (!item?.stats) return [];
-    const stats = [];
-    if (item.stats.attack) stats.push({ label: 'ATQ', value: formatStat(item.stats.attack), color: '#ef4444' });
-    if (item.stats.defense) stats.push({ label: 'DEF', value: formatStat(item.stats.defense), color: '#3b82f6' });
-    if (item.stats.hpBonus) stats.push({ label: 'HP', value: formatStat(item.stats.hpBonus), color: '#22c55e' });
-    if (item.stats.xpBonus) stats.push({ label: 'XP', value: formatStat(item.stats.xpBonus), color: '#a855f7' });
-    if (item.stats.critChance) stats.push({ label: 'CRT', value: formatStat(item.stats.critChance, true), color: '#fbbf24' });
-    if (item.stats.dodgeChance) stats.push({ label: 'ESQ', value: formatStat(item.stats.dodgeChance, true), color: '#06b6d4' });
-    return stats;
-  };
-
-  const itemStats = getItemStats();
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <motion.div
-        className={cn(
-          'w-16 h-16 rounded-lg border-2 flex items-center justify-center text-2xl relative',
-          'transition-all duration-200 bg-[#16213e]',
-          item ? `border-${item.rarity} rarity-${item.rarity}` : 'border-[#2d2d44] border-dashed'
-        )}
-        whileHover={{ scale: 1.1 }}
-        title={item ? `${item.name}${item.gemSlot ? ` (${item.gemSlot.name})` : ''}` : `${type} vazio`}
-      >
-        {item ? (
-          <div className="relative">
-            {item.icon}
-            {item.element && (
-              <span className="absolute -top-1 -right-1 text-xs">
-                {item.element === 'fire' ? '🔥' :
-                 item.element === 'water' ? '💧' :
-                 item.element === 'lightning' ? '⚡' :
-                 item.element === 'ice' ? '❄️' :
-                 item.element === 'earth' ? '🌍' :
-                 item.element === 'shadow' ? '🌑' : '✨'}
-              </span>
-            )}
-            {item.gemSlot && (
-              <span className="absolute -bottom-1 -right-1 text-[8px]">💎</span>
-            )}
-          </div>
-        ) : slotIcons[type] || '?'}
-      </motion.div>
-      
-      {/* Stats display below slot */}
-      {item && itemStats.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-1 max-w-[80px]">
-          {itemStats.map((stat, i) => (
-            <span 
-              key={i} 
-              className="text-[9px] px-1 py-0.5 rounded bg-[#1a1a2e] border border-[#2d2d44]"
-              style={{ color: stat.color }}
-            >
-              {stat.label} {stat.value}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface DashboardProps {
   onEnterDungeon: () => void;
