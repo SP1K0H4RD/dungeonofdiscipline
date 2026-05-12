@@ -213,8 +213,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest font-cinzel">ENERGIA</span>
             </div>
             <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-xl font-black text-white font-cinzel">{character.energy}</span>
-              <span className="text-[9px] font-bold text-gray-600 font-cinzel">/ {character.maxEnergy}</span>
+              <span className="text-xl font-black text-white font-cinzel leading-none">{character.energy}</span>
+              <span className="text-xl font-black text-white font-cinzel leading-none">/ {character.maxEnergy}</span>
             </div>
             <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/5">
               <motion.div 
@@ -232,8 +232,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest font-cinzel">FRAGMENTOS</span>
             </div>
             <div className="flex items-baseline gap-1 mb-2">
-              <span className="text-xl font-black text-white font-cinzel">{Math.floor(character.energyFragments)}</span>
-              <span className="text-[9px] font-bold text-gray-600 font-cinzel">/ 5</span>
+              <span className="text-xl font-black text-white font-cinzel leading-none">{Math.floor(character.energyFragments)}</span>
+              <span className="text-xl font-black text-white font-cinzel leading-none">/ 5</span>
             </div>
             <div className="flex gap-2.5 mb-1.5 px-1">
               {[...Array(5)].map((_, i) => {
@@ -274,8 +274,12 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col justify-center items-center text-center gap-2">
                 <div className="w-full space-y-1">
-                  <p className="text-[10px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
-                  <p className="text-[5px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">3 energias para recuperar 20% da vida</p>
+                  <p className="text-[9px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
+                  <p className="text-[5px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">
+                    <span className="block">3 energias para</span>
+                    <span className="block">recuperar 20 %</span>
+                    <span className="block">da vida</span>
+                  </p>
                 </div>
                 
                 <Button 
@@ -287,7 +291,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     <span className="text-[8px] animate-pulse font-cinzel">...</span>
                   ) : (
                     <div className="flex items-center gap-1">
-                      <FlameKindling className="w-3 h-3" />
+                      <FlameKindling className="w-[11px] h-[11px]" />
                       <span className="text-[7px] font-black uppercase font-cinzel tracking-widest">Descansar</span>
                     </div>
                   )}
@@ -314,7 +318,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Derrote 3 Elites</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
                     style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
                   <span className="text-cyan-400 font-black text-[7px] font-cinzel">2</span>
@@ -334,7 +338,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Ganhe 500 Ouro</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
                     style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
                   <span className="text-cyan-400 font-black text-[7px] font-cinzel">1</span>
@@ -354,7 +358,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Gaste Energia</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
                     style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
                   <span className="text-cyan-400 font-black text-[7px] font-cinzel">3</span>
@@ -374,7 +378,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Derrote Bosses</p>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <div 
-                    className="w-1.5 h-2 bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
                     style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
                   />
                   <span className="text-cyan-400 font-black text-[7px] font-cinzel">5</span>
@@ -389,7 +393,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       </motion.div>
 
       {/* Baús Section */}
-      <motion.div variants={itemVariants} className="card-dungeon p-1 flex flex-col justify-center min-h-[35px]">
+      <motion.div variants={itemVariants} className="card-dungeon p-1 flex flex-col justify-center min-h-[27px]">
         <div className="flex items-center justify-between mb-0.5 px-2">
           <h3 className="text-[8px] font-bold text-white font-cinzel tracking-widest uppercase">BAÚS</h3>
           <span className="text-[5px] text-gray-500 font-bold uppercase tracking-widest font-cinzel">3/4</span>
