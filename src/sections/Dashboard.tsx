@@ -11,8 +11,7 @@ import {
   Settings,
   Target,
   AlertTriangle,
-  Scroll,
-  Plus
+  Scroll
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { ProgressBar } from '@/components/ProgressBar';
