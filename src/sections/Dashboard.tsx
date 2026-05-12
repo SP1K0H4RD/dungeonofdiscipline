@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Clock,
-  FlameKindling,
   Heart,
   RotateCcw,
   Settings,
