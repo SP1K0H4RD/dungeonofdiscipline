@@ -113,7 +113,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-3 pt-10 pb-12"
+      className="space-y-2 pt-10 pb-12"
     >
       {/* Top Section: Profile (Left 50%) + Resources (Right 50%) */}
       <div className="grid grid-cols-2 gap-2 h-[350px]">
@@ -393,7 +393,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       </motion.div>
 
       {/* Baús Section */}
-      <motion.div variants={itemVariants} className="card-dungeon p-1 flex flex-col justify-center min-h-[27px]">
+      <motion.div variants={itemVariants} className="card-dungeon p-1 flex flex-col justify-center min-h-[22px]">
         <div className="flex items-center justify-between mb-0.5 px-2">
           <h3 className="text-[8px] font-bold text-white font-cinzel tracking-widest uppercase">BAÚS</h3>
           <span className="text-[5px] text-gray-500 font-bold uppercase tracking-widest font-cinzel">3/4</span>
@@ -458,7 +458,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       </motion.div>
 
       {/* FOOTER: Static Enter Dungeon Button */}
-      <motion.div variants={itemVariants} className="pt-4">
+      <motion.div variants={itemVariants} className="pt-1">
         <motion.button
           onClick={onEnterDungeon}
           className="w-full h-16 rounded-2xl bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 p-[2px] shadow-[0_0_30px_rgba(245,158,11,0.2)] group active:scale-95 transition-all"
