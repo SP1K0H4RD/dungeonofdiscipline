@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  AlertTriangle,
-  ChevronRight,
   Clock,
-  Coins,
-  Flame,
   FlameKindling,
   Heart,
   RotateCcw,
@@ -15,7 +11,8 @@ import {
   Star,
   Sword,
   Target,
-  Zap
+  Zap,
+  Coins
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -24,8 +21,6 @@ import { PETS, CHEST_UNLOCK_TIMES } from '@/types/game';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -66,7 +61,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
   const [showPetSelector, setShowPetSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [resetStep, setResetStep] = useState(1);
-  const [showCriticalHpWarning, setShowCriticalHpWarning] = useState(false);
   const [isResting, setIsResting] = useState(false);
 
   const handleRecoverEnergy = () => {
@@ -114,13 +108,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     rare: 'border-blue-500 text-blue-400 bg-blue-500/10',
     epic: 'border-purple-500 text-purple-400 bg-purple-500/10',
     legendary: 'border-yellow-500 text-yellow-400 bg-yellow-500/10',
-  };
-
-  const rarityLabels = {
-    common: 'Comum',
-    rare: 'Raro',
-    epic: 'Épico',
-    legendary: 'Lendário',
   };
 
   return (
@@ -473,72 +460,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
         </motion.button>
       </motion.div>
 
-      {/* Reset Confirmation Dialog */}
-      <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
-              <RotateCcw className="w-5 h-5 text-red-400" />
-              {resetStep === 1 ? 'Resetar Progresso?' : 'Confirmação Final'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            {resetStep === 1 ? (
-              <>
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                  <p className="text-red-400 font-semibold mb-2">⚠️ Atenção!</p>
-                  <p className="text-gray-300 text-sm">Isso irá resetar:</p>
-                  <ul className="text-sm text-gray-400 mt-2 space-y-1">
-                    <li>• HP, XP e Level</li>
-                    <li>• Streak e histórico</li>
-                    <li>• Andar da dungeon</li>
-                    <li>• Equipamentos</li>
-                    <li>• Estatísticas de combate</li>
-                    <li>• Ataques especiais</li>
-                  </ul>
-                </div>
-                <p className="text-gray-400 text-sm">
-                  Skins e conquistas cosméticas serão mantidas.
-                </p>
-              </>
-            ) : (
-              <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-center">
-                <Skull className="w-12 h-12 text-red-500 mx-auto mb-2" />
-                <p className="text-red-400 font-bold">TEM CERTEZA ABSOLUTA?</p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Esta ação não pode ser desfeita!
-                </p>
-              </div>
-            )}
-            
-            <div className="flex gap-3 pt-2">
-              <Button
-                onClick={() => {
-                  setShowResetConfirm(false);
-                  setResetStep(1);
-                }}
-                variant="outline"
-                className="flex-1 border-gray-600 text-gray-400"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleReset}
-                className={cn(
-                  'flex-1',
-                  resetStep === 1 
-                    ? 'bg-yellow-600 hover:bg-yellow-700' 
-                    : 'bg-red-600 hover:bg-red-700'
-                )}
-              >
-                {resetStep === 1 ? 'Continuar' : 'RESETAR TUDO'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Settings / Recover Energy Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
@@ -547,9 +468,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <Settings className="w-5 h-5 text-purple-400" />
               Configurações
             </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Gerencie seu personagem e recursos.
-            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6 py-4">
@@ -570,60 +488,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 Recuperar
               </Button>
             </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              onClick={() => setShowSettings(false)}
-              variant="outline"
-              className="w-full border-gray-600 text-gray-400"
-            >
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Critical HP Warning Dialog */}
-      <Dialog open={showCriticalHpWarning} onOpenChange={setShowCriticalHpWarning}>
-        <DialogContent className="bg-[#1a1a2e] border-red-500/50 text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl flex items-center gap-2 text-red-400">
-              <AlertTriangle className="w-6 h-6" />
-              HP Crítico!
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p className="text-red-400 font-semibold mb-2">⚠️ Atenção!</p>
-              <p className="text-gray-300 text-sm">
-                Seu HP está em <span className="text-red-400 font-bold">{Math.round(hpPercent)}%</span>.
-              </p>
-              <p className="text-gray-400 text-sm mt-2">
-                Se for derrotado, há <span className="text-red-400">risco real de perder seu personagem</span>.
-              </p>
-            </div>
             
-            <div className="flex gap-3 pt-2">
-              <Button
-                onClick={() => setShowCriticalHpWarning(false)}
-                variant="outline"
-                className="flex-1 border-gray-600 text-gray-400"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowCriticalHpWarning(false);
-                  onEnterDungeon();
-                }}
-                className="flex-1 bg-red-600 hover:bg-red-700"
-              >
-                <Target className="w-4 h-4 mr-2" />
-                Entrar Mesmo Assim
-              </Button>
-            </div>
+            <Button
+              onClick={() => setShowResetConfirm(true)}
+              variant="ghost"
+              className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Resetar Progresso
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -636,9 +509,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <Sparkles className="w-5 h-5 text-purple-400" />
               Escolha seu Pet
             </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Selecione um companheiro para te ajudar nas batalhas.
-            </DialogDescription>
           </DialogHeader>
           
           <div className="grid grid-cols-1 gap-4 py-4">
@@ -668,19 +538,43 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 </div>
               </motion.button>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Confirmation Dialog */}
+      <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-red-400" />
+              Confirmar Reset?
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+              <p className="text-red-400 font-semibold mb-2">⚠️ Atenção!</p>
+              <p className="text-gray-300 text-sm">
+                Isso irá apagar todo o seu progresso, equipamentos e nível. Skins e conquistas cosméticas serão mantidas.
+              </p>
+            </div>
             
-            {selectedPetId && (
-              <Button 
-                onClick={() => {
-                  selectPet(null);
-                  setShowPetSelector(false);
-                }}
-                variant="ghost"
-                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 mt-2"
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={() => setShowResetConfirm(false)}
+                variant="outline"
+                className="flex-1 border-gray-600 text-gray-400"
               >
-                Remover Pet Atual
+                Cancelar
               </Button>
-            )}
+              <Button
+                onClick={handleReset}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                RESETAR TUDO
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
