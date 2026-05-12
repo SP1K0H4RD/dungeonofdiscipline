@@ -1747,6 +1747,27 @@ export interface RunHistory {
 }
 
 // ============================================
+// ============================================
+// CHEST SYSTEM
+// ============================================
+
+export type ChestRarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+export interface DungeonChest {
+  id: string;
+  rarity: ChestRarity;
+  status: 'locked' | 'unlocking' | 'unlocked';
+  unlockStartedAt?: number; // timestamp
+  unlockDuration: number; // in milliseconds
+}
+
+export const CHEST_UNLOCK_TIMES: Record<ChestRarity, number> = {
+  common: 2 * 60 * 60 * 1000, // 2 hours
+  rare: 8 * 60 * 60 * 1000, // 8 hours
+  epic: 16 * 60 * 60 * 1000, // 16 hours
+  legendary: 24 * 60 * 60 * 1000, // 24 hours
+};
+
 // GAME STATE
 // ============================================
 
@@ -1795,6 +1816,7 @@ export interface GameState {
   } | null;
   unlockedSkins: string[];
   achievements: string[];
+  chests: (DungeonChest | null)[]; // 4 slots for chests
   // Debug logs
   debugLogs: string[];
 }

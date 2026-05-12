@@ -76,6 +76,8 @@ interface GameContextType {
   
   // Chest System
   openChest: () => { type: 'gold' | 'consumable' | 'equipment'; reward: any } | null;
+  startUnlockingChest: (slotIndex: number) => void;
+  collectChestRewards: (slotIndex: number) => void;
   
   // Forge
   destroyItem: (itemId: string) => void;
