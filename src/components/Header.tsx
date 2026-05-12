@@ -150,43 +150,22 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               </span>
             </motion.div>
 
-            {/* Profile Section */}
+            {/* User Profile */}
             <div className="relative">
-              <motion.button
+              <button
                 onClick={() => user ? setShowProfileMenu(!showProfileMenu) : signInWithGoogle()}
-                className={cn(
-                  'flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all',
-                  user 
-                    ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
-                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                )}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
-                {user ? (
-                  <div className="flex items-center gap-2">
-                    {user.user_metadata.avatar_url && !imgError ? (
-                      <img 
-                        src={user.user_metadata.avatar_url} 
-                        alt="Profile" 
-                        className="w-5 h-5 rounded-full"
-                        referrerPolicy="no-referrer"
-                        onError={() => setImgError(true)}
-                      />
-                    ) : (
-                      <User className="w-4 h-4" />
-                    )}
-                    <span className="hidden sm:block text-xs font-bold truncate max-w-[80px]">
-                      {user.user_metadata.full_name || user.email}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span className="hidden sm:block text-xs font-bold">Entrar</span>
-                  </div>
-                )}
-              </motion.button>
+                {/* Gold Counter - Following layout image */}
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-500/10 rounded-md border border-yellow-500/30 mr-2">
+                  <Coins className="w-3.5 h-3.5 text-yellow-500" />
+                  <span className="text-xs font-mono font-bold text-yellow-500">{economy.coins}</span>
+                </div>
+                
+                <div className="w-8 h-8 rounded-md bg-purple-600 flex items-center justify-center text-sm font-bold text-white uppercase">
+                  {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
+                </div>
+              </button>
 
               <AnimatePresence>
                 {showProfileMenu && user && (
