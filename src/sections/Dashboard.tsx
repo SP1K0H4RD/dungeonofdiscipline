@@ -119,25 +119,25 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       <div className="grid grid-cols-2 gap-2">
         
         {/* LEFT COLUMN: Profile (50%) */}
-        <motion.div variants={itemVariants} className="col-span-1 card-dungeon p-0 flex flex-col h-full overflow-hidden">
-          <div className="flex-1 flex flex-col relative">
-            {/* Expanded Avatar */}
-            <div className="absolute inset-0 z-0">
+        <motion.div variants={itemVariants} className="col-span-1 card-dungeon p-0 flex flex-col h-full overflow-hidden bg-black/40">
+          <div className="flex flex-col h-full">
+            {/* Expanded Avatar - Now with limited height to not overlap name too much */}
+            <div className="h-[150px] w-full relative shrink-0">
               <img 
                 src="https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg" 
                 alt="Avatar" 
                 className="w-full h-full object-cover opacity-90"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
             </div>
 
-            {/* Content overlaying the avatar at the bottom */}
-            <div className="relative z-10 mt-auto p-2 pt-8 flex flex-col">
-              <div className="text-center mb-1">
-                <h2 className="text-xs font-bold text-white font-cinzel truncate w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+            {/* Content below the avatar */}
+            <div className="p-2 flex flex-col flex-1 justify-between">
+              <div className="text-right mb-1">
+                <h2 className="text-xs font-bold text-white font-cinzel truncate w-full">
                   {character.name || 'A'}
                 </h2>
-                <p className="text-purple-400 font-bold uppercase tracking-widest text-[6px] mt-0 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                <p className="text-purple-400 font-bold uppercase tracking-widest text-[6px] mt-0">
                   {recoveryMode ? 'Em Recuperação' : 'Persistente'}
                 </p>
               </div>
@@ -150,7 +150,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                       <Heart className={cn("w-2 h-2", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
                       <span className="text-[7px] font-black text-white/70 uppercase tracking-tighter">HP</span>
                     </div>
-                    <span className="text-[8px] font-mono font-bold text-green-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                    <span className="text-[8px] font-mono font-bold text-green-400">
                       {Math.round(character.hp)} / {character.maxHp}
                     </span>
                   </div>
@@ -170,7 +170,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                       <Star className="w-2 h-2 text-yellow-500" />
                       <span className="text-[7px] font-black text-white/70 uppercase tracking-tighter">Lvl {character.level}</span>
                     </div>
-                    <span className="text-[8px] font-mono font-bold text-purple-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                    <span className="text-[8px] font-mono font-bold text-purple-400">
                       {character.xp} / {character.maxXp}
                     </span>
                   </div>
@@ -186,7 +186,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 {/* Pet Info Line */}
                 <button 
                   onClick={() => setShowPetSelector(true)}
-                  className="flex items-center gap-1 bg-black/60 p-1 rounded-md border border-white/10 w-full group hover:border-purple-500/30 transition-all backdrop-blur-sm"
+                  className="flex items-center gap-1 bg-black/60 p-1 rounded-md border border-white/10 w-full group hover:border-purple-500/30 transition-all"
                 >
                   <div className="w-5 h-5 rounded-sm bg-white/5 flex items-center justify-center text-xs group-hover:scale-110 transition-transform">
                     {selectedPetId ? PETS[selectedPetId].icon : '🐾'}
@@ -269,24 +269,21 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               </div>
               
               {/* Right: Content */}
-              <div className="relative z-10 p-1 flex flex-col justify-between items-center text-center">
-                <div className="w-full">
-                  <p className="text-[7px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">DESCANSAR</p>
-                  <p className="text-[4.5px] text-gray-500 font-bold uppercase leading-tight">3 energias para recuperar 20% da vida</p>
+              <div className="relative z-10 p-2 flex flex-col justify-center items-center text-center gap-2">
+                <div className="w-full space-y-1">
+                  <p className="text-[10px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">DESCANSAR</p>
+                  <p className="text-[7px] text-gray-400 font-bold uppercase leading-tight">3 energias para recuperar 20% da vida</p>
                 </div>
                 
                 <Button 
                   onClick={handleRest}
                   disabled={character.energy < 3 || isResting}
-                  className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-4 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center gap-1 group/rest py-0"
+                  className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-6 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center group/rest py-0"
                 >
                   {isResting ? (
-                    <span className="text-[7px] animate-pulse">...</span>
+                    <span className="text-[8px] animate-pulse">...</span>
                   ) : (
-                    <>
-                      <FlameKindling className="w-2.5 h-2.5" />
-                      <span className="text-[7px] font-black uppercase">Descansar</span>
-                    </>
+                    <FlameKindling className="w-3.5 h-3.5" />
                   )}
                 </Button>
               </div>
