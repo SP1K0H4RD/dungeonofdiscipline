@@ -71,7 +71,7 @@ export function Shop() {
   const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 
   return (
-    <div className="space-y-6 pt-0 pb-24 overflow-x-hidden">
+    <div className="space-y-6 pt-2 pb-24 overflow-x-hidden">
       {/* Header Mobile Sticky */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-1 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">Forja</h2>

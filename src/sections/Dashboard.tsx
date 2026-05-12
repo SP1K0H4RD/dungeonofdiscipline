@@ -113,7 +113,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-3 pt-1 pb-12"
+      className="space-y-3 pt-2 pb-12"
     >
       {/* Top Section: Profile (Left 50%) + Resources (Right 50%) */}
       <div className="grid grid-cols-2 gap-2">
