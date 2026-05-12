@@ -128,51 +128,43 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-6 pt-4 pb-32" // Increased bottom padding for floating button
+      className="space-y-6 pt-4 pb-12"
     >
-      {/* Top Section: Profile + Energy/Fragments/Rest */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Top Section: Profile (Left 50%) + Resources (Right 50%) */}
+      <div className="grid grid-cols-2 gap-4">
         
-        {/* LEFT COLUMN: Profile (Span 5) */}
-        <motion.div variants={itemVariants} className="lg:col-span-5 card-dungeon p-6 flex flex-col">
-          <div className="flex flex-col items-center text-center mb-6">
-            <div className="relative mb-4">
-              <div className="w-40 h-40 rounded-3xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 flex items-center justify-center text-6xl shadow-2xl border border-white/5 relative overflow-hidden">
-                <img 
-                  src="https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg" 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover opacity-80"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              </div>
-              <div className="absolute top-2 right-2 flex gap-1">
-                <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-              </div>
+        {/* LEFT COLUMN: Profile (50%) */}
+        <motion.div variants={itemVariants} className="card-dungeon p-4 flex flex-col h-full">
+          <div className="flex flex-col items-center text-center mb-4">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 flex items-center justify-center text-4xl shadow-xl border border-white/5 relative overflow-hidden mb-3">
+              <img 
+                src="https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg" 
+                alt="Avatar" 
+                className="w-full h-full object-cover opacity-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
             
-            <h2 className="text-4xl font-bold text-white font-cinzel tracking-tighter">
+            <h2 className="text-xl font-bold text-white font-cinzel truncate w-full">
               {character.name || 'A'}
             </h2>
-            <p className="text-purple-400 font-bold uppercase tracking-[0.2em] text-xs mt-1">
+            <p className="text-purple-400 font-bold uppercase tracking-widest text-[8px] mt-0.5">
               {recoveryMode ? 'Em Recuperação' : 'Persistente'}
             </p>
           </div>
 
-          <div className="space-y-6 mt-auto">
+          <div className="space-y-4">
             {/* HP Bar */}
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <Heart className={cn("w-4 h-4", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">HP</span>
-                </div>
-                <span className="text-sm font-mono font-bold text-green-400">
+              <div className="flex justify-between items-center mb-1">
+                <Heart className={cn("w-3 h-3", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
+                <span className="text-[10px] font-mono font-bold text-green-400">
                   {Math.round(character.hp)} / {character.maxHp}
                 </span>
               </div>
-              <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
                 <motion.div 
-                  className="h-full bg-gradient-to-r from-green-600 to-green-400 shadow-[0_0_10px_rgba(34,197,94,0.4)]"
+                  className="h-full bg-gradient-to-r from-green-600 to-green-400"
                   initial={{ width: 0 }}
                   animate={{ width: `${(character.hp / character.maxHp) * 100}%` }}
                 />
@@ -181,18 +173,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
             {/* Level/XP Bar */}
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nível {character.level}</span>
-                </div>
-                <span className="text-sm font-mono font-bold text-purple-400">
-                  {character.xp} / {character.maxXp} XP
+              <div className="flex justify-between items-center mb-1">
+                <Star className="w-3 h-3 text-yellow-500" />
+                <span className="text-[10px] font-mono font-bold text-purple-400">
+                  {character.xp} / {character.maxXp}
                 </span>
               </div>
-              <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
                 <motion.div 
-                  className="h-full bg-gradient-to-r from-purple-600 to-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+                  className="h-full bg-gradient-to-r from-purple-600 to-purple-400"
                   initial={{ width: 0 }}
                   animate={{ width: `${(character.xp / character.maxXp) * 100}%` }}
                 />
@@ -202,45 +191,37 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             {/* Pet Info Line */}
             <button 
               onClick={() => setShowPetSelector(true)}
-              className="flex items-center gap-3 bg-black/40 hover:bg-black/60 p-3 rounded-xl border border-white/5 transition-all group"
+              className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/5 w-full"
             >
-              <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+              <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-xl">
                 {selectedPetId ? PETS[selectedPetId].icon : '🐾'}
               </div>
-              <div className="text-left flex-1">
-                <h4 className="text-sm font-bold text-purple-400 font-cinzel">
+              <div className="text-left overflow-hidden">
+                <h4 className="text-[10px] font-bold text-purple-400 font-cinzel truncate">
                   {selectedPetId ? PETS[selectedPetId].name : 'Nenhum Pet'}
                 </h4>
-                <p className="text-[10px] text-gray-500 font-bold uppercase">Pet Ativo • Nível 1</p>
+                <p className="text-[8px] text-gray-500 font-bold uppercase">Lvl 1</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-purple-400 transition-colors" />
             </button>
           </div>
         </motion.div>
 
-        {/* RIGHT COLUMN: Resources (Span 7) */}
-        <div className="lg:col-span-7 space-y-4 flex flex-col">
+        {/* RIGHT COLUMN: Resources (50%) */}
+        <div className="space-y-4 flex flex-col h-full">
           
           {/* Energy Card */}
-          <motion.div variants={itemVariants} className="card-dungeon p-5 bg-gradient-to-br from-yellow-900/10 to-transparent">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500/20" />
-                <span className="text-sm font-black text-yellow-500 uppercase tracking-widest">ENERGIA</span>
-              </div>
-              <div className="px-2 py-1 bg-black/40 rounded-md border border-white/5 text-[10px] font-mono text-gray-500">
-                +1 em 05:32
-              </div>
+          <motion.div variants={itemVariants} className="card-dungeon p-4 bg-gradient-to-br from-yellow-900/10 to-transparent flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <Zap className="w-4 h-4 text-yellow-500 fill-yellow-500/20" />
+              <span className="text-[8px] font-mono text-gray-500">+1 em 05:32</span>
             </div>
-            
-            <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-4xl font-black text-white font-mono">{character.energy}</span>
-              <span className="text-xl font-bold text-gray-600 font-mono">/ {character.maxEnergy}</span>
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-2xl font-black text-white font-mono">{character.energy}</span>
+              <span className="text-xs font-bold text-gray-600 font-mono">/ {character.maxEnergy}</span>
             </div>
-            
-            <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+            <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
               <motion.div 
-                className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400"
                 initial={{ width: 0 }}
                 animate={{ width: `${(character.energy / character.maxEnergy) * 100}%` }}
               />
@@ -248,158 +229,101 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
           </motion.div>
 
           {/* Fragments Card */}
-          <motion.div variants={itemVariants} className="card-dungeon p-5 bg-gradient-to-br from-blue-900/10 to-transparent">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 flex items-center justify-center text-blue-400">💎</div>
-              <span className="text-sm font-black text-blue-400 uppercase tracking-widest">FRAGMENTOS DE ENERGIA</span>
+          <motion.div variants={itemVariants} className="card-dungeon p-4 bg-gradient-to-br from-purple-900/10 to-transparent flex-1">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">FRAGMENTOS</span>
             </div>
-            
-            <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-4xl font-black text-white font-mono">{Math.floor(character.energyFragments)}</span>
-              <span className="text-xl font-bold text-gray-600 font-mono">/ 5</span>
+            <div className="flex gap-1 mb-3">
+              {[...Array(5)].map((_, i) => {
+                const isFilled = i < Math.floor(character.energyFragments);
+                return (
+                  <div 
+                    key={i} 
+                    className={cn(
+                      "w-4 h-6 rounded-[2px] border transition-all duration-300",
+                      isFilled 
+                        ? "bg-purple-500 border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.5)]" 
+                        : "bg-purple-900/10 border-white/5"
+                    )}
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                  />
+                );
+              })}
             </div>
-
-            <div className="flex gap-3 mb-6">
-              {[...Array(5)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "w-8 h-10 flex items-center justify-center text-2xl transition-all duration-500",
-                    i < Math.floor(character.energyFragments) 
-                      ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] opacity-100 scale-110" 
-                      : "opacity-20 grayscale scale-90"
-                  )}
-                >
-                  💎
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-black/40 rounded-xl p-3 border border-white/5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                ℹ️
-              </div>
-              <p className="text-xs text-gray-400 font-medium">A cada 5 fragmentos você ganha +1 energia</p>
-            </div>
+            <p className="text-[8px] text-gray-500 font-medium leading-tight">5 fragmentos = +1 energia</p>
           </motion.div>
 
           {/* Rest Card */}
-          <motion.div variants={itemVariants} className="card-dungeon p-0 overflow-hidden group relative min-h-[140px] flex">
-            <div className="absolute inset-0 z-0">
+          <motion.div variants={itemVariants} className="card-dungeon p-0 overflow-hidden group relative flex-1 min-h-[100px]">
+            <div className="absolute inset-0">
               <img 
                 src="https://img.freepik.com/premium-photo/camp-fire-forest-night_863013-108.jpg" 
                 alt="Campfire" 
-                className="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-700"
+                className="w-full h-full object-cover opacity-30"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-black/40" />
             </div>
-            
-            <div className="relative z-10 p-5 flex flex-col justify-center flex-1">
-              <h3 className="text-sm font-black text-yellow-500 uppercase tracking-[0.2em] mb-1">DESCANSAR</h3>
-              <p className="text-xs text-gray-300 font-medium max-w-[180px]">
-                3 energias para recuperar 20% de vida
-              </p>
-            </div>
-            
-            <div className="relative z-10 p-5 flex items-center">
+            <div className="relative z-10 p-3 flex flex-col justify-between h-full">
+              <p className="text-[8px] text-gray-300 font-bold uppercase">DESCANSAR</p>
               <Button 
                 onClick={handleRest}
                 disabled={character.energy < 3 || isResting}
-                className="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-6 h-12 rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all active:scale-95"
+                className="bg-yellow-500 hover:bg-yellow-400 text-black font-black text-[10px] h-7 w-full rounded-md shadow-lg"
               >
-                <FlameKindling className="w-5 h-5 mr-2" />
-                Descansar
+                {isResting ? '...' : 'Descansar'}
               </Button>
             </div>
           </motion.div>
         </div>
       </div>
 
-      {/* Missões Diárias Section */}
-      <motion.div variants={itemVariants} className="card-dungeon p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-white font-cinzel tracking-widest uppercase">MISSÕES DIÁRIAS</h3>
-          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Renova em: 11h 32m</span>
+      {/* Missões Diárias Section - Horizontal Scroll or Grid */}
+      <motion.div variants={itemVariants} className="card-dungeon p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-white font-cinzel tracking-widest uppercase">MISSÕES DIÁRIAS</h3>
+          <span className="text-[8px] text-gray-500 font-bold uppercase">Renova: 11h 32m</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 overflow-x-auto">
           {/* Mission 1 */}
-          <div className="p-4 bg-black/40 rounded-2xl border border-white/5 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Skull className="w-5 h-5 text-gray-500" />
-                <span className="text-sm font-bold text-gray-300">Derrote 3 elites</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-blue-400 font-black text-xs">
-                💎 2
-              </div>
+          <div className="p-3 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-2 min-w-[140px]">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-bold text-gray-300 truncate">Derrote 3 elites</span>
+              <span className="text-purple-400 font-black text-[10px]">💎2</span>
             </div>
-            <div className="h-2 bg-black/60 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-black/60 rounded-full overflow-hidden">
               <div className="h-full bg-green-500 w-[66%]" />
             </div>
-            <div className="flex justify-end">
-              <span className="text-[10px] font-mono font-bold text-green-500">2 / 3</span>
-            </div>
+            <span className="text-[8px] font-mono font-bold text-green-500 text-right">2 / 3</span>
           </div>
 
           {/* Mission 2 */}
-          <div className="p-4 bg-black/40 rounded-2xl border border-white/5 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Coins className="w-5 h-5 text-yellow-600" />
-                <span className="text-sm font-bold text-gray-300">Ganhe 500 de ouro</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-blue-400 font-black text-xs">
-                💎 1
-              </div>
+          <div className="p-3 bg-black/40 rounded-xl border border-white/5 flex flex-col gap-2 min-w-[140px]">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-bold text-gray-300 truncate">Ganhe 500 ouro</span>
+              <span className="text-purple-400 font-black text-[10px]">💎1</span>
             </div>
-            <div className="h-2 bg-black/60 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-black/60 rounded-full overflow-hidden">
               <div className="h-full bg-green-500 w-[50%]" />
             </div>
-            <div className="flex justify-end">
-              <span className="text-[10px] font-mono font-bold text-green-500">250 / 500</span>
-            </div>
+            <span className="text-[8px] font-mono font-bold text-green-500 text-right">250/500</span>
           </div>
-
-          {/* Mission 3 */}
-          <div className="p-4 bg-black/40 rounded-2xl border border-white/5 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Target className="w-5 h-5 text-orange-500" />
-                <span className="text-sm font-bold text-gray-300">Encontre 1 sala secreta</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-blue-400 font-black text-xs">
-                💎 2
-              </div>
-            </div>
-            <div className="h-2 bg-black/60 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 w-0" />
-            </div>
-            <div className="flex justify-end">
-              <span className="text-[10px] font-mono font-bold text-gray-600">0 / 1</span>
-            </div>
-          </div>
-
-          {/* View All Button */}
-          <button className="p-4 bg-purple-500/5 hover:bg-purple-500/10 rounded-2xl border border-purple-500/20 flex items-center justify-center transition-all group">
-            <span className="text-sm font-bold text-purple-400 group-hover:text-purple-300">Ver todas as missões</span>
-          </button>
         </div>
       </motion.div>
 
-      {/* Baús Section */}
-      <motion.div variants={itemVariants} className="card-dungeon p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-white font-cinzel tracking-widest uppercase">BAÚS</h3>
-          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Slots: 3/4</span>
+      {/* Baús Section - Dispostos Horizontalmente */}
+      <motion.div variants={itemVariants} className="card-dungeon p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-white font-cinzel tracking-widest uppercase">BAÚS</h3>
+          <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Slots: 3/4</span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="flex gap-2 overflow-x-auto pb-2">
           {gameState.chests.map((chest, index) => (
-            <div key={index} className="flex flex-col items-center gap-3">
+            <div key={index} className="flex flex-col items-center gap-2 min-w-[80px] flex-1">
               <div 
                 className={cn(
-                  "w-full aspect-square rounded-2xl border-2 p-4 transition-all duration-300 flex flex-col items-center justify-center overflow-hidden relative",
+                  "w-full aspect-square rounded-xl border-2 p-2 transition-all duration-300 flex flex-col items-center justify-center relative",
                   chest 
                     ? rarityColors[chest.rarity]
                     : "border-dashed border-white/5 bg-white/[0.02]"
@@ -407,12 +331,9 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               >
                 {chest ? (
                   <>
-                    <span className="text-[10px] font-black uppercase tracking-widest mb-2 opacity-60">
-                      {rarityLabels[chest.rarity]}
-                    </span>
                     <motion.div 
-                      className="text-5xl mb-3 relative z-10"
-                      animate={chest.status === 'unlocking' ? { y: [0, -5, 0] } : {}}
+                      className="text-2xl mb-1"
+                      animate={chest.status === 'unlocking' ? { y: [0, -3, 0] } : {}}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
                       {chest.rarity === 'common' && '📦'}
@@ -420,8 +341,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                       {chest.rarity === 'epic' && '💎'}
                       {chest.rarity === 'legendary' && '👑'}
                     </motion.div>
-                    <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-gray-300">
-                      <Clock className="w-3 h-3 text-yellow-500" />
+                    <div className="flex items-center gap-0.5 text-[8px] font-mono font-bold text-gray-300">
+                      <Clock className="w-2 h-2 text-yellow-500" />
                       {chest.status === 'unlocking' 
                         ? (chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (Date.now() - chest.unlockStartedAt))) : '--:--')
                         : (chest.status === 'unlocked' ? 'PRONTO' : `${CHEST_UNLOCK_TIMES[chest.rarity] / (60 * 60 * 1000)}h`)
@@ -429,9 +350,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center opacity-10">
-                    <Skull className="w-10 h-10 mb-2" />
-                    <span className="text-[10px] font-bold">SLOT VAZIO</span>
+                  <div className="opacity-10">
+                    <Skull className="w-6 h-6" />
                   </div>
                 )}
               </div>
@@ -442,13 +362,13 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     else if (chest.status === 'unlocked') collectChestRewards(index);
                   }}
                   className={cn(
-                    "w-full h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
-                    chest.status === 'locked' && "bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/30",
-                    chest.status === 'unlocking' && "bg-gray-800 text-gray-500 cursor-not-allowed",
-                    chest.status === 'unlocked' && "bg-yellow-600 hover:bg-yellow-500 text-white shadow-[0_0_15px_rgba(202,138,4,0.4)] animate-pulse"
+                    "w-full h-6 text-[8px] font-black uppercase rounded-md transition-all",
+                    chest.status === 'locked' && "bg-purple-900/40 text-purple-300 border border-purple-500/30",
+                    chest.status === 'unlocking' && "bg-gray-800 text-gray-500",
+                    chest.status === 'unlocked' && "bg-yellow-600 text-white animate-pulse"
                   )}
                 >
-                  {chest.status === 'locked' ? 'Destrancar' : chest.status === 'unlocking' ? 'Acelerando...' : 'Abrir Agora'}
+                  {chest.status === 'locked' ? 'Destrancar' : chest.status === 'unlocking' ? '...' : 'Abrir'}
                 </Button>
               )}
             </div>
@@ -456,38 +376,25 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
         </div>
       </motion.div>
 
-      {/* FOOTER: Enter Dungeon Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 z-40 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
-        <div className="max-w-md mx-auto pointer-events-auto relative">
-          {/* Flame visuals around button */}
-          <div className="absolute -left-8 top-1/2 -translate-y-1/2">
-            <Flame className="w-8 h-8 text-orange-500 animate-pulse fill-orange-500/20" />
-          </div>
-          <div className="absolute -right-8 top-1/2 -translate-y-1/2">
-            <Flame className="w-8 h-8 text-orange-500 animate-pulse fill-orange-500/20" />
-          </div>
-
-          <motion.button
-            onClick={onEnterDungeon}
-            className="w-full h-16 rounded-2xl bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 p-[2px] shadow-[0_0_30px_rgba(245,158,11,0.4)] group active:scale-95 transition-all"
-            whileHover={{ scale: 1.02 }}
-          >
-            <div className="w-full h-full bg-[#0a0a0a] rounded-[14px] flex flex-col items-center justify-center relative overflow-hidden">
-              {/* Internal glow */}
-              <div className="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors" />
-              
-              <div className="flex items-center gap-3 relative z-10">
-                <Sword className="w-6 h-6 text-yellow-500 group-hover:rotate-12 transition-transform" />
-                <span className="text-xl font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400">ENTRAR NA DUNGEON</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-1 relative z-10">
-                <Zap className="w-3.5 h-3.5 text-yellow-500/70" />
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Custo: 1 Energia</span>
-              </div>
+      {/* FOOTER: Static Enter Dungeon Button */}
+      <motion.div variants={itemVariants} className="pt-4">
+        <motion.button
+          onClick={onEnterDungeon}
+          className="w-full h-16 rounded-2xl bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 p-[2px] shadow-[0_0_30px_rgba(245,158,11,0.2)] group active:scale-95 transition-all"
+        >
+          <div className="w-full h-full bg-[#0a0a0a] rounded-[14px] flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors" />
+            <div className="flex items-center gap-3 relative z-10">
+              <Sword className="w-6 h-6 text-yellow-500 group-hover:rotate-12 transition-transform" />
+              <span className="text-xl font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400 uppercase">ENTRAR NA DUNGEON</span>
             </div>
-          </motion.button>
-        </div>
-      </div>
+            <div className="flex items-center gap-1.5 mt-1 relative z-10">
+              <Zap className="w-3.5 h-3.5 text-yellow-500/70" />
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Custo: 1 Energia</span>
+            </div>
+          </div>
+        </motion.button>
+      </motion.div>
 
       {/* Stats Grid - Base + Equipment - Removido do Dashboard */}
 
