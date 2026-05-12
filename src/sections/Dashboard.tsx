@@ -133,7 +133,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
             {/* Content overlaying the avatar at the bottom */}
             <div className="relative z-10 mt-auto p-2 pt-8 flex flex-col">
-              <div className="text-center mb-2">
+              <div className="text-center mb-1">
                 <h2 className="text-xs font-bold text-white font-cinzel truncate w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                   {character.name || 'A'}
                 </h2>
@@ -146,7 +146,10 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 {/* HP Bar */}
                 <div>
                   <div className="flex justify-between items-center mb-0.5">
-                    <Heart className={cn("w-2 h-2", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
+                    <div className="flex items-center gap-1">
+                      <Heart className={cn("w-2 h-2", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
+                      <span className="text-[7px] font-black text-white/70 uppercase tracking-tighter">HP</span>
+                    </div>
                     <span className="text-[8px] font-mono font-bold text-green-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
                       {Math.round(character.hp)} / {character.maxHp}
                     </span>
@@ -163,7 +166,10 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 {/* Level/XP Bar */}
                 <div>
                   <div className="flex justify-between items-center mb-0.5">
-                    <Star className="w-2 h-2 text-yellow-500" />
+                    <div className="flex items-center gap-1">
+                      <Star className="w-2 h-2 text-yellow-500" />
+                      <span className="text-[7px] font-black text-white/70 uppercase tracking-tighter">Lvl {character.level}</span>
+                    </div>
                     <span className="text-[8px] font-mono font-bold text-purple-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
                       {character.xp} / {character.maxXp}
                     </span>
