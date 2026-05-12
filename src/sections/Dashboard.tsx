@@ -357,6 +357,32 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   Complete tarefas para ganhar fragmentos de cristal.
                 </p>
               </div>
+
+              {/* Pet Selection Line */}
+              <div className="pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between bg-black/20 rounded-xl p-3 border border-white/5 hover:border-purple-500/30 transition-all group cursor-pointer"
+                  onClick={() => setShowPetSelector(true)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                      {selectedPetId ? PETS[selectedPetId].icon : '🐾'}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mascote</p>
+                      <h4 className="text-sm font-bold text-white font-cinzel">
+                        {selectedPetId ? `${PETS[selectedPetId].name} (Lvl 1)` : 'Nenhum Pet Selecionado'}
+                      </h4>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 text-[10px] font-bold text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                  >
+                    {selectedPetId ? 'TROCAR' : 'ESCOLHER'}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
