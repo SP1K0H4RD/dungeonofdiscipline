@@ -119,75 +119,81 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       <div className="grid grid-cols-2 gap-2">
         
         {/* LEFT COLUMN: Profile (50%) */}
-        <motion.div variants={itemVariants} className="col-span-1 card-dungeon p-2 flex flex-col h-full">
-          <div className="flex flex-col items-center text-center mb-1">
-            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 flex items-center justify-center text-3xl shadow-xl border border-white/5 relative overflow-hidden mb-1">
+        <motion.div variants={itemVariants} className="col-span-1 card-dungeon p-0 flex flex-col h-full overflow-hidden">
+          <div className="flex-1 flex flex-col relative">
+            {/* Expanded Avatar */}
+            <div className="absolute inset-0 z-0">
               <img 
                 src="https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg" 
                 alt="Avatar" 
-                className="w-full h-full object-cover opacity-80"
+                className="w-full h-full object-cover opacity-90"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            </div>
-            
-            <h2 className="text-sm font-bold text-white font-cinzel truncate w-full">
-              {character.name || 'A'}
-            </h2>
-            <p className="text-purple-400 font-bold uppercase tracking-widest text-[7px] mt-0">
-              {recoveryMode ? 'Em Recuperação' : 'Persistente'}
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            {/* HP Bar */}
-            <div>
-              <div className="flex justify-between items-center mb-0.5">
-                <Heart className={cn("w-2.5 h-2.5", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
-                <span className="text-[9px] font-mono font-bold text-green-400">
-                  {Math.round(character.hp)} / {character.maxHp}
-                </span>
-              </div>
-              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-green-600 to-green-400"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(character.hp / character.maxHp) * 100}%` }}
-                />
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
             </div>
 
-            {/* Level/XP Bar */}
-            <div>
-              <div className="flex justify-between items-center mb-0.5">
-                <Star className="w-2.5 h-2.5 text-yellow-500" />
-                <span className="text-[9px] font-mono font-bold text-purple-400">
-                  {character.xp} / {character.maxXp}
-                </span>
+            {/* Content overlaying the avatar at the bottom */}
+            <div className="relative z-10 mt-auto p-2 pt-8 flex flex-col">
+              <div className="text-center mb-2">
+                <h2 className="text-xs font-bold text-white font-cinzel truncate w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                  {character.name || 'A'}
+                </h2>
+                <p className="text-purple-400 font-bold uppercase tracking-widest text-[6px] mt-0 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                  {recoveryMode ? 'Em Recuperação' : 'Persistente'}
+                </p>
               </div>
-              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-purple-600 to-purple-400"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(character.xp / character.maxXp) * 100}%` }}
-                />
+
+              <div className="space-y-1.5">
+                {/* HP Bar */}
+                <div>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <Heart className={cn("w-2 h-2", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
+                    <span className="text-[8px] font-mono font-bold text-green-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                      {Math.round(character.hp)} / {character.maxHp}
+                    </span>
+                  </div>
+                  <div className="h-1 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                    <motion.div 
+                      className="h-full bg-gradient-to-r from-green-600 to-green-400"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(character.hp / character.maxHp) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Level/XP Bar */}
+                <div>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <Star className="w-2 h-2 text-yellow-500" />
+                    <span className="text-[8px] font-mono font-bold text-purple-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                      {character.xp} / {character.maxXp}
+                    </span>
+                  </div>
+                  <div className="h-1 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                    <motion.div 
+                      className="h-full bg-gradient-to-r from-purple-600 to-purple-400"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(character.xp / character.maxXp) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Pet Info Line */}
+                <button 
+                  onClick={() => setShowPetSelector(true)}
+                  className="flex items-center gap-1 bg-black/60 p-1 rounded-md border border-white/10 w-full group hover:border-purple-500/30 transition-all backdrop-blur-sm"
+                >
+                  <div className="w-5 h-5 rounded-sm bg-white/5 flex items-center justify-center text-xs group-hover:scale-110 transition-transform">
+                    {selectedPetId ? PETS[selectedPetId].icon : '🐾'}
+                  </div>
+                  <div className="text-left overflow-hidden">
+                    <h4 className="text-[8px] font-bold text-purple-400 font-cinzel truncate">
+                      {selectedPetId ? PETS[selectedPetId].name : 'Pet'}
+                    </h4>
+                    <p className="text-[6px] text-gray-500 font-bold uppercase">Lvl 1</p>
+                  </div>
+                </button>
               </div>
             </div>
-
-            {/* Pet Info Line */}
-            <button 
-              onClick={() => setShowPetSelector(true)}
-              className="flex items-center gap-1.5 bg-black/40 p-1.5 rounded-lg border border-white/5 w-full group hover:border-purple-500/30 transition-all"
-            >
-              <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
-                {selectedPetId ? PETS[selectedPetId].icon : '🐾'}
-              </div>
-              <div className="text-left overflow-hidden">
-                <h4 className="text-[9px] font-bold text-purple-400 font-cinzel truncate">
-                  {selectedPetId ? PETS[selectedPetId].name : 'Nenhum Pet'}
-                </h4>
-                <p className="text-[7px] text-gray-500 font-bold uppercase">Lvl 1</p>
-              </div>
-            </button>
           </div>
         </motion.div>
 
@@ -215,16 +221,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
           {/* Fragments Card */}
           <motion.div variants={itemVariants} className="card-dungeon p-2 bg-gradient-to-br from-purple-900/10 to-transparent flex-1">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-purple-400" />
-                <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter font-cinzel">FRAGMENTOS DE ENERGIA</span>
-              </div>
-              <span className="text-[9px] font-bold text-purple-400 font-mono">
-                {Math.floor(character.energyFragments)} / 5
-              </span>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-3 h-3 text-purple-400" />
+              <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest font-cinzel">FRAGMENTOS</span>
             </div>
-            <div className="flex gap-1 mb-1">
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-xl font-black text-white font-mono">{Math.floor(character.energyFragments)}</span>
+              <span className="text-[9px] font-bold text-gray-600 font-mono">/ 5</span>
+            </div>
+            <div className="flex gap-1 mb-1.5">
               {[...Array(5)].map((_, i) => {
                 const isFilled = i < Math.floor(character.energyFragments);
                 return (
@@ -241,11 +246,11 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 );
               })}
             </div>
-            <p className="text-[6px] text-gray-600 font-bold uppercase tracking-tighter leading-none">5 FRAG = +1 ENG</p>
+            <p className="text-[5.5px] text-gray-600 font-bold uppercase tracking-tight leading-none">a cada 5 fragmentos vocÊ ganha +1 energia</p>
           </motion.div>
 
           {/* Rest Card */}
-          <motion.div variants={itemVariants} className="card-dungeon p-0 overflow-hidden group relative flex-1 min-h-[60px]">
+          <motion.div variants={itemVariants} className="card-dungeon p-0 overflow-hidden group relative flex-1 min-h-[55px]">
             <div className="grid grid-cols-2 h-full">
               {/* Left: Image */}
               <div className="relative overflow-hidden border-r border-white/5">
@@ -258,24 +263,26 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               </div>
               
               {/* Right: Content */}
-              <div className="relative z-10 p-1.5 flex flex-col justify-between items-center text-center">
+              <div className="relative z-10 p-1 flex flex-col justify-between items-center text-center">
                 <div className="w-full">
-                  <p className="text-[8px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">DESCANSAR</p>
-                  <p className="text-[5px] text-gray-500 font-bold uppercase leading-tight mt-0.5">3 energias para recuperar 20% da vida</p>
+                  <p className="text-[7px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">DESCANSAR</p>
+                  <p className="text-[4.5px] text-gray-500 font-bold uppercase leading-tight">3 energias para recuperar 20% da vida</p>
                 </div>
                 
                 <Button 
                   onClick={handleRest}
                   disabled={character.energy < 3 || isResting}
-                  className="bg-transparent hover:bg-yellow-500/10 text-yellow-500 p-0 h-8 w-8 rounded-full border border-yellow-500/30 flex items-center justify-center group/rest"
+                  className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-4 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center gap-1 group/rest py-0"
                 >
                   {isResting ? (
-                    <span className="text-[8px] animate-pulse">...</span>
+                    <span className="text-[7px] animate-pulse">...</span>
                   ) : (
-                    <FlameKindling className="w-5 h-5 group-hover/rest:scale-110 transition-transform" />
+                    <>
+                      <FlameKindling className="w-2.5 h-2.5" />
+                      <span className="text-[7px] font-black uppercase">Descansar</span>
+                    </>
                   )}
                 </Button>
-                <div className="h-2" /> {/* Spacer */}
               </div>
             </div>
           </motion.div>
@@ -374,7 +381,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
       {/* Baús Section */}
       <motion.div variants={itemVariants} className="card-dungeon p-1.5">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-0.5">
           <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">BAÚS</h3>
           <span className="text-[6px] text-gray-500 font-bold uppercase tracking-widest">3/4</span>
         </div>
@@ -384,7 +391,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             <div key={index} className="flex flex-col items-center gap-0.5">
               <div 
                 className={cn(
-                  "w-full aspect-square rounded-md border p-1 transition-all duration-300 flex flex-col items-center justify-center relative",
+                  "w-full aspect-square rounded-sm border p-0.5 transition-all duration-300 flex flex-col items-center justify-center relative",
                   chest 
                     ? rarityColors[chest.rarity]
                     : "border-dashed border-white/5 bg-white/[0.01]"
@@ -393,8 +400,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 {chest ? (
                   <>
                     <motion.div 
-                      className="text-sm mb-0"
-                      animate={chest.status === 'unlocking' ? { y: [0, -1, 0] } : {}}
+                      className="text-xs mb-0"
+                      animate={chest.status === 'unlocking' ? { y: [0, -0.5, 0] } : {}}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
                       {chest.rarity === 'common' && '📦'}
@@ -402,7 +409,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                       {chest.rarity === 'epic' && '💎'}
                       {chest.rarity === 'legendary' && '👑'}
                     </motion.div>
-                    <div className="flex items-center gap-0.5 text-[4px] font-mono font-bold text-gray-400 scale-90">
+                    <div className="flex items-center gap-0.5 text-[3.5px] font-mono font-bold text-gray-400 scale-90">
                       <Clock className="w-1 h-1 text-yellow-500" />
                       {chest.status === 'unlocking' 
                         ? (chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (Date.now() - chest.unlockStartedAt))) : '--:--')
@@ -412,7 +419,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   </>
                 ) : (
                   <div className="opacity-10">
-                    <Skull className="w-2.5 h-2.5" />
+                    <Skull className="w-2 h-2" />
                   </div>
                 )}
               </div>
@@ -423,7 +430,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     else if (chest.status === 'unlocked') collectChestRewards(index);
                   }}
                   className={cn(
-                    "w-full h-3 text-[5px] font-black uppercase rounded-[1px] transition-all p-0",
+                    "w-full h-2.5 text-[4.5px] font-black uppercase rounded-[1px] transition-all p-0",
                     chest.status === 'locked' && "bg-purple-900/40 text-purple-300 border border-purple-500/30",
                     chest.status === 'unlocking' && "bg-gray-800 text-gray-500",
                     chest.status === 'unlocked' && "bg-yellow-600 text-white animate-pulse"
