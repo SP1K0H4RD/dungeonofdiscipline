@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, User, LogOut, RefreshCw } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
@@ -23,7 +23,6 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
   const { user, signOut, signInWithGoogle } = useAuth();
   const { character, economy, recoveryMode } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [imgError, setImgError] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSync = async () => {

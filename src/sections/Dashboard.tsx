@@ -1,25 +1,23 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
-  Heart, 
-  Zap, 
-  Sparkles,
-  RotateCcw,
-  Skull,
-  Star,
-  FlameKindling,
-  Settings,
-  Target,
   AlertTriangle,
-  Scroll,
-  Clock,
-  Unlock,
-  Package,
   ChevronRight,
-  Flame
+  Clock,
+  Coins,
+  Flame,
+  FlameKindling,
+  Heart,
+  RotateCcw,
+  Settings,
+  Skull,
+  Sparkles,
+  Star,
+  Sword,
+  Target,
+  Zap
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
-import { ProgressBar } from '@/components/ProgressBar';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PETS, CHEST_UNLOCK_TIMES } from '@/types/game';
@@ -156,7 +154,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {character.name || 'A'}
             </h2>
             <p className="text-purple-400 font-bold uppercase tracking-[0.2em] text-xs mt-1">
-              Persistente
+              {recoveryMode ? 'Em Recuperação' : 'Persistente'}
             </p>
           </div>
 
@@ -165,7 +163,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-green-500" />
+                  <Heart className={cn("w-4 h-4", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">HP</span>
                 </div>
                 <span className="text-sm font-mono font-bold text-green-400">
@@ -424,19 +422,33 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     </motion.div>
                     <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-gray-300">
                       <Clock className="w-3 h-3 text-yellow-500" />
-                      {chest.status === 'unlocking' ? '04:59' : 'Pronto'}
+                      {chest.status === 'unlocking' 
+                        ? (chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (Date.now() - chest.unlockStartedAt))) : '--:--')
+                        : (chest.status === 'unlocked' ? 'PRONTO' : `${CHEST_UNLOCK_TIMES[chest.rarity] / (60 * 60 * 1000)}h`)
+                      }
                     </div>
                   </>
                 ) : (
                   <div className="flex flex-col items-center opacity-10">
                     <Skull className="w-10 h-10 mb-2" />
-                    <span className="text-[10px] font-bold">TRANCADO</span>
+                    <span className="text-[10px] font-bold">SLOT VAZIO</span>
                   </div>
                 )}
               </div>
               {chest && (
-                <Button className="w-full bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/30 h-8 text-[10px] font-black uppercase tracking-widest rounded-lg">
-                  Acelerar
+                <Button 
+                  onClick={() => {
+                    if (chest.status === 'locked') startUnlockingChest(index);
+                    else if (chest.status === 'unlocked') collectChestRewards(index);
+                  }}
+                  className={cn(
+                    "w-full h-8 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                    chest.status === 'locked' && "bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/30",
+                    chest.status === 'unlocking' && "bg-gray-800 text-gray-500 cursor-not-allowed",
+                    chest.status === 'unlocked' && "bg-yellow-600 hover:bg-yellow-500 text-white shadow-[0_0_15px_rgba(202,138,4,0.4)] animate-pulse"
+                  )}
+                >
+                  {chest.status === 'locked' ? 'Destrancar' : chest.status === 'unlocking' ? 'Acelerando...' : 'Abrir Agora'}
                 </Button>
               )}
             </div>
