@@ -274,7 +274,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col justify-center items-center text-center gap-2">
                 <div className="w-full space-y-1">
-                  <p className="text-[9px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
+                  <p className="text-[8px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
                   <p className="text-[5px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">
                     <span className="block">3 energias para</span>
                     <span className="block">recuperar 20 %</span>
@@ -399,12 +399,12 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
           <span className="text-[5px] text-gray-500 font-bold uppercase tracking-widest font-cinzel">3/4</span>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 px-2">
+        <div className="grid grid-cols-4 gap-1.5 px-2">
           {gameState.chests.map((chest, index) => (
             <div key={index} className="flex flex-col items-center gap-0.5">
               <div 
                 className={cn(
-                  "w-full aspect-square rounded-sm border p-0.5 transition-all duration-300 flex flex-col items-center justify-center relative",
+                  "w-full aspect-[10/7] rounded-sm border p-0.5 transition-all duration-300 flex flex-col items-center justify-center relative",
                   chest 
                     ? rarityColors[chest.rarity]
                     : "border-dashed border-white/5 bg-white/[0.01]"
@@ -413,7 +413,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 {chest ? (
                   <>
                     <motion.div 
-                      className="text-xs mb-0"
+                      className="text-[10px] mb-0"
                       animate={chest.status === 'unlocking' ? { y: [0, -0.5, 0] } : {}}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
@@ -432,7 +432,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   </>
                 ) : (
                   <div className="opacity-10">
-                    <Skull className="w-2.5 h-2.5" />
+                    <Skull className="w-2 h-2" />
                   </div>
                 )}
               </div>
@@ -443,7 +443,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     else if (chest.status === 'unlocked') collectChestRewards(index);
                   }}
                   className={cn(
-                    "w-full h-3 text-[5px] font-black uppercase rounded-[1px] transition-all p-0 font-cinzel",
+                    "w-full h-2.5 text-[4.5px] font-black uppercase rounded-[1px] transition-all p-0 font-cinzel",
                     chest.status === 'locked' && "bg-purple-900/40 text-purple-300 border border-purple-500/30",
                     chest.status === 'unlocking' && "bg-gray-800 text-gray-500",
                     chest.status === 'unlocked' && "bg-yellow-600 text-white animate-pulse"
