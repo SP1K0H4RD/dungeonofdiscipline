@@ -58,11 +58,12 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     startUnlockingChest,
     collectChestRewards
   } = useGame();
-  const { character, recoveryMode, selectedPetId, economy, unlockedPets } = gameState;
+  const { character, recoveryMode, selectedPetId, economy, unlockedPets, playerProfile } = gameState;
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showPetSelector, setShowPetSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [resetStep, setResetStep] = useState(1);
+  const [avatarOk, setAvatarOk] = useState(true);
   const [isResting, setIsResting] = useState(false);
 
   const handleRecoverEnergy = () => {
@@ -127,9 +128,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             {/* Expanded Avatar - Increased height to take more space */}
             <div className="flex-1 w-full relative">
               <img 
-                src="https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg" 
+                key={(playerProfile?.avatarUrl || 'fallback') + (avatarOk ? ':ok' : ':fallback')}
+                src={
+                  playerProfile?.avatarUrl && avatarOk
+                    ? playerProfile.avatarUrl
+                    : "https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg"
+                }
                 alt="Avatar" 
                 className="w-full h-full object-cover opacity-90"
+                onError={() => setAvatarOk(false)}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
             </div>
@@ -523,30 +530,34 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
       {/* Pet Selector Dialog */}
       <Dialog open={showPetSelector} onOpenChange={setShowPetSelector}>
-        <DialogContent className="bg-transparent border-none text-white max-w-3xl p-0 shadow-none">
-          <div className="relative w-full rounded-2xl border-2 border-purple-500/60 bg-black/80 shadow-[0_0_80px_rgba(168,85,247,0.25)] overflow-hidden">
+        <DialogContent className="bg-transparent border-none text-white p-0 shadow-none w-[100dvw] h-[100dvh] max-w-none top-0 left-0 translate-x-0 translate-y-0 sm:w-full sm:h-auto sm:max-w-3xl sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]">
+          <div className="relative w-full h-full sm:h-auto sm:rounded-2xl border-2 border-purple-500/60 bg-black/80 shadow-[0_0_80px_rgba(168,85,247,0.25)] overflow-hidden flex flex-col">
             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_55%)]" />
-            <button
-              onClick={() => setShowPetSelector(false)}
-              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-xl border border-white/10 bg-black/40 hover:bg-black/60 flex items-center justify-center"
-            >
-              <X className="w-4 h-4 text-gray-300" />
-            </button>
 
-            <div className="px-6 pt-6 pb-4 text-center relative">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-10 h-10 rounded-full border border-purple-500/40 bg-purple-500/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-purple-400" />
+            <div className="sticky top-0 z-20 bg-black/70 backdrop-blur-md border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-9 h-9 rounded-full border border-purple-500/40 bg-purple-500/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4.5 h-4.5 text-purple-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-2xl font-black font-cinzel tracking-widest text-white truncate">PETS</h2>
+                    <p className="text-[10px] sm:text-xs text-gray-400 truncate">
+                      Colete fragmentos para desbloquear e escolher seu pet.
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-3xl font-black font-cinzel tracking-widest text-white">PETS</h2>
+                <button
+                  onClick={() => setShowPetSelector(false)}
+                  className="w-9 h-9 rounded-xl border border-white/10 bg-black/40 hover:bg-black/60 flex items-center justify-center shrink-0"
+                >
+                  <X className="w-4 h-4 text-gray-300" />
+                </button>
               </div>
-              <p className="mt-2 text-xs text-gray-400">
-                Colete fragmentos para desbloquear novos pets e fortalecer sua jornada.
-              </p>
             </div>
 
-            <div className="px-6 pb-6 relative">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="relative flex-1 overflow-auto px-4 pt-4 pb-28 sm:px-6 sm:pb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 {Object.values(PETS).map((pet) => {
                   const isUnlocked = (unlockedPets || []).includes(pet.id);
                   const isActive = selectedPetId === pet.id;
@@ -572,34 +583,34 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className={cn(
-                        "relative rounded-xl border overflow-hidden text-left p-3 transition-all",
+                        "relative rounded-xl border overflow-hidden text-left p-2 sm:p-3 transition-all",
                         isActive ? "border-purple-400 bg-purple-500/10" : "border-white/10 bg-black/40 hover:border-white/20",
-                        !isUnlocked && "grayscale"
+                        !isUnlocked && "opacity-90"
                       )}
-                      style={{ boxShadow: isActive ? `0 0 30px ${pet.color}33` : undefined }}
+                      style={{ boxShadow: isActive ? `0 0 24px ${pet.color}33` : undefined }}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-black font-cinzel truncate" style={{ color: pet.color }}>
+                          <p className="text-[10px] sm:text-[11px] font-black font-cinzel truncate" style={{ color: pet.color }}>
                             {pet.name}
                           </p>
-                          <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">
+                          <p className="text-[8px] sm:text-[9px] text-gray-500 font-black uppercase tracking-widest">
                             {isUnlocked ? (isActive ? 'Ativo' : 'Desbloqueado') : 'Bloqueado'}
                           </p>
                         </div>
-                        <div className="text-2xl">{pet.icon}</div>
+                        <div className="text-xl sm:text-2xl">{pet.icon}</div>
                       </div>
 
                       {!isUnlocked && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <div className="w-10 h-10 rounded-xl border border-white/10 bg-black/50 flex items-center justify-center">
-                            <Lock className="w-5 h-5 text-gray-300/80" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-white/10 bg-black/55 flex items-center justify-center">
+                            <Lock className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-300/80" />
                           </div>
                         </div>
                       )}
 
-                      <div className="mt-10 space-y-2">
-                        <div className="flex items-center justify-between text-[10px] font-black">
+                      <div className="mt-8 sm:mt-10 space-y-1.5 sm:space-y-2">
+                        <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-black">
                           <span className="text-gray-400 uppercase tracking-widest">Fragmentos</span>
                           <span className="text-gray-300 font-mono">
                             {Math.min(have, need)}/{need}
@@ -616,11 +627,11 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                         </div>
 
                         {canUnlock ? (
-                          <div className="text-[10px] font-black uppercase tracking-widest text-green-400">
+                          <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-green-400">
                             Clique para desbloquear
                           </div>
                         ) : (
-                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                          <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-500">
                             {!isUnlocked ? 'Bloqueado' : 'Disponível'}
                           </div>
                         )}
@@ -629,31 +640,27 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   );
                 })}
               </div>
+            </div>
 
-              <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-purple-500/20 bg-black/40 px-4 py-3">
+            <div className="absolute bottom-0 left-0 right-0 z-20 bg-black/75 backdrop-blur-md border-t border-white/10 px-4 py-3 sm:px-6 sm:py-4">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shrink-0">
                     <div className="text-xl">🧩</div>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest">
+                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest truncate">
                       Fragmentos de Pet
                     </p>
-                    <p className="text-[10px] text-gray-500 font-bold leading-tight">
-                      Colete fragmentos para desbloquear novos pets poderosos.
+                    <p className="text-[10px] text-gray-500 font-bold leading-tight truncate">
+                      {(economy.petShards?.rare || 0) + (economy.petShards?.epic || 0) + (economy.petShards?.legendary || 0)} disponíveis
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Disponíveis</p>
-                  <p className="text-lg font-black font-mono text-purple-300">
-                    {(economy.petShards?.rare || 0) + (economy.petShards?.epic || 0) + (economy.petShards?.legendary || 0)}
-                  </p>
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-1">
-                    Coleção
-                  </p>
-                  <p className="text-[10px] text-gray-300 font-mono">
-                    {(unlockedPets || []).length}/{Object.keys(PETS).length} desbloqueados
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Coleção</p>
+                  <p className="text-sm font-black font-mono text-gray-200">
+                    {(unlockedPets || []).length}/{Object.keys(PETS).length}
                   </p>
                 </div>
               </div>

@@ -1471,6 +1471,7 @@ export interface PlayerProfile {
   consecutiveFailures: number;
   difficultyPreference: 'easier' | 'balanced' | 'challenging';
   autoAdjustEnabled: boolean;
+  avatarUrl?: string;
   // Focus system
   activeFocusTag: FocusTag;
   focusHistory: {
@@ -1501,6 +1502,7 @@ export const DEFAULT_PLAYER_PROFILE: PlayerProfile = {
   consecutiveFailures: 0,
   difficultyPreference: 'balanced',
   autoAdjustEnabled: true,
+  avatarUrl: '/player-avatar.png',
   activeFocusTag: null,
   focusHistory: [],
   questHistory: [],

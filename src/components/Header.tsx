@@ -28,10 +28,11 @@ const navItems = [
 export function Header({ currentView, onViewChange }: HeaderProps) {
   const { gameState, syncLocalToCloud, setGameState } = useGame();
   const { user, signOut, signInWithGoogle } = useAuth();
-  const { character, economy, recoveryMode, sanctuaryBuff } = gameState;
+  const { character, economy, recoveryMode, sanctuaryBuff, playerProfile } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -175,9 +176,18 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 onClick={() => user ? setShowProfileMenu(!showProfileMenu) : signInWithGoogle()}
                 className="flex items-center gap-2 p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
-                <div className="w-8 h-8 rounded-md bg-purple-600 flex items-center justify-center text-sm font-bold text-white uppercase">
-                  {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
-                </div>
+                {playerProfile?.avatarUrl && !avatarFailed ? (
+                  <img
+                    src={playerProfile.avatarUrl}
+                    alt="Perfil"
+                    className="w-8 h-8 rounded-md object-cover border border-white/10"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-md bg-purple-600 flex items-center justify-center text-sm font-bold text-white uppercase">
+                    {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
+                  </div>
+                )}
               </button>
 
               <AnimatePresence>
