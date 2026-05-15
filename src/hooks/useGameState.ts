@@ -21,6 +21,12 @@ import type {
   CalendarEvent,
   FocusTag,
   MapId,
+  DungeonEvent,
+  DungeonEventReward,
+  EventChestRarity,
+  MerchantOffer,
+  PetShardRarity,
+  SanctuaryBuffType,
 } from '@/types/game';
 import { 
   attemptDodge, 
@@ -238,6 +244,9 @@ const INITIAL_GAME_STATE: GameState = {
     specialAttacks: [],
     lootboxes: [],
     maxSlots: 30,
+    consumables: {
+      protectionStones: 0,
+    },
   },
   economy: {
     coins: 0,
@@ -247,6 +256,11 @@ const INITIAL_GAME_STATE: GameState = {
       epic: 0,
       legendary: 0,
       mythic: 0,
+    },
+    petShards: {
+      rare: 0,
+      epic: 0,
+      legendary: 0,
     },
     totalCoinsEarned: 0,
     totalCoinsSpent: 0,
@@ -288,6 +302,8 @@ const INITIAL_GAME_STATE: GameState = {
   unlockedSkins: [],
   achievements: [],
   chests: [null, null, null, null], // 4 initial slots
+  dungeonEvent: null,
+  sanctuaryBuff: null,
   debugLogs: [],
 };
 
@@ -379,6 +395,277 @@ const generateItem = (rarity: Rarity): Item => {
   };
 };
 
+const rollDungeonEventType = (): 'combat' | 'chest' | 'merchant' | 'sanctuary' => {
+  const roll = Math.random() * 100;
+  if (roll < 82.5) return 'combat';
+  if (roll < 92.5) return 'chest';
+  if (roll < 97.5) return 'merchant';
+  return 'sanctuary';
+};
+
+const rollEventChestRarity = (): EventChestRarity => {
+  const roll = Math.random() * 100;
+  if (roll < 60) return 'common';
+  if (roll < 88) return 'rare';
+  if (roll < 98) return 'epic';
+  return 'legendary';
+};
+
+const applyEnergyFragments = (character: Character, fragmentsToAdd: number): { character: Character; energyGained: number } => {
+  let newFragments = (character.energyFragments || 0) + fragmentsToAdd;
+  let energyToGain = 0;
+
+  while (newFragments >= 5) {
+    newFragments -= 5;
+    energyToGain += 1;
+  }
+
+  const newEnergy = Math.min(character.maxEnergy, character.energy + energyToGain);
+
+  return {
+    character: {
+      ...character,
+      energy: newEnergy,
+      energyFragments: newFragments,
+    },
+    energyGained: Math.max(0, newEnergy - character.energy),
+  };
+};
+
+const applyDungeonRewards = (state: GameState, rewards: DungeonEventReward[]): GameState => {
+  let next: GameState = state;
+
+  for (const reward of rewards) {
+    if (reward.type === 'gold') {
+      const amount = Math.max(0, Math.floor(reward.amount || 0));
+      next = {
+        ...next,
+        economy: {
+          ...next.economy,
+          coins: next.economy.coins + amount,
+          totalCoinsEarned: next.economy.totalCoinsEarned + amount,
+        },
+      };
+      continue;
+    }
+
+    if (reward.type === 'forgeShard') {
+      const rarity = (reward.rarity as Rarity) || 'common';
+      const amount = Math.max(0, Math.floor(reward.amount || 0));
+      next = {
+        ...next,
+        economy: {
+          ...next.economy,
+          shards: {
+            ...next.economy.shards,
+            [rarity]: (next.economy.shards[rarity] || 0) + amount,
+          },
+        },
+      };
+      continue;
+    }
+
+    if (reward.type === 'energyFragment') {
+      const amount = Math.max(0, Math.floor(reward.amount || 0));
+      const res = applyEnergyFragments(next.character, amount);
+      next = {
+        ...next,
+        character: res.character,
+      };
+      continue;
+    }
+
+    if (reward.type === 'petShard') {
+      const rarity = (reward.rarity as PetShardRarity) || 'rare';
+      const amount = Math.max(0, Math.floor(reward.amount || 0));
+      next = {
+        ...next,
+        economy: {
+          ...next.economy,
+          petShards: {
+            ...(next.economy.petShards || { rare: 0, epic: 0, legendary: 0 }),
+            [rarity]: ((next.economy.petShards || { rare: 0, epic: 0, legendary: 0 })[rarity] || 0) + amount,
+          },
+        },
+      };
+      continue;
+    }
+
+    if (reward.type === 'protectionStone') {
+      const amount = Math.max(0, Math.floor(reward.amount || 0));
+      next = {
+        ...next,
+        inventory: {
+          ...next.inventory,
+          consumables: {
+            ...(next.inventory.consumables || { protectionStones: 0 }),
+            protectionStones: (next.inventory.consumables?.protectionStones || 0) + amount,
+          },
+        },
+      };
+      continue;
+    }
+
+    if (reward.type === 'item' && reward.item) {
+      if ((next.inventory.items || []).length >= next.inventory.maxSlots) {
+        continue;
+      }
+      next = {
+        ...next,
+        inventory: {
+          ...next.inventory,
+          items: [...next.inventory.items, reward.item],
+        },
+      };
+    }
+  }
+
+  return next;
+};
+
+const randInt = (min: number, max: number) => {
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+  return lo + Math.floor(Math.random() * (hi - lo + 1));
+};
+
+const generateChestRewards = (chestRarity: EventChestRarity): DungeonEventReward[] => {
+  if (chestRarity === 'common') {
+    const rewards: DungeonEventReward[] = [
+      { type: 'gold', amount: randInt(20, 60) },
+      { type: 'forgeShard', rarity: 'common', amount: randInt(1, 3) },
+    ];
+    if (Math.random() < 0.10) rewards.push({ type: 'energyFragment', amount: 1 });
+    return rewards;
+  }
+
+  if (chestRarity === 'rare') {
+    const rewards: DungeonEventReward[] = [
+      { type: 'gold', amount: randInt(80, 180) },
+      { type: 'forgeShard', rarity: 'rare', amount: randInt(1, 3) },
+      { type: 'energyFragment', amount: randInt(1, 2) },
+    ];
+    if (Math.random() < 0.10) rewards.push({ type: 'petShard', rarity: 'rare', amount: 1 });
+    return rewards;
+  }
+
+  if (chestRarity === 'epic') {
+    const itemRarity: Rarity = Math.random() < 0.70 ? 'rare' : 'epic';
+    const rewards: DungeonEventReward[] = [
+      { type: 'gold', amount: randInt(200, 500) },
+      { type: 'forgeShard', rarity: 'epic', amount: randInt(1, 3) },
+      { type: 'energyFragment', amount: randInt(2, 4) },
+      { type: 'item', item: generateItem(itemRarity) },
+    ];
+    if (Math.random() < 0.10) rewards.push({ type: 'petShard', rarity: 'epic', amount: 1 });
+    return rewards;
+  }
+
+  const rewards: DungeonEventReward[] = [
+    { type: 'gold', amount: randInt(500, 1200) },
+    { type: 'forgeShard', rarity: 'legendary', amount: randInt(1, 3) },
+    { type: 'energyFragment', amount: randInt(3, 6) },
+    { type: 'item', item: generateItem('epic') },
+  ];
+  if (Math.random() < 0.10) rewards.push({ type: 'petShard', rarity: 'legendary', amount: 1 });
+  if (Math.random() < 0.05) rewards.push({ type: 'item', item: generateItem('legendary') });
+  return rewards;
+};
+
+const generateMerchantOffers = (): MerchantOffer[] => {
+  const offers: MerchantOffer[] = [];
+  const seenKeys = new Set<string>();
+
+  const rollOffer = (): MerchantOffer => {
+    const roll = Math.random() * 100;
+
+    if (roll < 3) {
+      const rarityRoll = Math.random() * 100;
+      const rarity: PetShardRarity = rarityRoll < 70 ? 'rare' : rarityRoll < 95 ? 'epic' : 'legendary';
+      const price =
+        rarity === 'rare' ? randInt(300, 500) :
+        rarity === 'epic' ? randInt(700, 900) :
+        randInt(1500, 2300);
+      return {
+        id: generateId(),
+        title: `Estilhaço de Pet ${rarity.toUpperCase()}`,
+        description: 'Usado futuramente para desbloquear pets.',
+        price,
+        reward: { type: 'petShard', rarity, amount: 1 },
+      };
+    }
+
+    if (roll < 18) {
+      return {
+        id: generateId(),
+        title: 'Fragmento de Energia',
+        description: 'Ajuda a recuperar energia (5 fragmentos = +1 energia).',
+        price: randInt(80, 120),
+        reward: { type: 'energyFragment', amount: 1 },
+      };
+    }
+
+    if (roll < 30) {
+      return {
+        id: generateId(),
+        title: 'Pedra de Proteção',
+        description: 'Impede downgrade automático em falha de forja (consumida).',
+        price: randInt(250, 500),
+        reward: { type: 'protectionStone', amount: 1 },
+      };
+    }
+
+    const shardRoll = Math.random() * 100;
+    if (shardRoll < 70) {
+      return {
+        id: generateId(),
+        title: 'Fragmento Common',
+        description: 'Fragmento para forja.',
+        price: 70,
+        reward: { type: 'forgeShard', rarity: 'common', amount: 1 },
+      };
+    }
+    if (shardRoll < 95) {
+      return {
+        id: generateId(),
+        title: 'Fragmento Rare',
+        description: 'Fragmento para forja.',
+        price: 180,
+        reward: { type: 'forgeShard', rarity: 'rare', amount: 1 },
+      };
+    }
+    return {
+      id: generateId(),
+      title: 'Fragmento Epic',
+      description: 'Fragmento para forja.',
+      price: 400,
+      reward: { type: 'forgeShard', rarity: 'epic', amount: 1 },
+    };
+  };
+
+  let tries = 0;
+  while (offers.length < 3 && tries < 50) {
+    tries += 1;
+    const offer = rollOffer();
+    const key = `${offer.reward.type}:${offer.reward.rarity || ''}:${offer.reward.amount || ''}:${offer.title}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    offers.push(offer);
+  }
+
+  while (offers.length < 3) {
+    offers.push({
+      id: generateId(),
+      title: 'Fragmento Common',
+      description: 'Fragmento para forja.',
+      price: 70,
+      reward: { type: 'forgeShard', rarity: 'common', amount: 1 },
+    });
+  }
+
+  return offers;
+};
+
 // ============================================
 // STATE MIGRATION HELPER
 // ============================================
@@ -399,6 +686,14 @@ const migrateGameState = (parsed: any): GameState => {
       epic: 0,
       legendary: 0,
       mythic: 0,
+    };
+  }
+  
+  if (!baseEconomy.petShards) {
+    baseEconomy.petShards = {
+      rare: 0,
+      epic: 0,
+      legendary: 0,
     };
   }
 
@@ -446,6 +741,10 @@ const migrateGameState = (parsed: any): GameState => {
       ),
       gems: parsed.inventory?.gems || [],
       lootboxes: parsed.inventory?.lootboxes || [],
+      consumables: {
+        ...INITIAL_GAME_STATE.inventory.consumables,
+        ...(parsed.inventory?.consumables || {}),
+      },
     },
     // Migrate to new map system or generate new maps
     maps: parsed.maps || generateAllMaps(),
@@ -856,6 +1155,11 @@ export function useGameState() {
 
   const selectMapNode = useCallback((mapId: MapId, nodeId: string) => {
     setGameState(prev => {
+      if (prev.character.energy <= 0) {
+        addDebugLog('Sem energia para entrar na dungeon.');
+        return prev;
+      }
+
       // ...CRITICAL: Ensure maps exist before accessing
       if (!prev.maps || !prev.maps[mapId]) {
         console.error(`Map ${mapId} not found in state`, prev.maps);
@@ -868,13 +1172,30 @@ export function useGameState() {
         if (nodeIndex === -1 || nodeIndex === undefined) return { ...prev, maps: freshMaps };
 
         const node = map.nodes[nodeIndex];
-        // Spawn enemy immediately for fresh map
-        const spawnedEnemy = spawnMonster({ stage: node.stage, spawns: node.possibleSpawns });
-        const updatedNodes = [...map.nodes];
-        updatedNodes[nodeIndex] = { ...node, currentEnemy: spawnedEnemy };
-        freshMaps[mapId] = { ...map, nodes: updatedNodes };
+        const eventType = rollDungeonEventType();
 
-        return {
+        if (eventType === 'combat') {
+          const spawnedEnemy = spawnMonster({ stage: node.stage, spawns: node.possibleSpawns });
+          const updatedNodes = [...map.nodes];
+          updatedNodes[nodeIndex] = { ...node, currentEnemy: spawnedEnemy };
+          freshMaps[mapId] = { ...map, nodes: updatedNodes };
+
+          addDebugLog(`Selected node: Map ${mapId}, Stage ${node.stage} (${node.difficulty})`);
+
+          return {
+            ...prev,
+            maps: freshMaps,
+            character: {
+              ...prev.character,
+              energy: Math.max(0, prev.character.energy - 1),
+            },
+            currentMapId: mapId,
+            currentNodeId: nodeId,
+            dungeonEvent: null,
+          };
+        }
+
+        const baseState: GameState = {
           ...prev,
           maps: freshMaps,
           character: {
@@ -882,7 +1203,32 @@ export function useGameState() {
             energy: Math.max(0, prev.character.energy - 1),
           },
           currentMapId: mapId,
-          currentNodeId: nodeId,
+          currentNodeId: null,
+        };
+
+        if (eventType === 'chest') {
+          const chestRarity = rollEventChestRarity();
+          const rewards = generateChestRewards(chestRarity);
+          const rewarded = applyDungeonRewards(baseState, rewards);
+          addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);
+          return {
+            ...rewarded,
+            dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
+          };
+        }
+
+        if (eventType === 'merchant') {
+          addDebugLog('🧙 Mercador Perdido encontrado!');
+          return {
+            ...baseState,
+            dungeonEvent: { type: 'merchant', offers: generateMerchantOffers(), mapId, nodeId, stage: node.stage },
+          };
+        }
+
+        addDebugLog('🌿 Santuário da Floresta encontrado!');
+        return {
+          ...baseState,
+          dungeonEvent: { type: 'sanctuary', mapId, nodeId, stage: node.stage },
         };
       }
 
@@ -901,24 +1247,113 @@ export function useGameState() {
         return prev;
       }
 
-      // CRITICAL: Spawn enemy BEFORE starting combat if not already spawned
-      const spawnedEnemy = spawnMonster({ stage: node.stage, spawns: node.possibleSpawns });
-      const updatedNodes = [...map.nodes];
-      updatedNodes[nodeIndex] = { ...node, currentEnemy: spawnedEnemy };
-      const updatedMaps = { ...prev.maps, [mapId]: { ...map, nodes: updatedNodes } };
-      
-      addDebugLog(`Selected node: Map ${mapId}, Stage ${node.stage} (${node.difficulty})`);
-      
-      return {
+      const eventType = rollDungeonEventType();
+
+      if (eventType === 'combat') {
+        const spawnedEnemy = spawnMonster({ stage: node.stage, spawns: node.possibleSpawns });
+        const updatedNodes = [...map.nodes];
+        updatedNodes[nodeIndex] = { ...node, currentEnemy: spawnedEnemy };
+        const updatedMaps = { ...prev.maps, [mapId]: { ...map, nodes: updatedNodes } };
+
+        addDebugLog(`Selected node: Map ${mapId}, Stage ${node.stage} (${node.difficulty})`);
+
+        return {
+          ...prev,
+          maps: updatedMaps,
+          character: {
+            ...prev.character,
+            energy: Math.max(0, prev.character.energy - 1),
+          },
+          currentMapId: mapId,
+          currentNodeId: nodeId,
+          dungeonEvent: null,
+        };
+      }
+
+      const baseState: GameState = {
         ...prev,
-        maps: updatedMaps,
         character: {
           ...prev.character,
-          // Deduct 1 energy here (only once per user click)
           energy: Math.max(0, prev.character.energy - 1),
         },
         currentMapId: mapId,
-        currentNodeId: nodeId,
+        currentNodeId: null,
+        dungeonEvent: null,
+      };
+
+      if (eventType === 'chest') {
+        const chestRarity = rollEventChestRarity();
+        const rewards = generateChestRewards(chestRarity);
+        const rewarded = applyDungeonRewards(baseState, rewards);
+        addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);
+        return {
+          ...rewarded,
+          dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
+        };
+      }
+
+      if (eventType === 'merchant') {
+        addDebugLog('🧙 Mercador Perdido encontrado!');
+        return {
+          ...baseState,
+          dungeonEvent: { type: 'merchant', offers: generateMerchantOffers(), mapId, nodeId, stage: node.stage },
+        };
+      }
+
+      addDebugLog('🌿 Santuário da Floresta encontrado!');
+      return {
+        ...baseState,
+        dungeonEvent: { type: 'sanctuary', mapId, nodeId, stage: node.stage },
+      };
+    });
+  }, [addDebugLog]);
+
+  const closeDungeonEvent = useCallback(() => {
+    setGameState(prev => ({ ...prev, dungeonEvent: null }));
+  }, []);
+
+  const chooseSanctuaryBuff = useCallback((buffType: SanctuaryBuffType) => {
+    setGameState(prev => {
+      if (prev.dungeonEvent?.type !== 'sanctuary') return prev;
+      return {
+        ...prev,
+        sanctuaryBuff: { type: buffType, remainingCombats: 3 },
+        dungeonEvent: null,
+      };
+    });
+  }, []);
+
+  const skipMerchant = useCallback(() => {
+    setGameState(prev => {
+      if (prev.dungeonEvent?.type !== 'merchant') return prev;
+      return { ...prev, dungeonEvent: null };
+    });
+  }, []);
+
+  const buyMerchantOffer = useCallback((offerId: string) => {
+    setGameState(prev => {
+      if (prev.dungeonEvent?.type !== 'merchant') return prev;
+      const offer = prev.dungeonEvent.offers.find(o => o.id === offerId);
+      if (!offer) return prev;
+      if (prev.economy.coins < offer.price) {
+        addDebugLog('Ouro insuficiente para comprar.');
+        return prev;
+      }
+
+      const paid: GameState = {
+        ...prev,
+        economy: {
+          ...prev.economy,
+          coins: prev.economy.coins - offer.price,
+          totalCoinsSpent: prev.economy.totalCoinsSpent + offer.price,
+        },
+      };
+
+      const rewarded = applyDungeonRewards(paid, [offer.reward]);
+      addDebugLog(`Compra realizada: ${offer.title}`);
+      return {
+        ...rewarded,
+        dungeonEvent: null,
       };
     });
   }, [addDebugLog]);
@@ -1769,7 +2204,12 @@ export function useGameState() {
         playerDodged = true;
       }
 
-      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(prev.character.totalStats.critChance);
+      const buffType = prev.sanctuaryBuff?.type;
+      const attackMult = buffType === 'attack' ? 1.05 : 1;
+      const defenseMult = buffType === 'defense' ? 1.05 : 1;
+      const critBonus = buffType === 'crit' ? 0.03 : 0;
+
+      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(Math.min(1, prev.character.totalStats.critChance + critBonus));
       
       let damage = 0;
       let log = '';
@@ -1779,7 +2219,7 @@ export function useGameState() {
         log = `💨 ${enemyName} esquivou!`;
       } else {
         // Accumulate fractional attack
-        const effectiveAttack = prev.character.totalStats.attack + newPlayerAttackRemainder;
+        const effectiveAttack = (prev.character.totalStats.attack * attackMult) + newPlayerAttackRemainder;
         const attackToUse = Math.floor(effectiveAttack);
         newPlayerAttackRemainder = effectiveAttack - attackToUse;
 
@@ -1827,7 +2267,7 @@ export function useGameState() {
             : 10;
           
           // Apply player defense with accumulation
-          const effectiveDefense = prev.character.totalStats.defense + newPlayerDefenseRemainder;
+          const effectiveDefense = (prev.character.totalStats.defense * defenseMult) + newPlayerDefenseRemainder;
           const defenseToUse = Math.floor(effectiveDefense);
           newPlayerDefenseRemainder = effectiveDefense - defenseToUse;
 
@@ -1880,7 +2320,11 @@ export function useGameState() {
         const isBoss = currentNode?.isBoss || false;
         // XP and Gold from spawned enemy
         const xpReward = spawnedEnemy?.xp || 10;
-        const goldReward = spawnedEnemy?.gold || 0;
+        const baseGoldReward = spawnedEnemy?.gold || 0;
+        const goldReward = buffType === 'gold' ? Math.floor(baseGoldReward * 1.15) : baseGoldReward;
+        const nextBuff = prev.sanctuaryBuff
+          ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
+          : null;
         
         // Calculate lobby penalty: 20% of total damage taken in this battle
         const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
@@ -1903,6 +2347,7 @@ export function useGameState() {
         
         return {
           ...stateAfterXP,
+          sanctuaryBuff: nextBuff,
           character: {
             ...stateAfterXP.character,
             hp: finalLobbyHp, // Apply lobby penalty after victory
@@ -1946,9 +2391,13 @@ export function useGameState() {
         // CRITICAL: Penalty is the ONLY damage applied on death to avoid double-dipping
         // We use the HP the player had BEFORE the battle and subtract 50% of max HP
         const finalLobbyHp = Math.max(0, prev.character.hp - hpPenalty);
+        const nextBuff = prev.sanctuaryBuff
+          ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
+          : null;
 
         return {
           ...prev,
+          sanctuaryBuff: nextBuff,
           character: {
             ...prev.character,
             hp: finalLobbyHp, // Applied 50% penalty (if 0, App.tsx will trigger DeathScreen)
@@ -2025,12 +2474,17 @@ export function useGameState() {
       const enemyDodgeChance = (spawnedEnemy?.dodge || 2) / 100;
 
       const bossDodged = attemptDodge(enemyDodgeChance * 0.5); // Harder to dodge special
-      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(prev.character.totalStats.critChance + 0.10); // Higher crit chance
+      const buffType = prev.sanctuaryBuff?.type;
+      const attackMult = buffType === 'attack' ? 1.05 : 1;
+      const defenseMult = buffType === 'defense' ? 1.05 : 1;
+      const critBonus = buffType === 'crit' ? 0.03 : 0;
+
+      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(Math.min(1, prev.character.totalStats.critChance + critBonus + 0.10)); // Higher crit chance
       
       let newPlayerAttackRemainder = prev.combat.playerAttackRemainder || 0;
       
       // Accumulate fractional attack for special
-      const effectiveAttack = prev.character.totalStats.attack + newPlayerAttackRemainder;
+      const effectiveAttack = (prev.character.totalStats.attack * attackMult) + newPlayerAttackRemainder;
       const attackToUse = Math.floor(effectiveAttack);
       newPlayerAttackRemainder = effectiveAttack - attackToUse;
 
@@ -2085,7 +2539,7 @@ export function useGameState() {
             : 10;
           
           // Apply player defense with accumulation
-          const effectiveDefense = prev.character.totalStats.defense + newPlayerDefenseRemainder;
+          const effectiveDefense = (prev.character.totalStats.defense * defenseMult) + newPlayerDefenseRemainder;
           const defenseToUse = Math.floor(effectiveDefense);
           newPlayerDefenseRemainder = effectiveDefense - defenseToUse;
 
@@ -2130,7 +2584,11 @@ export function useGameState() {
         // Use enemy stats for rewards
         const isBoss = currentNode?.isBoss || false;
         const xpReward = spawnedEnemy?.xp || 20;
-        const goldReward = spawnedEnemy?.gold || 10;
+        const baseGoldReward = spawnedEnemy?.gold || 10;
+        const goldReward = buffType === 'gold' ? Math.floor(baseGoldReward * 1.15) : baseGoldReward;
+        const nextBuff = prev.sanctuaryBuff
+          ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
+          : null;
         
         // Calculate lobby penalty: 20% of total damage taken in this battle
         const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
@@ -2153,6 +2611,7 @@ export function useGameState() {
 
         return {
           ...stateAfterXP,
+          sanctuaryBuff: nextBuff,
           character: {
             ...stateAfterXP.character,
             hp: finalLobbyHp, // Apply lobby penalty after victory
@@ -2196,9 +2655,13 @@ export function useGameState() {
         // CRITICAL: Penalty is the ONLY damage applied on death to avoid double-dipping
         // We use the HP the player had BEFORE the battle and subtract 50% of max HP
         const finalLobbyHp = Math.max(0, prev.character.hp - hpPenalty);
+        const nextBuff = prev.sanctuaryBuff
+          ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
+          : null;
 
         return {
           ...prev,
+          sanctuaryBuff: nextBuff,
           character: {
             ...prev.character,
             hp: finalLobbyHp, // Applied 50% penalty (if 0, App.tsx will trigger DeathScreen)
@@ -2494,6 +2957,8 @@ export function useGameState() {
       const roll = Math.random() * 100;
 
       let newLevel = currentLevel;
+      const protectionStones = prev.inventory.consumables?.protectionStones || 0;
+      let protectionUsed = 0;
       
       if (roll <= successChance) {
         newLevel = targetLevel;
@@ -2506,9 +2971,15 @@ export function useGameState() {
         const downgradeRoll = Math.random() * 100;
         
         if (downgradeRoll <= downgradeChance && currentLevel > 0) {
-          newLevel = currentLevel - 1;
-          result = 'downgrade';
-          addDebugLog(`FAIL! ${itemToUpgrade.name} downgraded to +${newLevel}`);
+          if (protectionStones > 0) {
+            protectionUsed = 1;
+            result = 'fail';
+            addDebugLog(`Pedra de Proteção consumida! ${itemToUpgrade.name} não sofreu downgrade.`);
+          } else {
+            newLevel = currentLevel - 1;
+            result = 'downgrade';
+            addDebugLog(`FAIL! ${itemToUpgrade.name} downgraded to +${newLevel}`);
+          }
         } else {
           result = 'fail';
           addDebugLog(`FAIL! ${itemToUpgrade.name} stayed at +${newLevel}`);
@@ -2545,6 +3016,10 @@ export function useGameState() {
         inventory: {
           ...prev.inventory,
           items: newInventoryItems,
+          consumables: {
+            ...(prev.inventory.consumables || { protectionStones: 0 }),
+            protectionStones: Math.max(0, (prev.inventory.consumables?.protectionStones || 0) - protectionUsed),
+          },
         },
       };
 
@@ -2948,6 +3423,10 @@ export function useGameState() {
     completeMapNode,
     resetMaps,
     spawnEnemyForNode,
+    closeDungeonEvent,
+    chooseSanctuaryBuff,
+    skipMerchant,
+    buyMerchantOffer,
     // Energy System
     recoverEnergy: () => {
       setGameState(prev => ({

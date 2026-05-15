@@ -61,6 +61,10 @@ interface GameContextType {
   completeMapNode: (mapId: MapId, nodeId: string) => void;
   resetMaps: () => void;
   spawnEnemyForNode: (mapId: MapId, nodeId: string) => void;
+  closeDungeonEvent: () => void;
+  chooseSanctuaryBuff: (buffType: 'attack' | 'defense' | 'crit' | 'gold') => void;
+  skipMerchant: () => void;
+  buyMerchantOffer: (offerId: string) => void;
   
   // Energy System
   recoverEnergy: () => void;

@@ -277,7 +277,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   <p className="text-[8px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
                   <p className="text-[5px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">
                     <span className="block">3 energias para</span>
-                    <span className="block">recuperar 20 %</span>
+                    <span className="block">recuperar 20%</span>
                     <span className="block">da vida</span>
                   </p>
                 </div>
@@ -457,21 +457,21 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
         </div>
       </motion.div>
 
-      {/* FOOTER: Static Enter Dungeon Button */}
-      <motion.div variants={itemVariants} className="pt-1">
+6  6      {/* FOOTER: Static Enter Dungeon Button */}
+      <motion.div variants={itemVariants} className="pt-0">
         <motion.button
           onClick={onEnterDungeon}
-          className="w-full h-16 rounded-2xl bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 p-[2px] shadow-[0_0_30px_rgba(245,158,11,0.2)] group active:scale-95 transition-all"
+          className="w-full h-14 rounded-2xl bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 p-[2px] shadow-[0_0_30px_rgba(245,158,11,0.2)] group active:scale-95 transition-all"
         >
           <div className="w-full h-full bg-[#0a0a0a] rounded-[14px] flex flex-col items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors" />
             <div className="flex items-center gap-3 relative z-10">
-              <Sword className="w-6 h-6 text-yellow-500 group-hover:rotate-12 transition-transform" />
-              <span className="text-xl font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400 uppercase">ENTRAR NA DUNGEON</span>
+              <Sword className="w-5 h-5 text-yellow-500 group-hover:rotate-12 transition-transform" />
+              <span className="text-lg font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400 uppercase">ENTRAR NA DUNGEON</span>
             </div>
-            <div className="flex items-center gap-1.5 mt-1 relative z-10">
-              <Zap className="w-3.5 h-3.5 text-yellow-500/70" />
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
+            <div className="flex items-center gap-1.5 mt-0.5 relative z-10">
+              <Zap className="w-3 h-3 text-yellow-500/70" />
+              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
             </div>
           </div>
         </motion.button>

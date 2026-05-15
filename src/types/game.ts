@@ -271,6 +271,62 @@ export interface Gem {
 
 export type MapId = 'map1' | 'map2' | 'map3' | 'map4' | 'map5';
 
+export type DungeonEventType = 'combat' | 'chest' | 'merchant' | 'sanctuary';
+export type EventChestRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type SanctuaryBuffType = 'attack' | 'defense' | 'crit' | 'gold';
+export type PetShardRarity = 'rare' | 'epic' | 'legendary';
+
+export interface ActiveSanctuaryBuff {
+  type: SanctuaryBuffType;
+  remainingCombats: number;
+}
+
+export type DungeonEventRewardType =
+  | 'gold'
+  | 'forgeShard'
+  | 'energyFragment'
+  | 'petShard'
+  | 'item'
+  | 'protectionStone';
+
+export interface DungeonEventReward {
+  type: DungeonEventRewardType;
+  amount?: number;
+  rarity?: Rarity | PetShardRarity;
+  item?: Item;
+}
+
+export interface MerchantOffer {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  reward: DungeonEventReward;
+}
+
+export type DungeonEvent =
+  | {
+      type: 'chest';
+      chestRarity: EventChestRarity;
+      rewards: DungeonEventReward[];
+      mapId: MapId;
+      nodeId: string;
+      stage: number;
+    }
+  | {
+      type: 'merchant';
+      offers: MerchantOffer[];
+      mapId: MapId;
+      nodeId: string;
+      stage: number;
+    }
+  | {
+      type: 'sanctuary';
+      mapId: MapId;
+      nodeId: string;
+      stage: number;
+    };
+
 // Monster spawn data from spreadsheet
 export interface MonsterSpawn {
   name: string;
@@ -1688,6 +1744,9 @@ export interface Inventory {
   specialAttacks: SpecialAttack[];
   lootboxes: { lootbox: Lootbox; quantity: number }[];
   maxSlots: number;
+  consumables?: {
+    protectionStones: number;
+  };
 }
 
 // ============================================
@@ -1702,6 +1761,11 @@ export interface Economy {
     epic: number;
     legendary: number;
     mythic: number;
+  };
+  petShards?: {
+    rare: number;
+    epic: number;
+    legendary: number;
   };
   totalCoinsEarned: number;
   totalCoinsSpent: number;
@@ -1817,6 +1881,8 @@ export interface GameState {
   unlockedSkins: string[];
   achievements: string[];
   chests: (DungeonChest | null)[]; // 4 slots for chests
+  dungeonEvent: DungeonEvent | null;
+  sanctuaryBuff: ActiveSanctuaryBuff | null;
   // Debug logs
   debugLogs: string[];
 }

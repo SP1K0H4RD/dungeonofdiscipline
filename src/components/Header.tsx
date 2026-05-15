@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
@@ -21,7 +21,7 @@ const navItems = [
 export function Header({ currentView, onViewChange }: HeaderProps) {
   const { gameState, syncLocalToCloud } = useGame();
   const { user, signOut, signInWithGoogle } = useAuth();
-  const { character, economy, recoveryMode } = gameState;
+  const { character, economy, recoveryMode, sanctuaryBuff } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -148,6 +148,18 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 {economy.coins}
               </span>
             </motion.div>
+
+            {sanctuaryBuff && (
+              <div className="hidden sm:flex items-center gap-2 bg-green-500/10 px-2 py-1.5 rounded-lg border border-green-500/30">
+                {sanctuaryBuff.type === 'attack' && <Sword className="w-4 h-4 text-green-400" />}
+                {sanctuaryBuff.type === 'defense' && <Shield className="w-4 h-4 text-green-400" />}
+                {sanctuaryBuff.type === 'crit' && <Star className="w-4 h-4 text-green-400" />}
+                {sanctuaryBuff.type === 'gold' && <Coins className="w-4 h-4 text-green-400" />}
+                <span className="text-xs text-green-300">
+                  Buff: {sanctuaryBuff.type} ({sanctuaryBuff.remainingCombats})
+                </span>
+              </div>
+            )}
 
             {/* User Profile */}
             <div className="relative">
