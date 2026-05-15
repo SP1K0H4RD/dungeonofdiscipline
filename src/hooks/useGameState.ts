@@ -21,7 +21,6 @@ import type {
   CalendarEvent,
   FocusTag,
   MapId,
-  DungeonEvent,
   DungeonEventReward,
   EventChestRarity,
   MerchantOffer,
