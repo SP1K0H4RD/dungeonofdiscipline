@@ -303,6 +303,9 @@ const INITIAL_GAME_STATE: GameState = {
   chests: [null, null, null, null], // 4 initial slots
   dungeonEvent: null,
   sanctuaryBuff: null,
+  settings: {
+    infiniteEnergy: false,
+  },
   debugLogs: [],
 };
 
@@ -700,6 +703,10 @@ const migrateGameState = (parsed: any): GameState => {
     ...INITIAL_GAME_STATE,
     ...parsed,
     economy: baseEconomy,
+    settings: {
+      ...INITIAL_GAME_STATE.settings,
+      ...(parsed.settings || {}),
+    },
     // CRITICAL: Deep merge character to preserve new fields
     character: {
       ...INITIAL_CHARACTER,
@@ -1154,7 +1161,7 @@ export function useGameState() {
 
   const selectMapNode = useCallback((mapId: MapId, nodeId: string) => {
     setGameState(prev => {
-      if (prev.character.energy <= 0) {
+      if (!prev.settings?.infiniteEnergy && prev.character.energy <= 0) {
         addDebugLog('Sem energia para entrar na dungeon.');
         return prev;
       }
@@ -1186,7 +1193,7 @@ export function useGameState() {
             maps: freshMaps,
             character: {
               ...prev.character,
-              energy: Math.max(0, prev.character.energy - 1),
+              energy: prev.settings?.infiniteEnergy ? prev.character.energy : Math.max(0, prev.character.energy - 1),
             },
             currentMapId: mapId,
             currentNodeId: nodeId,
@@ -1199,7 +1206,7 @@ export function useGameState() {
           maps: freshMaps,
           character: {
             ...prev.character,
-            energy: Math.max(0, prev.character.energy - 1),
+            energy: prev.settings?.infiniteEnergy ? prev.character.energy : Math.max(0, prev.character.energy - 1),
           },
           currentMapId: mapId,
           currentNodeId: null,
@@ -1261,7 +1268,7 @@ export function useGameState() {
           maps: updatedMaps,
           character: {
             ...prev.character,
-            energy: Math.max(0, prev.character.energy - 1),
+            energy: prev.settings?.infiniteEnergy ? prev.character.energy : Math.max(0, prev.character.energy - 1),
           },
           currentMapId: mapId,
           currentNodeId: nodeId,
@@ -1273,7 +1280,7 @@ export function useGameState() {
         ...prev,
         character: {
           ...prev.character,
-          energy: Math.max(0, prev.character.energy - 1),
+          energy: prev.settings?.infiniteEnergy ? prev.character.energy : Math.max(0, prev.character.energy - 1),
         },
         currentMapId: mapId,
         currentNodeId: null,
@@ -3443,7 +3450,7 @@ export function useGameState() {
     collectChestRewards,
     restCharacter: () => {
       setGameState(prev => {
-        if (prev.character.energy < 3) {
+        if (!prev.settings?.infiniteEnergy && prev.character.energy < 3) {
           addDebugLog('Energia insuficiente para descansar! (Mínimo 3)');
           return prev;
         }
@@ -3452,13 +3459,13 @@ export function useGameState() {
         const prevHp = prev.character.hp;
         const newHp = Math.min(prev.character.maxHp, prev.character.hp + healAmount);
         
-        addDebugLog(`Descansou na fogueira: -3 ⚡, +${healAmount} HP`);
+        addDebugLog(`Descansou na fogueira: ${prev.settings?.infiniteEnergy ? '∞ ⚡' : '-3 ⚡'}, +${healAmount} HP`);
         
         return {
           ...prev,
           character: {
             ...prev.character,
-            energy: prev.character.energy - 3,
+            energy: prev.settings?.infiniteEnergy ? prev.character.energy : prev.character.energy - 3,
             hp: newHp,
           },
           showRestOverlay: true,

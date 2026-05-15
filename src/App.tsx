@@ -25,6 +25,13 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import type { DungeonEventReward, MerchantOffer, SanctuaryBuffType } from '@/types/game';
 
 // ============================================
 // ERROR BOUNDARY - Global Error Protection
@@ -336,6 +343,10 @@ function AppContent() {
     enterMapSystem,
     exitMapSystem,
     leaveCombat,
+    closeDungeonEvent,
+    chooseSanctuaryBuff,
+    skipMerchant,
+    buyMerchantOffer,
     showLevelUp,
     setShowLevelUp,
     showRestOverlay,
@@ -404,6 +415,79 @@ function AppContent() {
         return <Dashboard onEnterDungeon={handleEnterDungeon} />;
     }
   };
+
+  const dungeonEvent = gameState.dungeonEvent;
+
+  const renderReward = (reward: DungeonEventReward, index: number) => {
+    if (reward.type === 'gold') {
+      return (
+        <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
+          <span className="text-xs text-gray-300">Ouro</span>
+          <span className="text-xs font-mono text-yellow-400">+{reward.amount}</span>
+        </div>
+      );
+    }
+    if (reward.type === 'forgeShard') {
+      return (
+        <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
+          <span className="text-xs text-gray-300">Fragmento {reward.rarity}</span>
+          <span className="text-xs font-mono text-purple-400">+{reward.amount}</span>
+        </div>
+      );
+    }
+    if (reward.type === 'energyFragment') {
+      return (
+        <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
+          <span className="text-xs text-gray-300">Fragmento de Energia</span>
+          <span className="text-xs font-mono text-cyan-400">+{reward.amount}</span>
+        </div>
+      );
+    }
+    if (reward.type === 'petShard') {
+      return (
+        <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
+          <span className="text-xs text-gray-300">Estilhaço de Pet {reward.rarity?.toString().toUpperCase()}</span>
+          <span className="text-xs font-mono text-pink-400">+{reward.amount}</span>
+        </div>
+      );
+    }
+    if (reward.type === 'protectionStone') {
+      return (
+        <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
+          <span className="text-xs text-gray-300">Pedra de Proteção</span>
+          <span className="text-xs font-mono text-blue-400">+{reward.amount}</span>
+        </div>
+      );
+    }
+    if (reward.type === 'item' && reward.item) {
+      return (
+        <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
+          <span className="text-xs text-gray-300">{reward.item.name}</span>
+          <span className="text-[10px] uppercase">{reward.item.rarity}</span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const OfferCard = ({ offer }: { offer: MerchantOffer }) => (
+    <div className="p-3 rounded-lg border border-white/10 bg-black/30">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="text-sm font-bold text-white">{offer.title}</h4>
+          <p className="text-[10px] text-gray-400">{offer.description}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-mono text-yellow-400">{offer.price} ouro</p>
+          <Button onClick={() => buyMerchantOffer(offer.id)} className="mt-1 h-6 px-2 text-[10px]">Comprar</Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const BuffButton = ({ label, type }: { label: string; type: SanctuaryBuffType }) => (
+    <Button onClick={() => chooseSanctuaryBuff(type)} className="w-full h-8 text-xs">{label}</Button>
+  );
 
   return (
     <>
@@ -499,6 +583,51 @@ function AppContent() {
               )}
             </AnimatePresence>
           </main>
+
+          <Dialog open={!!dungeonEvent} onOpenChange={(open) => { if (!open) closeDungeonEvent(); }}>
+            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+              {dungeonEvent?.type === 'chest' && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="font-cinzel text-xl">Baú {dungeonEvent.chestRarity.toUpperCase()}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2 py-2">
+                    {dungeonEvent.rewards.map(renderReward)}
+                  </div>
+                  <Button onClick={closeDungeonEvent} className="w-full">Continuar</Button>
+                </>
+              )}
+
+              {dungeonEvent?.type === 'merchant' && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="font-cinzel text-xl">Mercador Perdido</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2 py-2">
+                    {dungeonEvent.offers.map((offer) => (
+                      <OfferCard key={offer.id} offer={offer} />
+                    ))}
+                  </div>
+                  <Button onClick={skipMerchant} variant="outline" className="w-full">Sair</Button>
+                </>
+              )}
+
+              {dungeonEvent?.type === 'sanctuary' && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="font-cinzel text-xl">Santuário da Floresta</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-xs text-gray-400 -mt-2 mb-2">Escolha 1 buff por 3 combates</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <BuffButton label="+5% attack" type="attack" />
+                    <BuffButton label="+5% defense" type="defense" />
+                    <BuffButton label="+3% crit chance" type="crit" />
+                    <BuffButton label="+15% gold ganho" type="gold" />
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Global Overlays */}
           <AnimatePresence>

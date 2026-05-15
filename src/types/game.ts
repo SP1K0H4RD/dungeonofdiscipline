@@ -1883,6 +1883,9 @@ export interface GameState {
   chests: (DungeonChest | null)[]; // 4 slots for chests
   dungeonEvent: DungeonEvent | null;
   sanctuaryBuff: ActiveSanctuaryBuff | null;
+  settings: {
+    infiniteEnergy: boolean;
+  };
   // Debug logs
   debugLogs: string[];
 }

@@ -68,7 +68,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
   };
 
   const handleRest = () => {
-    if (character.energy < 3 || isResting) return;
+    if ((!gameState.settings?.infiniteEnergy && character.energy < 3) || isResting) return;
     
     setIsResting(true);
     
@@ -284,7 +284,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 
                 <Button 
                   onClick={handleRest}
-                  disabled={character.energy < 3 || isResting}
+                  disabled={(!gameState.settings?.infiniteEnergy && character.energy < 3) || isResting}
                   className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-7 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center group/rest py-0"
                 >
                   {isResting ? (
@@ -457,7 +457,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
         </div>
       </motion.div>
 
-6  6      {/* FOOTER: Static Enter Dungeon Button */}
+      {/* FOOTER: Static Enter Dungeon Button */}
       <motion.div variants={itemVariants} className="pt-0">
         <motion.button
           onClick={onEnterDungeon}

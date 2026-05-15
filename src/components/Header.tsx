@@ -1,10 +1,17 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 
 interface HeaderProps {
   currentView: string;
@@ -19,11 +26,12 @@ const navItems = [
 ];
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
-  const { gameState, syncLocalToCloud } = useGame();
+  const { gameState, syncLocalToCloud, setGameState } = useGame();
   const { user, signOut, signInWithGoogle } = useAuth();
   const { character, economy, recoveryMode, sanctuaryBuff } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -195,6 +203,17 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                     </button>
 
                     <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setShowConfig(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-purple-400 hover:bg-purple-500/10 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Configuração
+                    </button>
+
+                    <button
                       onClick={handleSignOut}
                       disabled={isSyncing}
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
@@ -235,6 +254,34 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
         </div>
       </div>
     </motion.header>
+    <Dialog open={showConfig} onOpenChange={setShowConfig}>
+      <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
+            <Settings className="w-5 h-5 text-purple-400" />
+            Configuração
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex items-center justify-between gap-4 py-2">
+          <div>
+            <p className="text-sm font-bold text-white">Energia infinita</p>
+            <p className="text-xs text-gray-500">Impede o consumo de energia ao jogar.</p>
+          </div>
+          <Switch
+            checked={!!gameState.settings?.infiniteEnergy}
+            onCheckedChange={(checked) => {
+              setGameState(prev => ({
+                ...prev,
+                settings: {
+                  ...(prev.settings || { infiniteEnergy: false }),
+                  infiniteEnergy: checked,
+                },
+              }));
+            }}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
