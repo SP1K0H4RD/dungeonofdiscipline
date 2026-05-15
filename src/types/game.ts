@@ -1823,6 +1823,7 @@ export interface DungeonChest {
   status: 'locked' | 'unlocking' | 'unlocked';
   unlockStartedAt?: number; // timestamp
   unlockDuration: number; // in milliseconds
+  pendingRewards?: DungeonEventReward[];
 }
 
 export const CHEST_UNLOCK_TIMES: Record<ChestRarity, number> = {
@@ -1883,6 +1884,10 @@ export interface GameState {
   chests: (DungeonChest | null)[]; // 4 slots for chests
   dungeonEvent: DungeonEvent | null;
   sanctuaryBuff: ActiveSanctuaryBuff | null;
+  lootOverlay: {
+    title: string;
+    rewards: DungeonEventReward[];
+  } | null;
   settings: {
     infiniteEnergy: boolean;
   };

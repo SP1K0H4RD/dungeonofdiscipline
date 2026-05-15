@@ -22,6 +22,8 @@ import type {
   FocusTag,
   MapId,
   DungeonEventReward,
+  DungeonChest,
+  ChestRarity,
   EventChestRarity,
   MerchantOffer,
   PetShardRarity,
@@ -57,6 +59,7 @@ import {
   FORGE_RARITY_MULTIPLIERS,
   FORGE_SUCCESS_CHANCES,
   FORGE_DOWNGRADE_CHANCES,
+  CHEST_UNLOCK_TIMES,
   PETS,
   type PetId,
   type DayOfWeek,
@@ -303,6 +306,7 @@ const INITIAL_GAME_STATE: GameState = {
   chests: [null, null, null, null], // 4 initial slots
   dungeonEvent: null,
   sanctuaryBuff: null,
+  lootOverlay: null,
   settings: {
     infiniteEnergy: false,
   },
@@ -574,6 +578,16 @@ const generateChestRewards = (chestRarity: EventChestRarity): DungeonEventReward
   return rewards;
 };
 
+const createDungeonChest = (rarity: ChestRarity, pendingRewards: DungeonEventReward[]): DungeonChest => {
+  return {
+    id: generateId(),
+    rarity,
+    status: 'locked',
+    unlockDuration: CHEST_UNLOCK_TIMES[rarity],
+    pendingRewards,
+  };
+};
+
 const generateMerchantOffers = (): MerchantOffer[] => {
   const offers: MerchantOffer[] = [];
   const seenKeys = new Set<string>();
@@ -707,6 +721,7 @@ const migrateGameState = (parsed: any): GameState => {
       ...INITIAL_GAME_STATE.settings,
       ...(parsed.settings || {}),
     },
+    lootOverlay: null,
     // CRITICAL: Deep merge character to preserve new fields
     character: {
       ...INITIAL_CHARACTER,
@@ -1215,10 +1230,23 @@ export function useGameState() {
         if (eventType === 'chest') {
           const chestRarity = rollEventChestRarity();
           const rewards = generateChestRewards(chestRarity);
+          const emptySlot = baseState.chests.findIndex(c => !c);
+          if (emptySlot !== -1) {
+            const newChests = [...baseState.chests];
+            newChests[emptySlot] = createDungeonChest(chestRarity, rewards);
+            addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);
+            return {
+              ...baseState,
+              chests: newChests,
+              dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
+            };
+          }
+
+          addDebugLog(`🧰 Baú encontrado, mas não há espaço (4/4). Recompensas entregues.`);
           const rewarded = applyDungeonRewards(baseState, rewards);
-          addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);
           return {
             ...rewarded,
+            lootOverlay: { title: `Baú ${chestRarity.toUpperCase()}`, rewards },
             dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
           };
         }
@@ -1290,10 +1318,23 @@ export function useGameState() {
       if (eventType === 'chest') {
         const chestRarity = rollEventChestRarity();
         const rewards = generateChestRewards(chestRarity);
+        const emptySlot = baseState.chests.findIndex(c => !c);
+        if (emptySlot !== -1) {
+          const newChests = [...baseState.chests];
+          newChests[emptySlot] = createDungeonChest(chestRarity, rewards);
+          addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);
+          return {
+            ...baseState,
+            chests: newChests,
+            dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
+          };
+        }
+
+        addDebugLog(`🧰 Baú encontrado, mas não há espaço (4/4). Recompensas entregues.`);
         const rewarded = applyDungeonRewards(baseState, rewards);
-        addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);
         return {
           ...rewarded,
+          lootOverlay: { title: `Baú ${chestRarity.toUpperCase()}`, rewards },
           dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
         };
       }
@@ -3374,11 +3415,20 @@ export function useGameState() {
       const chest = prev.chests[slotIndex];
       if (!chest || chest.status !== 'unlocked') return prev;
 
+      const rewards = chest.pendingRewards && chest.pendingRewards.length > 0
+        ? chest.pendingRewards
+        : generateChestRewards(chest.rarity as EventChestRarity);
+
       const newChests = [...prev.chests];
       newChests[slotIndex] = null;
 
-      addDebugLog(`Baú ${chest.rarity} aberto! Recompensas em breve...`);
-      return { ...prev, chests: newChests };
+      const base = { ...prev, chests: newChests };
+      const rewarded = applyDungeonRewards(base, rewards);
+      addDebugLog(`Baú ${chest.rarity} aberto!`);
+      return {
+        ...rewarded,
+        lootOverlay: { title: `Baú ${chest.rarity.toUpperCase()}`, rewards },
+      };
     });
   }, [addDebugLog]);
 

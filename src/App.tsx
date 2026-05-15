@@ -347,6 +347,7 @@ function AppContent() {
     chooseSanctuaryBuff,
     skipMerchant,
     buyMerchantOffer,
+    setGameState,
     showLevelUp,
     setShowLevelUp,
     showRestOverlay,
@@ -417,6 +418,7 @@ function AppContent() {
   };
 
   const dungeonEvent = gameState.dungeonEvent;
+  const lootOverlay = gameState.lootOverlay;
 
   const renderReward = (reward: DungeonEventReward, index: number) => {
     if (reward.type === 'gold') {
@@ -488,6 +490,38 @@ function AppContent() {
   const BuffButton = ({ label, type }: { label: string; type: SanctuaryBuffType }) => (
     <Button onClick={() => chooseSanctuaryBuff(type)} className="w-full h-8 text-xs">{label}</Button>
   );
+
+  const [eventIntro, setEventIntro] = useState<null | { type: 'chest' | 'merchant' | 'sanctuary'; chestRarity?: string }>(null);
+  const [showEventDialog, setShowEventDialog] = useState(false);
+
+  useEffect(() => {
+    if (!dungeonEvent) {
+      setEventIntro(null);
+      setShowEventDialog(false);
+      return;
+    }
+
+    setShowEventDialog(false);
+
+    if (dungeonEvent.type === 'chest') {
+      setEventIntro({ type: 'chest', chestRarity: dungeonEvent.chestRarity });
+    } else if (dungeonEvent.type === 'merchant') {
+      setEventIntro({ type: 'merchant' });
+    } else {
+      setEventIntro({ type: 'sanctuary' });
+    }
+
+    const t = window.setTimeout(() => {
+      setEventIntro(null);
+      if (dungeonEvent.type === 'chest') {
+        closeDungeonEvent();
+      } else {
+        setShowEventDialog(true);
+      }
+    }, 900);
+
+    return () => window.clearTimeout(t);
+  }, [dungeonEvent, closeDungeonEvent]);
 
   return (
     <>
@@ -584,20 +618,47 @@ function AppContent() {
             </AnimatePresence>
           </main>
 
-          <Dialog open={!!dungeonEvent} onOpenChange={(open) => { if (!open) closeDungeonEvent(); }}>
-            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
-              {dungeonEvent?.type === 'chest' && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle className="font-cinzel text-xl">Baú {dungeonEvent.chestRarity.toUpperCase()}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-2 py-2">
-                    {dungeonEvent.rewards.map(renderReward)}
+          <AnimatePresence>
+            {eventIntro && (
+              <motion.div
+                key="event-intro"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.6, x: eventIntro.type === 'chest' ? 180 : 0, y: eventIntro.type === 'chest' ? 240 : 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="text-center"
+                >
+                  <div className="text-6xl">
+                    {eventIntro.type === 'chest' && (eventIntro.chestRarity === 'legendary' ? '👑' : eventIntro.chestRarity === 'epic' ? '💎' : eventIntro.chestRarity === 'rare' ? '🎁' : '📦')}
+                    {eventIntro.type === 'merchant' && '🧙'}
+                    {eventIntro.type === 'sanctuary' && '🌿'}
                   </div>
-                  <Button onClick={closeDungeonEvent} className="w-full">Continuar</Button>
-                </>
-              )}
+                  <div className="mt-3 text-lg font-bold font-cinzel">
+                    {eventIntro.type === 'chest' && 'Baú encontrado!'}
+                    {eventIntro.type === 'merchant' && 'Mercador Perdido!'}
+                    {eventIntro.type === 'sanctuary' && 'Santuário da Floresta!'}
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    {eventIntro.type === 'chest' && `Raridade: ${eventIntro.chestRarity?.toUpperCase()}`}
+                    {eventIntro.type === 'merchant' && 'Escolha 1 oferta'}
+                    {eventIntro.type === 'sanctuary' && 'Escolha 1 buff'}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
+          <Dialog
+            open={!!dungeonEvent && showEventDialog && dungeonEvent.type !== 'chest'}
+            onOpenChange={(open) => { if (!open) closeDungeonEvent(); }}
+          >
+            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
               {dungeonEvent?.type === 'merchant' && (
                 <>
                   <DialogHeader>
@@ -626,6 +687,27 @@ function AppContent() {
                   </div>
                 </>
               )}
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={!!lootOverlay && !eventIntro}
+            onOpenChange={(open) => {
+              if (!open) {
+                setGameState(prev => ({ ...prev, lootOverlay: null }));
+              }
+            }}
+          >
+            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-cinzel text-xl">{lootOverlay?.title || 'Recompensas'}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 py-2">
+                {(lootOverlay?.rewards || []).map(renderReward)}
+              </div>
+              <Button onClick={() => setGameState(prev => ({ ...prev, lootOverlay: null }))} className="w-full">
+                Continuar
+              </Button>
             </DialogContent>
           </Dialog>
 
