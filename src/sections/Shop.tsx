@@ -11,12 +11,20 @@ import {
   TrendingUp,
   ShieldCheck,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Check,
+  X
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import type { Item, Rarity } from '@/types/game';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -43,6 +51,12 @@ export function Shop() {
   const { economy, inventory, character } = gameState;
   const [selectedForgeItemId, setSelectedForgeItemId] = useState<string | null>(null);
   const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; result: 'success' | 'fail' | 'downgrade' } | null>(null);
+  const [confirmUpgrade, setConfirmUpgrade] = useState(false);
+  const [confirmConvertRarity, setConfirmConvertRarity] = useState<Rarity | null>(null);
+  const [confirmDestroyItemIds, setConfirmDestroyItemIds] = useState<string[] | null>(null);
+  const [itemActionTarget, setItemActionTarget] = useState<Item | null>(null);
+  const [multiSelectDestroy, setMultiSelectDestroy] = useState(false);
+  const [selectedDestroyIds, setSelectedDestroyIds] = useState<string[]>([]);
 
   const selectedForgeItem = (inventory.items.find(i => i.id === selectedForgeItemId) || 
                             [
@@ -56,19 +70,65 @@ export function Shop() {
 
   const handleUpgrade = () => {
     if (!selectedForgeItemId) return;
+    setConfirmUpgrade(true);
+  };
+
+  const executeUpgrade = () => {
+    if (!selectedForgeItemId) return;
     const res = upgradeItem(selectedForgeItemId);
     setUpgradeResult(res);
-    
-    // Clear result after 3 seconds
+    setConfirmUpgrade(false);
     setTimeout(() => setUpgradeResult(null), 3000);
   };
 
-  const handleDestroy = (itemId: string) => {
-    destroyItem(itemId);
-    if (selectedForgeItemId === itemId) setSelectedForgeItemId(null);
+  const isEquippedItemId = (itemId: string) => Object.values(gameState.character.equipped).some(i => i?.id === itemId);
+
+  const toggleDestroySelect = (itemId: string) => {
+    if (isEquippedItemId(itemId)) return;
+    setSelectedDestroyIds(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
+  };
+
+  const openDestroyConfirm = (itemIds: string[]) => {
+    const filtered = itemIds.filter(id => !isEquippedItemId(id));
+    if (filtered.length === 0) return;
+    setConfirmDestroyItemIds(filtered);
+  };
+
+  const executeDestroy = (itemIds: string[]) => {
+    for (const id of itemIds) destroyItem(id);
+    if (itemIds.includes(selectedForgeItemId || '')) setSelectedForgeItemId(null);
+    setConfirmDestroyItemIds(null);
+    setMultiSelectDestroy(false);
+    setSelectedDestroyIds([]);
+  };
+
+  const rarityOrder: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+  const getNextRarity = (r: Rarity): Rarity | null => {
+    const idx = rarityOrder.indexOf(r);
+    if (idx === -1 || idx >= rarityOrder.length - 1) return null;
+    return rarityOrder[idx + 1];
   };
 
   const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
+  const equippedItems = ([
+    character.equipped.weapon,
+    character.equipped.armor,
+    character.equipped.helmet,
+    character.equipped.boots,
+    character.equipped.accessory,
+  ].filter(Boolean) as Item[]).filter((it, idx, arr) => arr.findIndex(a => a.id === it.id) === idx);
+  const itemsById = new Map(inventory.items.map(i => [i.id, i]));
+  const getDestroyYield = (item: Item) => Math.max(1, item.upgradeLevel);
+  const destroyTotals = (ids: string[]) => {
+    const totals: Partial<Record<Rarity, number>> = {};
+    for (const id of ids) {
+      const it = itemsById.get(id);
+      if (!it) continue;
+      const amt = getDestroyYield(it);
+      totals[it.rarity] = (totals[it.rarity] || 0) + amt;
+    }
+    return totals;
+  };
 
   return (
     <div className="space-y-6 pt-10 pb-24 overflow-x-hidden">
@@ -113,7 +173,7 @@ export function Shop() {
               {/* Conversion Trigger */}
               {r !== 'legendary' && economy?.shards?.[r] >= 10 && (
                 <button
-                  onClick={() => convertShards(r)}
+                  onClick={() => setConfirmConvertRarity(r)}
                   className="absolute bottom-1 right-1 p-1 bg-black/60 rounded-lg border border-white/10 hover:bg-black/80 transition-all group/btn"
                 >
                   <TrendingUp className="w-3 h-3 text-green-500 group-hover/btn:scale-110 transition-transform" />
@@ -255,7 +315,7 @@ export function Shop() {
                     <div className="flex flex-col items-center justify-center border-l border-white/10">
                       <div className="flex items-center gap-2 mb-1">
                         <Zap className="w-3.5 h-3.5 text-purple-500" />
-                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Fragmentos</p>
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Cristais</p>
                       </div>
                       <p className="text-lg font-black text-purple-500 font-mono">
                         {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards}
@@ -314,8 +374,12 @@ export function Shop() {
                       Forjar Aço
                     </Button>
                     <Button
-                      onClick={() => handleDestroy(selectedForgeItem.id)}
-                      className="bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-500/20 px-8 h-16 rounded-2xl active:scale-95 transition-all border-b-4 border-red-900/40"
+                      onClick={() => openDestroyConfirm([selectedForgeItem.id])}
+                      disabled={isEquippedItemId(selectedForgeItem.id)}
+                      className={cn(
+                        "bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-500/20 px-8 h-16 rounded-2xl active:scale-95 transition-all border-b-4 border-red-900/40",
+                        isEquippedItemId(selectedForgeItem.id) && "opacity-40 cursor-not-allowed"
+                      )}
                     >
                       <Trash2 className="w-6 h-6" />
                     </Button>
@@ -364,15 +428,65 @@ export function Shop() {
               </TooltipProvider>
             </h4>
             
+            {equippedItems.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between px-2 mb-2">
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Equipados</p>
+                  {multiSelectDestroy && (
+                    <button
+                      onClick={() => { setMultiSelectDestroy(false); setSelectedDestroyIds([]); }}
+                      className="text-[10px] text-gray-400 hover:text-white font-black uppercase tracking-widest flex items-center gap-1"
+                    >
+                      <X className="w-3 h-3" />
+                      Sair
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-3 px-1">
+                  {equippedItems.map((item) => {
+                    const colors = rarityColors[item.rarity as Rarity] || rarityColors.common;
+                    const isSelected = selectedForgeItemId === item.id;
+                    return (
+                      <motion.button
+                        key={item.id}
+                        onClick={() => {
+                          if (multiSelectDestroy) return;
+                          setItemActionTarget(item);
+                        }}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={cn(
+                          "relative aspect-square rounded-2xl border-2 transition-all group flex items-center justify-center shadow-lg",
+                          isSelected ? "border-orange-500 bg-orange-500/20 ring-4 ring-orange-500/10" : cn(colors.border, "bg-black/60 hover:border-white/20 hover:bg-black/40")
+                        )}
+                      >
+                        <div className="text-3xl filter drop-shadow-md group-hover:scale-110 transition-transform">{item.icon}</div>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl">
+                          <Lock className="w-4 h-4 text-gray-300/70" />
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-3 gap-3 overflow-y-auto pr-3 custom-scrollbar flex-1">
               {inventory.items.map((item) => {
                 const isEquipped = Object.values(gameState.character.equipped).some(i => i?.id === item.id);
                 const colors = rarityColors[item.rarity as Rarity] || rarityColors.common;
+                const isSelectedForDestroy = selectedDestroyIds.includes(item.id);
                 
                 return (
                   <motion.button
                     key={item.id}
-                    onClick={() => setSelectedForgeItemId(item.id)}
+                    onClick={() => {
+                      if (multiSelectDestroy) {
+                        toggleDestroySelect(item.id);
+                        return;
+                      }
+                      setItemActionTarget(item);
+                    }}
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     className={cn(
@@ -380,7 +494,8 @@ export function Shop() {
                       selectedForgeItemId === item.id 
                         ? "border-orange-500 bg-orange-500/20 ring-4 ring-orange-500/10" 
                         : cn(colors.border, "bg-black/60 hover:border-white/20 hover:bg-black/40"),
-                      isEquipped && "opacity-40"
+                      isEquipped && "opacity-40",
+                      multiSelectDestroy && isSelectedForDestroy && "border-red-500 bg-red-500/10 ring-4 ring-red-500/10"
                     )}
                   >
                     <div className="text-3xl filter drop-shadow-md group-hover:scale-110 transition-transform">{item.icon}</div>
@@ -392,6 +507,14 @@ export function Shop() {
                     {isEquipped && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl">
                         <Lock className="w-4 h-4 text-gray-500" />
+                      </div>
+                    )}
+                    {multiSelectDestroy && !isEquipped && (
+                      <div className={cn(
+                        "absolute bottom-2 left-2 w-5 h-5 rounded-md border flex items-center justify-center",
+                        isSelectedForDestroy ? "bg-red-600 border-red-500 text-white" : "bg-black/50 border-white/10 text-transparent"
+                      )}>
+                        <Check className="w-3 h-3" />
                       </div>
                     )}
                   </motion.button>
@@ -416,25 +539,222 @@ export function Shop() {
               <div className="flex items-start gap-3">
                 <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
                 <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">MELHORIA:</span> Custo fixo de <span className="text-white">1 Fragmento</span> por nível. Ouro aumenta +25 a cada nível.
+                  <span className="text-orange-500/80">MELHORIA:</span> Custo fixo de <span className="text-white">1 Cristal</span> por nível. Ouro aumenta +25 a cada nível.
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
                 <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">DESMANTELAR:</span> Recupera fragmentos igual ao nível de upgrade do item (Mínimo 1).
+                  <span className="text-orange-500/80">DESMANTELAR:</span> Recupera cristais igual ao nível de upgrade do item (Mínimo 1).
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
                 <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">CONVERSÃO:</span> Use 10 Fragmentos para criar 1 da raridade superior clicando na seta.
+                  <span className="text-orange-500/80">CONVERSÃO:</span> Use 10 Cristais para criar 1 da raridade superior clicando na seta.
                 </p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={!!itemActionTarget} onOpenChange={(open) => { if (!open) setItemActionTarget(null); }}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl">Escolha uma ação</DialogTitle>
+          </DialogHeader>
+          {itemActionTarget && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 bg-black/30 border border-white/10 rounded-xl p-3">
+                <div className="text-3xl">{itemActionTarget.icon}</div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{itemActionTarget.name}</p>
+                  <p className="text-[10px] text-gray-400 uppercase">{itemActionTarget.rarity}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => {
+                    setSelectedForgeItemId(itemActionTarget.id);
+                    setItemActionTarget(null);
+                  }}
+                  className="w-full"
+                >
+                  Selecionar individualmente
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (isEquippedItemId(itemActionTarget.id)) return;
+                    setMultiSelectDestroy(true);
+                    setSelectedDestroyIds([itemActionTarget.id]);
+                    setItemActionTarget(null);
+                  }}
+                  disabled={isEquippedItemId(itemActionTarget.id)}
+                  variant="outline"
+                  className={cn("w-full", isEquippedItemId(itemActionTarget.id) && "opacity-40 cursor-not-allowed")}
+                >
+                  Selecionar mais itens
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {multiSelectDestroy && (
+        <div className="fixed bottom-4 left-4 right-4 z-[120] max-w-md mx-auto bg-[#1a1a2e] border border-[#2d2d44] rounded-2xl p-4 shadow-2xl">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white truncate">Desmantelar itens</p>
+              <p className="text-xs text-gray-400">
+                Selecionados: <span className="text-white font-mono">{selectedDestroyIds.length}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => openDestroyConfirm(selectedDestroyIds)}
+                disabled={selectedDestroyIds.length === 0}
+                className="h-9 bg-red-600 hover:bg-red-700"
+              >
+                Confirmar
+              </Button>
+              <Button
+                onClick={() => { setMultiSelectDestroy(false); setSelectedDestroyIds([]); }}
+                variant="outline"
+                className="h-9"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={!!confirmDestroyItemIds} onOpenChange={(open) => { if (!open) setConfirmDestroyItemIds(null); }}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl">Confirmar desmantelar</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-400">
+              Itens: <span className="text-white font-mono">{confirmDestroyItemIds?.length || 0}</span>
+            </p>
+            <div className="bg-black/30 border border-white/10 rounded-xl p-3 space-y-2">
+              {Object.entries(destroyTotals(confirmDestroyItemIds || [])).map(([rarity, amount]) => (
+                <div key={rarity} className="flex items-center justify-between">
+                  <span className="text-xs text-gray-300 uppercase">{rarity}</span>
+                  <span className="text-xs font-mono text-purple-300">+{amount} cristais</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => executeDestroy(confirmDestroyItemIds || [])}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                Desmantelar
+              </Button>
+              <Button
+                onClick={() => setConfirmDestroyItemIds(null)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmConvertRarity} onOpenChange={(open) => { if (!open) setConfirmConvertRarity(null); }}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl">Confirmar conversão</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-400">
+              Converter <span className="text-white font-mono">10</span> cristais <span className="text-white font-mono">{confirmConvertRarity}</span> em <span className="text-white font-mono">1</span> cristal <span className="text-white font-mono">{getNextRarity(confirmConvertRarity as Rarity)}</span>?
+            </p>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  if (!confirmConvertRarity) return;
+                  convertShards(confirmConvertRarity);
+                  setConfirmConvertRarity(null);
+                }}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                Confirmar
+              </Button>
+              <Button
+                onClick={() => setConfirmConvertRarity(null)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmUpgrade} onOpenChange={(open) => { if (!open) setConfirmUpgrade(false); }}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl">Confirmar melhoria</DialogTitle>
+          </DialogHeader>
+          {selectedForgeItem && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between bg-black/30 border border-white/10 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">{selectedForgeItem.icon}</div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{selectedForgeItem.name}</p>
+                    <p className="text-[10px] text-gray-400 uppercase">
+                      +{selectedForgeItem.upgradeLevel} → +{Math.min(10, selectedForgeItem.upgradeLevel + 1)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-black/30 border border-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Ouro</p>
+                  <p className="text-sm font-mono text-yellow-400">
+                    {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]}
+                  </p>
+                </div>
+                <div className="bg-black/30 border border-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Cristais</p>
+                  <p className="text-sm font-mono text-purple-400">
+                    {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={executeUpgrade}
+                  disabled={
+                    selectedForgeItem.upgradeLevel >= 10 || 
+                    economy.coins < (FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]) || 
+                    (economy?.shards?.[selectedForgeItem.rarity] || 0) < FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards
+                  }
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Confirmar
+                </Button>
+                <Button
+                  onClick={() => setConfirmUpgrade(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

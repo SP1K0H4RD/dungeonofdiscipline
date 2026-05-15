@@ -635,8 +635,8 @@ const generateMerchantOffers = (): MerchantOffer[] => {
     if (shardRoll < 70) {
       return {
         id: generateId(),
-        title: 'Fragmento Common',
-        description: 'Fragmento para forja.',
+        title: 'Cristal Common',
+        description: 'Cristal para forja.',
         price: 70,
         reward: { type: 'forgeShard', rarity: 'common', amount: 1 },
       };
@@ -644,16 +644,16 @@ const generateMerchantOffers = (): MerchantOffer[] => {
     if (shardRoll < 95) {
       return {
         id: generateId(),
-        title: 'Fragmento Rare',
-        description: 'Fragmento para forja.',
+        title: 'Cristal Rare',
+        description: 'Cristal para forja.',
         price: 180,
         reward: { type: 'forgeShard', rarity: 'rare', amount: 1 },
       };
     }
     return {
       id: generateId(),
-      title: 'Fragmento Epic',
-      description: 'Fragmento para forja.',
+      title: 'Cristal Epic',
+      description: 'Cristal para forja.',
       price: 400,
       reward: { type: 'forgeShard', rarity: 'epic', amount: 1 },
     };
@@ -672,8 +672,8 @@ const generateMerchantOffers = (): MerchantOffer[] => {
   while (offers.length < 3) {
     offers.push({
       id: generateId(),
-      title: 'Fragmento Common',
-      description: 'Fragmento para forja.',
+      title: 'Cristal Common',
+      description: 'Cristal para forja.',
       price: 70,
       reward: { type: 'forgeShard', rarity: 'common', amount: 1 },
     });
@@ -2905,7 +2905,7 @@ export function useGameState() {
     setGameState(prev => {
       const shards = prev.economy?.shards || { common: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
       if (shards[fromRarity] < 10) {
-        addDebugLog(`Insufficient ${fromRarity} shards (10 required)`);
+        addDebugLog(`Cristais insuficientes (${fromRarity}) (precisa de 10)`);
         return prev;
       }
 
@@ -2913,7 +2913,7 @@ export function useGameState() {
       newShards[fromRarity] -= 10;
       newShards[toRarity] = (newShards[toRarity] || 0) + 1;
 
-      addDebugLog(`Converted 10 ${fromRarity} shards into 1 ${toRarity} shard`);
+      addDebugLog(`Conversão: 10 cristais ${fromRarity} viraram 1 cristal ${toRarity}`);
 
       return {
         ...prev,
@@ -2948,7 +2948,7 @@ export function useGameState() {
       
       const newInventoryItems = prev.inventory.items.filter(i => i.id !== itemId);
 
-      addDebugLog(`Destroyed ${itemToDestroy.name} for ${shardAmount} ${rarity} fragment(s)`);
+      addDebugLog(`Desmantelou ${itemToDestroy.name}: +${shardAmount} cristal(is) ${rarity}`);
 
       return {
         ...prev,
@@ -2995,7 +2995,7 @@ export function useGameState() {
       }
 
       if (shards[rarity] < shardCost) {
-        addDebugLog(`Insufficient ${rarity} fragments for upgrade (${shardCost} required)`);
+        addDebugLog(`Cristais insuficientes (${rarity}) para forja (${shardCost} necessário)`);
         return prev;
       }
 

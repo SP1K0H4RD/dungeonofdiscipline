@@ -432,7 +432,7 @@ function AppContent() {
     if (reward.type === 'forgeShard') {
       return (
         <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
-          <span className="text-xs text-gray-300">Fragmento {reward.rarity}</span>
+          <span className="text-xs text-gray-300">Cristal {reward.rarity}</span>
           <span className="text-xs font-mono text-purple-400">+{reward.amount}</span>
         </div>
       );
