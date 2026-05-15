@@ -4,6 +4,7 @@ import {
   Clock,
   FlameKindling,
   Heart,
+  Lock,
   RotateCcw,
   Settings,
   Skull,
@@ -11,6 +12,7 @@ import {
   Star,
   Sword,
   Target,
+  X,
   Zap,
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
@@ -52,10 +54,11 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     restCharacter, 
     recoverEnergy, 
     selectPet,
+    unlockPet,
     startUnlockingChest,
     collectChestRewards
   } = useGame();
-  const { character, recoveryMode, selectedPetId } = gameState;
+  const { character, recoveryMode, selectedPetId, economy, unlockedPets } = gameState;
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showPetSelector, setShowPetSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -520,41 +523,141 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
       {/* Pet Selector Dialog */}
       <Dialog open={showPetSelector} onOpenChange={setShowPetSelector}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-              Escolha seu Pet
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 gap-4 py-4">
-            {(Object.values(PETS) as any[]).map((pet) => (
-              <motion.button
-                key={pet.id}
-                onClick={() => {
-                  selectPet(selectedPetId === pet.id ? null : pet.id);
-                  setShowPetSelector(false);
-                }}
-                className={cn(
-                  "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
-                  selectedPetId === pet.id 
-                    ? "bg-purple-500/20 border-purple-500" 
-                    : "bg-black/40 border-[#2d2d44] hover:border-gray-600"
-                )}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="text-4xl">{pet.icon}</div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-white flex items-center gap-2">
-                    {pet.name}
-                    {selectedPetId === pet.id && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded-full uppercase">Ativo</span>}
-                  </h4>
-                  <p className="text-[10px] text-gray-400 mt-1 leading-tight">{pet.abilityDescription}</p>
+        <DialogContent className="bg-transparent border-none text-white max-w-3xl p-0 shadow-none">
+          <div className="relative w-full rounded-2xl border-2 border-purple-500/60 bg-black/80 shadow-[0_0_80px_rgba(168,85,247,0.25)] overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.25),transparent_55%)]" />
+            <button
+              onClick={() => setShowPetSelector(false)}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-xl border border-white/10 bg-black/40 hover:bg-black/60 flex items-center justify-center"
+            >
+              <X className="w-4 h-4 text-gray-300" />
+            </button>
+
+            <div className="px-6 pt-6 pb-4 text-center relative">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-10 h-10 rounded-full border border-purple-500/40 bg-purple-500/10 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
                 </div>
-              </motion.button>
-            ))}
+                <h2 className="text-3xl font-black font-cinzel tracking-widest text-white">PETS</h2>
+              </div>
+              <p className="mt-2 text-xs text-gray-400">
+                Colete fragmentos para desbloquear novos pets e fortalecer sua jornada.
+              </p>
+            </div>
+
+            <div className="px-6 pb-6 relative">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {Object.values(PETS).map((pet) => {
+                  const isUnlocked = (unlockedPets || []).includes(pet.id);
+                  const isActive = selectedPetId === pet.id;
+                  const have = economy.petShards?.[pet.shardRarity] || 0;
+                  const need = pet.unlockCost;
+                  const canUnlock = !isUnlocked && have >= need;
+                  const progress = Math.min(1, need > 0 ? have / need : 0);
+
+                  return (
+                    <motion.button
+                      key={pet.id}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          selectPet(isActive ? null : pet.id);
+                          setShowPetSelector(false);
+                          return;
+                        }
+                        if (canUnlock) {
+                          unlockPet(pet.id);
+                          selectPet(pet.id);
+                        }
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={cn(
+                        "relative rounded-xl border overflow-hidden text-left p-3 transition-all",
+                        isActive ? "border-purple-400 bg-purple-500/10" : "border-white/10 bg-black/40 hover:border-white/20",
+                        !isUnlocked && "grayscale"
+                      )}
+                      style={{ boxShadow: isActive ? `0 0 30px ${pet.color}33` : undefined }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-black font-cinzel truncate" style={{ color: pet.color }}>
+                            {pet.name}
+                          </p>
+                          <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">
+                            {isUnlocked ? (isActive ? 'Ativo' : 'Desbloqueado') : 'Bloqueado'}
+                          </p>
+                        </div>
+                        <div className="text-2xl">{pet.icon}</div>
+                      </div>
+
+                      {!isUnlocked && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <div className="w-10 h-10 rounded-xl border border-white/10 bg-black/50 flex items-center justify-center">
+                            <Lock className="w-5 h-5 text-gray-300/80" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-10 space-y-2">
+                        <div className="flex items-center justify-between text-[10px] font-black">
+                          <span className="text-gray-400 uppercase tracking-widest">Fragmentos</span>
+                          <span className="text-gray-300 font-mono">
+                            {Math.min(have, need)}/{need}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/5 border border-white/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${Math.floor(progress * 100)}%`,
+                              background: pet.color,
+                            }}
+                          />
+                        </div>
+
+                        {canUnlock ? (
+                          <div className="text-[10px] font-black uppercase tracking-widest text-green-400">
+                            Clique para desbloquear
+                          </div>
+                        ) : (
+                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            {!isUnlocked ? 'Bloqueado' : 'Disponível'}
+                          </div>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-purple-500/20 bg-black/40 px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center">
+                    <div className="text-xl">🧩</div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest">
+                      Fragmentos de Pet
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-bold leading-tight">
+                      Colete fragmentos para desbloquear novos pets poderosos.
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Disponíveis</p>
+                  <p className="text-lg font-black font-mono text-purple-300">
+                    {(economy.petShards?.rare || 0) + (economy.petShards?.epic || 0) + (economy.petShards?.legendary || 0)}
+                  </p>
+                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-1">
+                    Coleção
+                  </p>
+                  <p className="text-[10px] text-gray-300 font-mono">
+                    {(unlockedPets || []).length}/{Object.keys(PETS).length} desbloqueados
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

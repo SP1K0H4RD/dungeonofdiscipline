@@ -30,7 +30,16 @@ export type FocusTag = 'estudos' | 'trabalho' | 'saude' | 'fitness' | 'leitura' 
 // PET SYSTEM
 // ============================================
 
-export type PetId = 'lobo-arcano' | 'morcego-vampirico' | 'raposa-astral';
+export type PetId =
+  | 'lobo-arcano'
+  | 'morcego-vampirico'
+  | 'raposa-astral'
+  | 'pantera-espectral'
+  | 'coruja-ancestral'
+  | 'salamandra-ignea'
+  | 'guardiao-de-pedra'
+  | 'drako-lendario'
+  | 'fenix-celestial';
 
 export interface Pet {
   id: PetId;
@@ -44,12 +53,14 @@ export interface Pet {
   abilityName: string;
   abilityDescription: string;
   chance: number;
+  shardRarity: PetShardRarity;
+  unlockCost: number;
 }
 
 export const PETS: Record<PetId, Pet> = {
   'lobo-arcano': {
     id: 'lobo-arcano',
-    name: 'Lobo Arcano',
+    name: 'Lobo Sombrio',
     description: 'Um lobo sombrio envolto em energia arcana roxa.',
     icon: '🐺',
     idleSprite: '🐺',
@@ -58,7 +69,9 @@ export const PETS: Record<PetId, Pet> = {
     color: '#a855f7', // purple-500
     abilityName: 'Mordida Crítica',
     abilityDescription: '5% de chance de atacar. Garante crítico (1.3x) no próximo ataque do player.',
-    chance: 0.05
+    chance: 0.05,
+    shardRarity: 'rare',
+    unlockCost: 30,
   },
   'morcego-vampirico': {
     id: 'morcego-vampirico',
@@ -71,7 +84,9 @@ export const PETS: Record<PetId, Pet> = {
     color: '#ef4444', // red-500
     abilityName: 'Dreno de Sangue',
     abilityDescription: '5% de chance de atacar. Recupera 50% do dano causado no próximo ataque.',
-    chance: 0.05
+    chance: 0.05,
+    shardRarity: 'epic',
+    unlockCost: 30,
   },
   'raposa-astral': {
     id: 'raposa-astral',
@@ -84,8 +99,100 @@ export const PETS: Record<PetId, Pet> = {
     color: '#3b82f6', // blue-500
     abilityName: 'Esquiva Estelar',
     abilityDescription: '5% de chance de atacar. Garante esquiva no próximo ataque inimigo.',
-    chance: 0.05
-  }
+    chance: 0.05,
+    shardRarity: 'rare',
+    unlockCost: 30,
+  },
+  'pantera-espectral': {
+    id: 'pantera-espectral',
+    name: 'Pantera Espectral',
+    description: 'Uma pantera silenciosa que se move entre sombras.',
+    icon: '🐈‍⬛',
+    idleSprite: '🐈‍⬛',
+    attackSprite: '🌑',
+    abilityIcon: '🌀',
+    color: '#a855f7',
+    abilityName: 'Sombra Veloz',
+    abilityDescription: '5% de chance de atacar. Aumenta a chance de esquiva no próximo ataque inimigo.',
+    chance: 0.05,
+    shardRarity: 'epic',
+    unlockCost: 30,
+  },
+  'coruja-ancestral': {
+    id: 'coruja-ancestral',
+    name: 'Coruja Ancestral',
+    description: 'Uma coruja sábia que guia sua jornada.',
+    icon: '🦉',
+    idleSprite: '🦉',
+    attackSprite: '📜',
+    abilityIcon: '🔮',
+    color: '#f59e0b',
+    abilityName: 'Olhar Profético',
+    abilityDescription: '5% de chance de atacar. Aumenta a chance de crítico no próximo ataque do player.',
+    chance: 0.05,
+    shardRarity: 'rare',
+    unlockCost: 30,
+  },
+  'salamandra-ignea': {
+    id: 'salamandra-ignea',
+    name: 'Salamandra Ígnea',
+    description: 'Uma criatura ardente que aquece o aço e o coração.',
+    icon: '🦎',
+    idleSprite: '🦎',
+    attackSprite: '🔥',
+    abilityIcon: '💥',
+    color: '#ef4444',
+    abilityName: 'Chama Viva',
+    abilityDescription: '5% de chance de atacar. Aumenta o dano do próximo ataque do player.',
+    chance: 0.05,
+    shardRarity: 'epic',
+    unlockCost: 30,
+  },
+  'guardiao-de-pedra': {
+    id: 'guardiao-de-pedra',
+    name: 'Guardião de Pedra',
+    description: 'Um colosso que protege com a força da terra.',
+    icon: '🪨',
+    idleSprite: '🪨',
+    attackSprite: '🛡️',
+    abilityIcon: '🧱',
+    color: '#22c55e',
+    abilityName: 'Pele Rochosa',
+    abilityDescription: '5% de chance de atacar. Reduz o dano do próximo ataque inimigo.',
+    chance: 0.05,
+    shardRarity: 'legendary',
+    unlockCost: 30,
+  },
+  'drako-lendario': {
+    id: 'drako-lendario',
+    name: 'Drako Lendário',
+    description: 'Um dragão jovem, mas já temível.',
+    icon: '🐉',
+    idleSprite: '🐉',
+    attackSprite: '🔥',
+    abilityIcon: '👑',
+    color: '#ef4444',
+    abilityName: 'Fúria Dracônica',
+    abilityDescription: '5% de chance de atacar. Garante crítico no próximo ataque do player.',
+    chance: 0.05,
+    shardRarity: 'legendary',
+    unlockCost: 30,
+  },
+  'fenix-celestial': {
+    id: 'fenix-celestial',
+    name: 'Fênix Celestial',
+    description: 'Uma fênix que renasce nas chamas do destino.',
+    icon: '🦅',
+    idleSprite: '🦅',
+    attackSprite: '✨',
+    abilityIcon: '❤️',
+    color: '#f59e0b',
+    abilityName: 'Renascimento',
+    abilityDescription: '5% de chance de atacar. Recupera parte da vida no próximo ataque do player.',
+    chance: 0.05,
+    shardRarity: 'legendary',
+    unlockCost: 30,
+  },
 };
 
 // ============================================
@@ -1839,6 +1946,7 @@ export const CHEST_UNLOCK_TIMES: Record<ChestRarity, number> = {
 export interface GameState {
   character: Character;
   selectedPetId: PetId | null;
+  unlockedPets: PetId[];
   // Map system
   maps: Record<MapId, GameMap>;
   currentMapId: MapId | null;

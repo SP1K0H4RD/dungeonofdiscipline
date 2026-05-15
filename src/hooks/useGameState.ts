@@ -226,6 +226,7 @@ const INITIAL_CHARACTER: Character = {
 const INITIAL_GAME_STATE: GameState = {
   character: INITIAL_CHARACTER,
   selectedPetId: null,
+  unlockedPets: [],
   // New map system
   maps: generateAllMaps(),
   currentMapId: 'map1',
@@ -813,6 +814,8 @@ const migrateGameState = (parsed: any): GameState => {
     currentNodeId: null,
     debugLogs: [],
   };
+
+  migrated.unlockedPets = Array.isArray(parsed.unlockedPets) ? parsed.unlockedPets : [];
 
   // Migration: Force energy limits
   migrated.character.maxEnergy = 10;
@@ -2969,8 +2972,15 @@ export function useGameState() {
     let isSuccess = false;
 
     setGameState(prev => {
-      const itemToUpgrade = prev.inventory.items.find(i => i.id === itemId);
-      if (!itemToUpgrade) return prev;
+      const inventoryItem = prev.inventory.items.find(i => i.id === itemId);
+      const equipmentSlots = ['weapon', 'armor', 'helmet', 'boots', 'accessory'] as const;
+      const equippedSlot = equipmentSlots.find(slot => prev.character.equipped[slot]?.id === itemId) || null;
+
+      const itemToUpgrade = inventoryItem || (equippedSlot ? prev.character.equipped[equippedSlot] : undefined);
+      if (!itemToUpgrade) {
+        addDebugLog(`Item não encontrado para melhoria (id: ${itemId})`);
+        return prev;
+      }
 
       if (itemToUpgrade.upgradeLevel >= 10) {
         addDebugLog(`${itemToUpgrade.name} is already at max level (+10)`);
@@ -3035,14 +3045,17 @@ export function useGameState() {
 
       const updatedItem = { ...itemToUpgrade, upgradeLevel: newLevel };
       
-      // Update inventory (must update the item object itself)
-      const newInventoryItems = prev.inventory.items.map(i => i.id === itemId ? updatedItem : i);
-
-      // If equipped, update equipped item too
       const newEquipped = { ...prev.character.equipped };
-      const slot = updatedItem.type as keyof typeof newEquipped;
-      if (newEquipped[slot]?.id === itemId) {
-        (newEquipped as any)[slot] = updatedItem;
+      let newInventoryItems = prev.inventory.items;
+
+      if (inventoryItem) {
+        newInventoryItems = prev.inventory.items.map(i => i.id === itemId ? updatedItem : i);
+        const slot = updatedItem.type as keyof typeof newEquipped;
+        if (newEquipped[slot]?.id === itemId) {
+          (newEquipped as any)[slot] = updatedItem;
+        }
+      } else if (equippedSlot) {
+        (newEquipped as any)[equippedSlot] = updatedItem;
       }
 
       const newShards = { ...shards };
@@ -3533,6 +3546,33 @@ export function useGameState() {
         ...prev,
         selectedPetId: petId
       }));
+    },
+    unlockPet: (petId: PetId) => {
+      setGameState(prev => {
+        if ((prev.unlockedPets || []).includes(petId)) return prev;
+        const pet = PETS[petId];
+        if (!pet) return prev;
+
+        const petShards = prev.economy.petShards || { rare: 0, epic: 0, legendary: 0 };
+        const current = petShards[pet.shardRarity] || 0;
+        if (current < pet.unlockCost) {
+          addDebugLog(`Fragmentos de pet insuficientes para desbloquear ${pet.name}`);
+          return prev;
+        }
+
+        return {
+          ...prev,
+          unlockedPets: [...(prev.unlockedPets || []), petId],
+          selectedPetId: prev.selectedPetId ?? petId,
+          economy: {
+            ...prev.economy,
+            petShards: {
+              ...petShards,
+              [pet.shardRarity]: Math.max(0, current - pet.unlockCost),
+            },
+          },
+        };
+      });
     },
     // Forge
     destroyItem,

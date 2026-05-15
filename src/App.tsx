@@ -448,7 +448,7 @@ function AppContent() {
     if (reward.type === 'petShard') {
       return (
         <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
-          <span className="text-xs text-gray-300">Estilhaço de Pet {reward.rarity?.toString().toUpperCase()}</span>
+          <span className="text-xs text-gray-300">Fragmento de Pet {reward.rarity?.toString().toUpperCase()}</span>
           <span className="text-xs font-mono text-pink-400">+{reward.amount}</span>
         </div>
       );
@@ -492,16 +492,12 @@ function AppContent() {
   );
 
   const [eventIntro, setEventIntro] = useState<null | { type: 'chest' | 'merchant' | 'sanctuary'; chestRarity?: string }>(null);
-  const [showEventDialog, setShowEventDialog] = useState(false);
 
   useEffect(() => {
     if (!dungeonEvent) {
       setEventIntro(null);
-      setShowEventDialog(false);
       return;
     }
-
-    setShowEventDialog(false);
 
     if (dungeonEvent.type === 'chest') {
       setEventIntro({ type: 'chest', chestRarity: dungeonEvent.chestRarity });
@@ -515,8 +511,6 @@ function AppContent() {
       setEventIntro(null);
       if (dungeonEvent.type === 'chest') {
         closeDungeonEvent();
-      } else {
-        setShowEventDialog(true);
       }
     }, 900);
 
@@ -655,42 +649,6 @@ function AppContent() {
           </AnimatePresence>
 
           <Dialog
-            open={!!dungeonEvent && showEventDialog && dungeonEvent.type !== 'chest'}
-            onOpenChange={(open) => { if (!open) closeDungeonEvent(); }}
-          >
-            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
-              {dungeonEvent?.type === 'merchant' && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle className="font-cinzel text-xl">Mercador Perdido</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-2 py-2">
-                    {dungeonEvent.offers.map((offer) => (
-                      <OfferCard key={offer.id} offer={offer} />
-                    ))}
-                  </div>
-                  <Button onClick={skipMerchant} variant="outline" className="w-full">Sair</Button>
-                </>
-              )}
-
-              {dungeonEvent?.type === 'sanctuary' && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle className="font-cinzel text-xl">Santuário da Floresta</DialogTitle>
-                  </DialogHeader>
-                  <p className="text-xs text-gray-400 -mt-2 mb-2">Escolha 1 buff por 3 combates</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <BuffButton label="+5% attack" type="attack" />
-                    <BuffButton label="+5% defense" type="defense" />
-                    <BuffButton label="+3% crit chance" type="crit" />
-                    <BuffButton label="+15% gold ganho" type="gold" />
-                  </div>
-                </>
-              )}
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
             open={!!lootOverlay && !eventIntro}
             onOpenChange={(open) => {
               if (!open) {
@@ -710,6 +668,58 @@ function AppContent() {
               </Button>
             </DialogContent>
           </Dialog>
+
+          <AnimatePresence>
+            {!!dungeonEvent && dungeonEvent.type !== 'chest' && !eventIntro && (
+              <motion.div
+                key="dungeon-event-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[130] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full max-w-md bg-[#1a1a2e] border-[#2d2d44] text-white rounded-2xl border p-6 shadow-2xl"
+                >
+                  {dungeonEvent.type === 'merchant' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-cinzel text-xl">Mercador Perdido</h3>
+                        <Button onClick={skipMerchant} variant="outline" className="h-8 px-3 text-xs">Sair</Button>
+                      </div>
+                      <div className="space-y-2">
+                        {dungeonEvent.offers.map((offer) => (
+                          <OfferCard key={offer.id} offer={offer} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {dungeonEvent.type === 'sanctuary' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-cinzel text-xl">Santuário da Floresta</h3>
+                          <p className="text-xs text-gray-400 mt-1">Escolha 1 buff por 3 combates</p>
+                        </div>
+                        <Button onClick={closeDungeonEvent} variant="outline" className="h-8 px-3 text-xs">Sair</Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <BuffButton label="+5% attack" type="attack" />
+                        <BuffButton label="+5% defense" type="defense" />
+                        <BuffButton label="+3% crit chance" type="crit" />
+                        <BuffButton label="+15% gold ganho" type="gold" />
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Global Overlays */}
           <AnimatePresence>

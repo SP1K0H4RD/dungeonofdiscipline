@@ -101,6 +101,7 @@ interface GameContextType {
   
   // Pet
   selectPet: (petId: PetId | null) => void;
+  unlockPet: (petId: PetId) => void;
   
   // Cloud Sync Choice
   syncLocalToCloud: () => Promise<void>;
