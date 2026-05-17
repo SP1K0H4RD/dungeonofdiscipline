@@ -306,7 +306,7 @@ function DeathScreen({ onRevive }: { onRevive: () => void }) {
         <div className="bg-[#16213e] rounded-lg p-4 mb-8 text-left">
           <p className="text-sm text-gray-400 mb-3">Penalidade de Ressurreição:</p>
           <ul className="text-sm text-red-400 space-y-1">
-            <li>• Perda de 40% do XP Total</li>
+            <li>• Perda de 20% do XP Total</li>
             <li>• Possível regressão de nível</li>
             <li>• HP restaurado ao novo máximo</li>
           </ul>

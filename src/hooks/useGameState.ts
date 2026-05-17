@@ -2375,10 +2375,7 @@ export function useGameState() {
         const nextBuff = prev.sanctuaryBuff
           ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
           : null;
-        
-        // Calculate lobby penalty: 20% of total damage taken in this battle
-        const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
-        const finalLobbyHp = Math.max(1, prev.character.hp - lobbyDamagePenalty);
+        const finalLobbyHp = Math.max(1, newPlayerHp);
         
         // Process XP through level up system
         let stateAfterXP = processLevelUp(prev, xpReward);
@@ -2393,14 +2390,14 @@ export function useGameState() {
           ? `🎁 DROP! Você encontrou: ${droppedItem.name}`
           : '';
 
-        addDebugLog(`Victory! +${xpReward} XP, +${goldReward} Gold. Lobby HP: -${lobbyDamagePenalty}${droppedItem ? ` | Drop: ${droppedItem.name}` : ''}`);
+        addDebugLog(`Victory! +${xpReward} XP, +${goldReward} Gold${droppedItem ? ` | Drop: ${droppedItem.name}` : ''}`);
         
         return {
           ...stateAfterXP,
           sanctuaryBuff: nextBuff,
           character: {
             ...stateAfterXP.character,
-            hp: finalLobbyHp, // Apply lobby penalty after victory
+            hp: finalLobbyHp,
             stats: {
               ...stateAfterXP.character.stats,
               bossesDefeated: isBoss 
@@ -2422,6 +2419,7 @@ export function useGameState() {
           },
           combat: {
             ...prev.combat,
+            playerHp: finalLobbyHp,
             bossHp: 0,
             isActive: false,
             logs: [...prev.combat.logs, log, `🎉 Vitória! +${xpReward} XP, +${goldReward} 🪙`, dropLog].filter(Boolean),
@@ -2436,11 +2434,7 @@ export function useGameState() {
       }
 
       if (newPlayerHp <= 0) {
-        // Defeat - Calculate penalty based on total HP
-        const hpPenalty = Math.floor(prev.character.maxHp * 0.5);
-        // CRITICAL: Penalty is the ONLY damage applied on death to avoid double-dipping
-        // We use the HP the player had BEFORE the battle and subtract 50% of max HP
-        const finalLobbyHp = Math.max(0, prev.character.hp - hpPenalty);
+        const finalLobbyHp = 0;
         const nextBuff = prev.sanctuaryBuff
           ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
           : null;
@@ -2450,10 +2444,9 @@ export function useGameState() {
           sanctuaryBuff: nextBuff,
           character: {
             ...prev.character,
-            hp: finalLobbyHp, // Applied 50% penalty (if 0, App.tsx will trigger DeathScreen)
+            hp: finalLobbyHp,
             stats: {
               ...prev.character.stats,
-              totalDeaths: prev.character.stats.totalDeaths + 1,
               totalDamageDealt: prev.character.stats.totalDamageDealt + damage,
               totalDamageTaken: prev.character.stats.totalDamageTaken + bossDamage,
               criticalHits: prev.character.stats.criticalHits + (playerCrit ? 1 : 0),
@@ -2464,7 +2457,7 @@ export function useGameState() {
             ...prev.combat,
             playerHp: 0,
             isActive: false,
-            logs: [...prev.combat.logs, log, bossLog, `💀 DERROTA! Penalidade de -${hpPenalty} HP (50%)`],
+            logs: [...prev.combat.logs, log, bossLog, `💀 DERROTA!`],
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
             damageTakenInCurrentBattle: newDamageTakenInBattle,
@@ -2477,7 +2470,7 @@ export function useGameState() {
         ...prev,
         character: {
           ...prev.character,
-          // Lobby HP stays the same during combat
+          hp: newPlayerHp,
           stats: {
             ...prev.character.stats,
             totalDamageDealt: prev.character.stats.totalDamageDealt + damage,
@@ -2639,10 +2632,7 @@ export function useGameState() {
         const nextBuff = prev.sanctuaryBuff
           ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
           : null;
-        
-        // Calculate lobby penalty: 20% of total damage taken in this battle
-        const lobbyDamagePenalty = Math.floor(newDamageTakenInBattle * 0.20);
-        const finalLobbyHp = Math.max(1, prev.character.hp - lobbyDamagePenalty);
+        const finalLobbyHp = Math.max(1, newPlayerHp);
         
         // Process XP through level up system
         let stateAfterXP = processLevelUp(prev, xpReward);
@@ -2657,14 +2647,14 @@ export function useGameState() {
           ? `🎁 DROP! Você encontrou: ${droppedItem.name}`
           : '';
 
-        addDebugLog(`Special Victory! +${xpReward} XP, +${goldReward} Gold. Lobby HP: -${lobbyDamagePenalty}${droppedItem ? ` | Drop: ${droppedItem.name}` : ''}`);
+        addDebugLog(`Special Victory! +${xpReward} XP, +${goldReward} Gold${droppedItem ? ` | Drop: ${droppedItem.name}` : ''}`);
 
         return {
           ...stateAfterXP,
           sanctuaryBuff: nextBuff,
           character: {
             ...stateAfterXP.character,
-            hp: finalLobbyHp, // Apply lobby penalty after victory
+            hp: finalLobbyHp,
             stats: {
               ...stateAfterXP.character.stats,
               bossesDefeated: isBoss 
@@ -2688,6 +2678,7 @@ export function useGameState() {
             ...prev.combat,
             isActive: false,
             bossHp: 0,
+            playerHp: finalLobbyHp,
             logs: [log, `🎉 Vitória! +${goldReward} moedas, +${xpReward} XP`, dropLog].filter(Boolean),
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
@@ -2700,11 +2691,7 @@ export function useGameState() {
       }
 
       if (newPlayerHp <= 0) {
-        // Defeat - Calculate penalty based on total HP
-        const hpPenalty = Math.floor(prev.character.maxHp * 0.5);
-        // CRITICAL: Penalty is the ONLY damage applied on death to avoid double-dipping
-        // We use the HP the player had BEFORE the battle and subtract 50% of max HP
-        const finalLobbyHp = Math.max(0, prev.character.hp - hpPenalty);
+        const finalLobbyHp = 0;
         const nextBuff = prev.sanctuaryBuff
           ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
           : null;
@@ -2714,7 +2701,7 @@ export function useGameState() {
           sanctuaryBuff: nextBuff,
           character: {
             ...prev.character,
-            hp: finalLobbyHp, // Applied 50% penalty (if 0, App.tsx will trigger DeathScreen)
+            hp: finalLobbyHp,
             stats: {
               ...prev.character.stats,
               totalDamageTaken: prev.character.stats.totalDamageTaken + bossDamage,
@@ -2724,7 +2711,7 @@ export function useGameState() {
             ...prev.combat,
             isActive: false,
             playerHp: 0,
-            logs: [log, bossLog, `💀 DERROTA! Penalidade de -${hpPenalty} HP (50%)`],
+            logs: [log, bossLog, `💀 DERROTA!`],
             specialAttackCooldown: newSpecialCooldown,
             damageTakenInCurrentBattle: newDamageTakenInBattle,
           },
@@ -2735,7 +2722,7 @@ export function useGameState() {
         ...prev,
         character: {
           ...prev.character,
-          // Lobby HP stays the same during combat
+          hp: newPlayerHp,
           stats: {
             ...prev.character.stats,
             totalDamageDealt: prev.character.stats.totalDamageDealt + (bossDodged ? 0 : damage),
@@ -2792,9 +2779,9 @@ export function useGameState() {
   // ============================================
 
   const handleDeath = (state: GameState): GameState => {
-    // Calculate 40% XP loss
+    // Calculate 20% XP loss
     const totalXp = getCharacterTotalXp(state.character);
-    const xpLoss = Math.floor(totalXp * 0.40);
+    const xpLoss = Math.floor(totalXp * 0.20);
     const newTotalXp = Math.max(0, totalXp - xpLoss);
     
     // Get new level and XP from the remaining total XP
@@ -2810,7 +2797,7 @@ export function useGameState() {
       floorReached: state.dungeon.maxFloorReached,
       bossesDefeated: state.character.stats.bossesDefeated,
       totalXp: totalXp,
-      cause: 'Derrota na dungeon (Penalidade: -40% XP)',
+      cause: 'Derrota na dungeon (Penalidade: -20% XP)',
     };
 
     addDebugLog(`💀 Morte! Penalidade de XP: -${xpLoss} (${totalXp} -> ${newTotalXp}) | Nível: ${state.character.level} -> ${newLevel}`);
@@ -3513,22 +3500,22 @@ export function useGameState() {
     collectChestRewards,
     restCharacter: () => {
       setGameState(prev => {
-        if (!prev.settings?.infiniteEnergy && prev.character.energy < 3) {
-          addDebugLog('Energia insuficiente para descansar! (Mínimo 3)');
+        if (!prev.settings?.infiniteEnergy && prev.character.energy < 1) {
+          addDebugLog('Energia insuficiente para descansar! (Custo: 1)');
           return prev;
         }
         
-        const healAmount = Math.floor(prev.character.maxHp * 0.20);
         const prevHp = prev.character.hp;
-        const newHp = Math.min(prev.character.maxHp, prev.character.hp + healAmount);
+        const newHp = prev.character.maxHp;
+        const healAmount = Math.max(0, newHp - prevHp);
         
-        addDebugLog(`Descansou na fogueira: ${prev.settings?.infiniteEnergy ? '∞ ⚡' : '-3 ⚡'}, +${healAmount} HP`);
+        addDebugLog(`Descansou na fogueira: ${prev.settings?.infiniteEnergy ? '∞ ⚡' : '-1 ⚡'}, +${healAmount} HP`);
         
         return {
           ...prev,
           character: {
             ...prev.character,
-            energy: prev.settings?.infiniteEnergy ? prev.character.energy : prev.character.energy - 3,
+            energy: prev.settings?.infiniteEnergy ? prev.character.energy : prev.character.energy - 1,
             hp: newHp,
           },
           showRestOverlay: true,

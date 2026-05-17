@@ -430,11 +430,7 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
             )}
           >
             <Zap className="w-5 h-5 mr-2" />
-            {equippedSpecial 
-              ? combat.specialAttackCooldown > 0 
-                ? `Cooldown (${combat.specialAttackCooldown})`
-                : equippedSpecial.name
-              : 'Sem Ataque Especial'}
+            {combat.specialAttackCooldown > 0 ? `Cooldown (${combat.specialAttackCooldown})` : 'Habilidade'}
           </Button>
         </div>
 

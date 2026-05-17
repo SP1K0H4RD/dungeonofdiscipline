@@ -72,7 +72,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
   };
 
   const handleRest = () => {
-    if ((!gameState.settings?.infiniteEnergy && character.energy < 3) || isResting) return;
+    if ((!gameState.settings?.infiniteEnergy && character.energy < 1) || isResting) return;
     
     setIsResting(true);
     
@@ -285,16 +285,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <div className="relative z-10 p-2 flex flex-col justify-center items-center text-center gap-2">
                 <div className="w-full space-y-1">
                   <p className="text-[8px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
-                  <p className="text-[5px] text-gray-400 font-bold uppercase leading-tight max-w-[80px] mx-auto font-cinzel tracking-widest">
-                    <span className="block">3 energias para</span>
-                    <span className="block">recuperar 20%</span>
-                    <span className="block">da vida</span>
-                  </p>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Zap className="w-3 h-3 text-yellow-500/70" />
+                    <span className="text-[5px] text-gray-400 font-bold uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
+                  </div>
                 </div>
                 
                 <Button 
                   onClick={handleRest}
-                  disabled={(!gameState.settings?.infiniteEnergy && character.energy < 3) || isResting}
+                  disabled={(!gameState.settings?.infiniteEnergy && character.energy < 1) || isResting}
                   className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-7 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center group/rest py-0"
                 >
                   {isResting ? (

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings, RotateCcw } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
@@ -26,7 +26,7 @@ const navItems = [
 ];
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
-  const { gameState, syncLocalToCloud, setGameState } = useGame();
+  const { gameState, syncLocalToCloud, setGameState, resetProgress } = useGame();
   const { user, signOut, signInWithGoogle } = useAuth();
   const { character, economy, recoveryMode, sanctuaryBuff, playerProfile } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -221,6 +221,18 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                     >
                       <Settings className="w-4 h-4" />
                       Configuração
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        resetProgress();
+                        window.location.reload();
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Reiniciar Jogo
                     </button>
 
                     <button
