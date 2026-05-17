@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings, RotateCcw } from 'lucide-react';
+import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
@@ -26,12 +26,13 @@ const navItems = [
 ];
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
-  const { gameState, syncLocalToCloud, setGameState, resetProgress } = useGame();
+  const { gameState, syncLocalToCloud, setGameState, restartGame } = useGame();
   const { user, signOut, signInWithGoogle } = useAuth();
   const { character, economy, recoveryMode, sanctuaryBuff, playerProfile } = gameState;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   const handleSync = async () => {
@@ -226,8 +227,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                     <button
                       onClick={() => {
                         setShowProfileMenu(false);
-                        resetProgress();
-                        window.location.reload();
+                        setShowRestartConfirm(true);
                       }}
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors"
                     >
@@ -301,6 +301,41 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               }));
             }}
           />
+        </div>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={showRestartConfirm} onOpenChange={setShowRestartConfirm}>
+      <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-cinzel text-xl flex items-center gap-2 text-orange-400">
+            <AlertTriangle className="w-5 h-5 text-orange-400" />
+            Reiniciar Jogo
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          <p className="text-sm text-gray-200">
+            Isso vai apagar seu personagem e todo o progresso salvo neste dispositivo.
+          </p>
+          <p className="text-xs text-gray-500">
+            Essa ação não pode ser desfeita.
+          </p>
+        </div>
+        <div className="flex gap-2 justify-end pt-2">
+          <button
+            onClick={() => setShowRestartConfirm(false)}
+            className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => {
+              setShowRestartConfirm(false);
+              restartGame();
+            }}
+            className="px-3 py-2 rounded-lg border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition-colors text-sm text-orange-300"
+          >
+            Confirmar reinício
+          </button>
         </div>
       </DialogContent>
     </Dialog>

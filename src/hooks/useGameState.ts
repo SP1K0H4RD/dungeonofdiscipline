@@ -3096,6 +3096,18 @@ export function useGameState() {
     localStorage.removeItem('auth-choice-made');
   }, []);
 
+  const restartGame = useCallback(() => {
+    setGameState({
+      ...INITIAL_GAME_STATE,
+      isInitialScreen: false,
+      showProfileSetup: true,
+      currentMapId: null,
+      currentNodeId: null,
+    });
+    localStorage.removeItem('dungeon-of-discipline');
+    localStorage.removeItem('auth-choice-made');
+  }, []);
+
   // ============================================
   // LOOTBOX SYSTEM - UPDATED WITH SPECIAL ATTACKS
   // ============================================
@@ -3567,6 +3579,7 @@ export function useGameState() {
     convertShards,
     // Reset
     resetProgress,
+    restartGame,
     setGameState,
     // Lootbox
     buyLootbox,

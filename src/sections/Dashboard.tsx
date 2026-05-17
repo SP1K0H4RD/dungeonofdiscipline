@@ -246,12 +246,14 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-xl font-black text-white font-cinzel leading-none">{character.energy}</span>
               <span className="text-xl font-black text-white font-cinzel leading-none">/ {character.maxEnergy}</span>
             </div>
-            <div className="h-4.5 bg-black/40 rounded-full overflow-hidden border border-white/5 mt-3">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400"
-                initial={{ width: 0 }}
-                animate={{ width: `${(character.energy / character.maxEnergy) * 100}%` }}
-              />
+            <div className="mt-3 px-0.5">
+              <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(character.energy / character.maxEnergy) * 100}%` }}
+                />
+              </div>
             </div>
           </motion.div>
 
@@ -304,7 +306,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col h-full text-center">
                 <div className="w-full">
-                  <p className="text-[8px] text-orange-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
+                  <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">ACAMPAMENTO</h3>
                 </div>
 
                 <div className="flex-1" />
@@ -476,7 +478,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 >
                   {chest.status === 'unlocking' ? (
                     <div className="flex items-center justify-center gap-1">
-                      <Clock className="w-2 h-2 text-white/90" />
+                      <Clock className="w-1.5 h-1.5 text-white/90" />
                       <span className="text-white">
                         {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
                       </span>
