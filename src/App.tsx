@@ -492,6 +492,12 @@ function AppContent() {
   );
 
   const [eventIntro, setEventIntro] = useState<null | { type: 'chest' | 'merchant' | 'sanctuary'; chestRarity?: string }>(null);
+  const chestIntroImages: Record<string, string> = {
+    common: '/chests/common.png',
+    rare: '/chests/rare.png',
+    epic: '/chests/epic.png',
+    legendary: '/chests/legendary.png',
+  };
 
   useEffect(() => {
     if (!dungeonEvent) {
@@ -512,7 +518,7 @@ function AppContent() {
       if (dungeonEvent.type === 'chest') {
         closeDungeonEvent();
       }
-    }, 900);
+    }, 3000);
 
     return () => window.clearTimeout(t);
   }, [dungeonEvent, closeDungeonEvent]);
@@ -628,10 +634,20 @@ function AppContent() {
                   transition={{ duration: 0.25 }}
                   className="text-center"
                 >
-                  <div className="text-6xl">
-                    {eventIntro.type === 'chest' && (eventIntro.chestRarity === 'legendary' ? '👑' : eventIntro.chestRarity === 'epic' ? '💎' : eventIntro.chestRarity === 'rare' ? '🎁' : '📦')}
-                    {eventIntro.type === 'merchant' && '🧙'}
-                    {eventIntro.type === 'sanctuary' && '🌿'}
+                  <div className="flex items-center justify-center">
+                    {eventIntro.type === 'chest' ? (
+                      <img
+                        src={chestIntroImages[eventIntro.chestRarity || 'common'] || chestIntroImages.common}
+                        alt="Baú"
+                        className="w-28 h-28 object-contain drop-shadow-2xl"
+                        draggable={false}
+                      />
+                    ) : (
+                      <div className="text-6xl">
+                        {eventIntro.type === 'merchant' && '🧙'}
+                        {eventIntro.type === 'sanctuary' && '🌿'}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-3 text-lg font-bold font-cinzel">
                     {eventIntro.type === 'chest' && 'Baú encontrado!'}
