@@ -18,7 +18,7 @@ import {
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PETS, CHEST_UNLOCK_TIMES } from '@/types/game';
+import { PETS } from '@/types/game';
 import {
   Dialog,
   DialogContent,
@@ -65,6 +65,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
   const [resetStep, setResetStep] = useState(1);
   const [avatarOk, setAvatarOk] = useState(true);
   const [isResting, setIsResting] = useState(false);
+  const [sleepOverlay, setSleepOverlay] = useState<'in' | 'out' | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const hasUnlockingChest = (gameState.chests || []).some(c => c?.status === 'unlocking');
 
@@ -84,12 +85,14 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     if ((!gameState.settings?.infiniteEnergy && character.energy < 1) || isResting) return;
     
     setIsResting(true);
+    setSleepOverlay('in');
     
-    // Start animation, then apply effect after 1.5s
-    setTimeout(() => {
+    window.setTimeout(() => setSleepOverlay('out'), 1000);
+    window.setTimeout(() => {
       restCharacter();
+      setSleepOverlay(null);
       setIsResting(false);
-    }, 1500);
+    }, 2000);
   };
 
   const hpPercent = (character.hp / character.maxHp) * 100;
@@ -129,6 +132,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
   };
 
   return (
+    <>
     <motion.div
       variants={containerVariants}
       initial="hidden"
@@ -242,8 +246,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <span className="text-xl font-black text-white font-cinzel leading-none">{character.energy}</span>
               <span className="text-xl font-black text-white font-cinzel leading-none">/ {character.maxEnergy}</span>
             </div>
-            <div className="flex-1" />
-            <div className="h-4.5 bg-black/40 rounded-full overflow-hidden border border-white/5 mt-2">
+            <div className="h-4.5 bg-black/40 rounded-full overflow-hidden border border-white/5 mt-3">
               <motion.div 
                 className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400"
                 initial={{ width: 0 }}
@@ -451,13 +454,6 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                       draggable={false}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                    <div className="absolute top-0.5 left-0.5 flex items-center gap-0.5 text-[3.5px] font-bold text-gray-200 bg-black/50 border border-white/10 rounded-[2px] px-0.5 py-0.5 scale-90 font-cinzel">
-                      <Clock className="w-1 h-1 text-yellow-500" />
-                      {chest.status === 'unlocking' 
-                        ? (chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--')
-                        : (chest.status === 'unlocked' ? 'OK' : `${CHEST_UNLOCK_TIMES[chest.rarity] / (60 * 60 * 1000)}h`)
-                      }
-                    </div>
                   </>
                 ) : (
                   <div className="opacity-10">
@@ -472,16 +468,20 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     else if (chest.status === 'unlocked') collectChestRewards(index);
                   }}
                   className={cn(
-                    "w-full h-3 text-[6px] font-black uppercase rounded-[1px] transition-all p-0 font-cinzel text-white",
-                    chest.status === 'locked' && "bg-purple-900/40 border border-purple-500/30",
-                    chest.status === 'unlocking' && "bg-gray-800 text-gray-500",
-                    chest.status === 'unlocked' && "bg-yellow-600 text-white animate-pulse"
+                    "w-full h-3 text-[6px] font-black uppercase rounded-[1px] transition-all p-0 font-cinzel",
+                    chest.status === 'locked' && "bg-purple-900/40 border border-purple-500/30 text-white",
+                    chest.status === 'unlocking' && "bg-gray-800 text-white",
+                    chest.status === 'unlocked' && "bg-green-600 hover:bg-green-700 text-white"
                   )}
                 >
-                  {chest.status === 'unlocking'
-                    ? (chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--')
-                    : (chest.status === 'locked' ? 'Abrir' : 'Pegar')
-                  }
+                  {chest.status === 'unlocking' ? (
+                    <div className="flex items-center justify-center gap-1">
+                      <Clock className="w-2 h-2 text-white/90" />
+                      <span className="text-white">
+                        {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
+                      </span>
+                    </div>
+                  ) : (chest.status === 'locked' ? 'Desbloquear' : 'Abrir')}
                 </Button>
               )}
             </div>
@@ -728,5 +728,14 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
         </DialogContent>
       </Dialog>
     </motion.div>
+    {sleepOverlay && (
+      <motion.div
+        className="fixed inset-0 z-[140] bg-black pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: sleepOverlay === 'in' ? 0.85 : 0 }}
+        transition={{ duration: 1, ease: 'easeInOut' }}
+      />
+    )}
+    </>
   );
 }
