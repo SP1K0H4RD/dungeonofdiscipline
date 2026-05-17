@@ -307,7 +307,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col h-full text-center">
                 <div className="w-full flex items-start justify-start">
-                  <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">ACAMPAMENTO</h3>
+                  <h3 className="text-[7px] font-bold text-white font-cinzel tracking-widest uppercase">ACAMPAMENTO</h3>
                 </div>
 
                 <div className="flex-1" />

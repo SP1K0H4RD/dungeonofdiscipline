@@ -263,14 +263,7 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2d2d44] p-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-          {combat.turn === 1 ? (
-            <Button variant="ghost" onClick={handleReturnToMap} className="text-gray-400 hover:text-white">
-              <ChevronLeft className="w-5 h-5 mr-1" />
-              Fugir
-            </Button>
-          ) : (
-            <div className="w-20" /> // Empty space when fleeing is not allowed
-          )}
+          <div className="w-20" />
           
           <div className="text-center">
             <h2 className="text-lg font-bold text-white font-cinzel">
@@ -289,6 +282,12 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
       <div className="max-w-4xl mx-auto p-4">
         {/* Battle Scene */}
         <div className="relative bg-gradient-to-b from-[#1a1a2e] to-[#0a0a0f] rounded-2xl border border-[#2d2d44] p-8 min-h-[400px] flex items-center justify-between">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-black/40 border border-white/10 px-3 py-1 rounded-full">
+            <p className="text-xs text-gray-200">
+              Turno {combat.turn}
+            </p>
+          </div>
+
           {/* Player */}
           <div className="relative flex flex-col items-center">
             {/* Pet */}
@@ -434,11 +433,15 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
           </Button>
         </div>
 
-        {/* Turn Info */}
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-500">
-            Turno {combat.turn}
-          </p>
+        <div className="mt-4 flex items-center justify-center">
+          <Button
+            onClick={handleReturnToMap}
+            disabled={combat.turn !== 1}
+            className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:hover:bg-red-600"
+          >
+            <ChevronLeft className="w-5 h-5 mr-2" />
+            Fugir da batalha
+          </Button>
         </div>
       </div>
     </motion.div>

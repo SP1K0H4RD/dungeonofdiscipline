@@ -436,28 +436,21 @@ export function Quests({}: QuestsProps) {
                     </motion.div>
                   )}
 
-              {newQuest.type === 'meta' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4"
-                >
-                  <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Data de Conclusão (Opcional)
-                  </label>
-                  <Input
-                    type="date"
-                    value={newQuest.scheduledDate}
-                    onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
-                    className="bg-[#16213e] border-cyan-500/50 text-white"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Defina uma data para concluir a meta
-                  </p>
-                </motion.div>
-              )}
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Data (opcional)
+                </label>
+                <Input
+                  type="date"
+                  value={newQuest.scheduledDate}
+                  onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
+                  className="bg-[#16213e] border-cyan-500/50 text-white"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Se definida, a tarefa aparece no calendário nesse dia
+                </p>
+              </div>
 
               {/* Energy Reward Selector */}
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
