@@ -112,6 +112,13 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     legendary: 'border-yellow-500 text-yellow-400 bg-yellow-500/10',
   };
 
+  const chestImages: Record<string, string> = {
+    common: '/chests/common.png',
+    rare: '/chests/rare.png',
+    epic: '/chests/epic.png',
+    legendary: '/chests/legendary.png',
+  };
+
   return (
     <motion.div
       variants={containerVariants}
@@ -158,13 +165,13 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   <div className="flex justify-between items-center mb-0.5">
                     <div className="flex items-center gap-1">
                       <Heart className={cn("w-2 h-2", isLowHp ? "text-red-500 animate-pulse" : "text-green-500")} />
-                      <span className="text-[7px] font-black text-white/70 uppercase tracking-tighter font-cinzel">HP</span>
+                      <span className="text-[8px] font-black text-white/70 uppercase tracking-tighter font-cinzel">HP</span>
                     </div>
                     <span className="text-[8px] font-bold text-green-400 font-cinzel">
                       {Math.round(character.hp)} / {character.maxHp}
                     </span>
                   </div>
-                  <div className="h-2 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                  <div className="h-2.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
                     <motion.div 
                       className="h-full bg-gradient-to-r from-green-600 to-green-400"
                       initial={{ width: 0 }}
@@ -178,13 +185,13 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   <div className="flex justify-between items-center mb-0.5">
                     <div className="flex items-center gap-1">
                       <Star className="w-2 h-2 text-yellow-500" />
-                      <span className="text-[7px] font-black text-white/70 uppercase tracking-tighter font-cinzel">Lvl {character.level}</span>
+                      <span className="text-[8px] font-black text-white/70 uppercase tracking-tighter font-cinzel">NÍVEL {character.level}</span>
                     </div>
                     <span className="text-[8px] font-bold text-purple-400 font-cinzel">
                       {character.xp} / {character.maxXp}
                     </span>
                   </div>
-                  <div className="h-2 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                  <div className="h-2.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
                     <motion.div 
                       className="h-full bg-gradient-to-r from-purple-600 to-purple-400"
                       initial={{ width: 0 }}
@@ -274,7 +281,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {/* Left: Image */}
               <div className="relative overflow-hidden border-r border-white/5">
                 <img 
-                  src="https://img.freepik.com/premium-photo/camp-fire-forest-night_863013-108.jpg" 
+                  src="/campfire.png" 
                   alt="Campfire" 
                   className="w-full h-full object-cover opacity-60"
                 />
@@ -284,17 +291,13 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col justify-center items-center text-center gap-2">
                 <div className="w-full space-y-1">
-                  <p className="text-[8px] text-yellow-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
-                  <div className="flex items-center justify-center gap-1.5">
-                    <Zap className="w-3 h-3 text-yellow-500/70" />
-                    <span className="text-[5px] text-gray-400 font-bold uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
-                  </div>
+                  <p className="text-[8px] text-orange-500 font-black uppercase tracking-widest font-cinzel">ACAMPAMENTO</p>
                 </div>
                 
                 <Button 
                   onClick={handleRest}
                   disabled={(!gameState.settings?.infiniteEnergy && character.energy < 1) || isResting}
-                  className="bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 h-7 w-full rounded-sm border border-yellow-500/30 flex items-center justify-center group/rest py-0"
+                  className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 h-7 w-full rounded-sm border border-orange-500/30 flex items-center justify-center group/rest py-0"
                 >
                   {isResting ? (
                     <span className="text-[8px] animate-pulse font-cinzel">...</span>
@@ -305,6 +308,10 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     </div>
                   )}
                 </Button>
+                <div className="flex items-center justify-center gap-1.5">
+                  <Zap className="w-3 h-3 text-orange-500/70" />
+                  <span className="text-[5px] text-gray-400 font-bold uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -413,7 +420,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             <div key={index} className="flex flex-col items-center gap-0.5">
               <div 
                 className={cn(
-                  "w-full aspect-[10/7] rounded-sm border p-0.5 transition-all duration-300 flex flex-col items-center justify-center relative",
+                  "w-full aspect-[10/7] rounded-sm border p-0 transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden",
                   chest 
                     ? rarityColors[chest.rarity]
                     : "border-dashed border-white/5 bg-white/[0.01]"
@@ -421,17 +428,16 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               >
                 {chest ? (
                   <>
-                    <motion.div 
-                      className="text-[10px] mb-0"
-                      animate={chest.status === 'unlocking' ? { y: [0, -0.5, 0] } : {}}
+                    <motion.img
+                      src={chestImages[chest.rarity] || chestImages.common}
+                      alt="Baú"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      animate={chest.status === 'unlocking' ? { y: [0, -1, 0] } : {}}
                       transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      {chest.rarity === 'common' && '📦'}
-                      {chest.rarity === 'rare' && '🎁'}
-                      {chest.rarity === 'epic' && '💎'}
-                      {chest.rarity === 'legendary' && '👑'}
-                    </motion.div>
-                    <div className="flex items-center gap-0.5 text-[3.5px] font-bold text-gray-400 scale-90 font-cinzel">
+                      draggable={false}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    <div className="absolute top-0.5 left-0.5 flex items-center gap-0.5 text-[3.5px] font-bold text-gray-200 bg-black/50 border border-white/10 rounded-[2px] px-0.5 py-0.5 scale-90 font-cinzel">
                       <Clock className="w-1 h-1 text-yellow-500" />
                       {chest.status === 'unlocking' 
                         ? (chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (Date.now() - chest.unlockStartedAt))) : '--:--')
