@@ -303,36 +303,32 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   className="w-full h-full object-cover contrast-105 saturate-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/20" />
-                <div className="absolute top-1 left-1 z-10 bg-black/55 border border-white/10 rounded-[6px] px-1.5 py-0.5 pointer-events-none">
-                  <span className="text-[8px] font-bold text-white font-cinzel tracking-widest uppercase">
-                    ACAMPAMENTO
-                  </span>
-                </div>
               </div>
               
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col h-full text-center">
+                <div className="w-full flex items-start justify-start">
+                  <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">ACAMPAMENTO</h3>
+                </div>
+
                 <div className="flex-1" />
 
-                <div className="w-full flex flex-col items-center gap-1.5">
-                  <Button 
-                    onClick={handleRest}
-                    disabled={(!gameState.settings?.infiniteEnergy && character.energy < 1) || isResting}
-                    className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 h-7 w-full rounded-sm border border-orange-500/30 flex items-center justify-center group/rest py-0"
-                  >
-                    {isResting ? (
-                      <span className="text-[8px] animate-pulse font-cinzel">...</span>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <FlameKindling className="w-[11px] h-[11px]" />
-                        <span className="text-[7px] font-black uppercase font-cinzel tracking-widest">Descansar</span>
-                      </div>
-                    )}
-                  </Button>
+                <div className="w-full flex flex-col items-center gap-1">
                   <div className="flex items-center justify-center gap-1.5">
                     <Zap className="w-3 h-3 text-yellow-500/70" />
                     <span className="text-[5px] text-gray-400 font-bold uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
                   </div>
+                  <Button 
+                    onClick={handleRest}
+                    disabled={(!gameState.settings?.infiniteEnergy && character.energy < 1) || isResting}
+                    className="bg-orange-500/10 hover:bg-orange-500/20 text-white h-7 w-full rounded-sm border border-orange-500/30 flex items-center justify-center group/rest py-0 mt-0.5"
+                  >
+                    {isResting ? (
+                      <span className="text-[8px] animate-pulse font-cinzel">...</span>
+                    ) : (
+                      <span className="text-[7px] font-black uppercase font-cinzel tracking-widest">Descansar</span>
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -480,8 +476,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   )}
                 >
                   {chest.status === 'unlocking' ? (
-                    <div className="flex items-center justify-center gap-1">
-                      <Clock className="w-1 h-1 text-white/90" />
+                    <div className="flex items-center justify-center gap-0.5">
+                      <Clock className="w-[3px] h-[3px] text-white/90" />
                       <span className="text-white">
                         {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
                       </span>
