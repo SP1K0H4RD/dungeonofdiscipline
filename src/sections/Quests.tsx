@@ -194,6 +194,23 @@ export function Quests({}: QuestsProps) {
 
   const todayStr = getBrazilDateStringFromDate(new Date());
 
+  const addEnergyReward = (delta: number) => {
+    setNewQuest(prev => {
+      const current = Math.round(prev.energyReward * 100);
+      const next = current + Math.round(delta * 100);
+      const clamped = Math.min(500, Math.max(0, next));
+      return { ...prev, energyReward: clamped / 100 };
+    });
+  };
+
+  const setEnergyReward = (value: number) => {
+    setNewQuest(prev => {
+      const normalized = Math.round(value * 100);
+      const clamped = Math.min(500, Math.max(0, normalized));
+      return { ...prev, energyReward: clamped / 100 };
+    });
+  };
+
   const handleQuestClick = (quest: Quest) => {
     setSelectedQuest(quest);
     setShowQuestModal(true);
@@ -471,9 +488,9 @@ export function Quests({}: QuestsProps) {
                           onChange={(e) => {
                             const val = parseFloat(e.target.value);
                             if (!isNaN(val)) {
-                              setNewQuest(prev => ({ ...prev, energyReward: val }));
+                              setEnergyReward(val);
                             } else if (e.target.value === '') {
-                              setNewQuest(prev => ({ ...prev, energyReward: 0 }));
+                              setEnergyReward(0);
                             }
                           }}
                           className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
@@ -491,7 +508,7 @@ export function Quests({}: QuestsProps) {
                     variant="outline" 
                     size="sm"
                     className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
-                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: Math.max(0, prev.energyReward - 0.2) }))}
+                    onClick={() => addEnergyReward(-0.2)}
                   >
                     -
                   </Button>
@@ -505,7 +522,7 @@ export function Quests({}: QuestsProps) {
                     variant="outline" 
                     size="sm"
                     className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
-                    onClick={() => setNewQuest(prev => ({ ...prev, energyReward: prev.energyReward + 0.2 }))}
+                    onClick={() => addEnergyReward(0.2)}
                   >
                     +
                   </Button>

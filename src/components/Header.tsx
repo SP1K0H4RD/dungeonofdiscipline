@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Store, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Sword, Scroll, Backpack, Castle, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
@@ -22,7 +22,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Sword },
   { id: 'quests', label: 'Tarefas', icon: Scroll },
   { id: 'inventory', label: 'Inventário', icon: Backpack },
-  { id: 'shop', label: 'Loja', icon: Store },
+  { id: 'shop', label: 'Castelo', icon: Castle },
 ];
 
 export function Header({ currentView, onViewChange }: HeaderProps) {

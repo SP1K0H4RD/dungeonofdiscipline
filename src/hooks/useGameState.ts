@@ -1245,13 +1245,8 @@ export function useGameState() {
             };
           }
 
-          addDebugLog(`🧰 Baú encontrado, mas não há espaço (4/4). Recompensas entregues.`);
-          const rewarded = applyDungeonRewards(baseState, rewards);
-          return {
-            ...rewarded,
-            lootOverlay: { title: `Baú ${chestRarity.toUpperCase()}`, rewards },
-            dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
-          };
+          addDebugLog(`🧰 Baú encontrado, mas não há espaço (4/4). Baú perdido.`);
+          return { ...baseState, dungeonEvent: null };
         }
 
         if (eventType === 'merchant') {
@@ -1333,13 +1328,8 @@ export function useGameState() {
           };
         }
 
-        addDebugLog(`🧰 Baú encontrado, mas não há espaço (4/4). Recompensas entregues.`);
-        const rewarded = applyDungeonRewards(baseState, rewards);
-        return {
-          ...rewarded,
-          lootOverlay: { title: `Baú ${chestRarity.toUpperCase()}`, rewards },
-          dungeonEvent: { type: 'chest', chestRarity, rewards, mapId, nodeId, stage: node.stage },
-        };
+        addDebugLog(`🧰 Baú encontrado, mas não há espaço (4/4). Baú perdido.`);
+        return baseState;
       }
 
       if (eventType === 'merchant') {

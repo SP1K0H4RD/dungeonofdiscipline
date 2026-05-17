@@ -436,8 +436,7 @@ export function Dungeon({ mapId, nodeId, onExit }: DungeonProps) {
         <div className="mt-4 flex items-center justify-center">
           <Button
             onClick={handleReturnToMap}
-            disabled={combat.turn !== 1}
-            className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:hover:bg-red-600"
+            className="bg-red-600 hover:bg-red-700 text-white"
           >
             <ChevronLeft className="w-5 h-5 mr-2" />
             Fugir da batalha
