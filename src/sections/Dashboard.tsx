@@ -87,12 +87,14 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     setIsResting(true);
     setSleepOverlay('in');
     
-    window.setTimeout(() => setSleepOverlay('out'), 1000);
     window.setTimeout(() => {
       restCharacter();
+      setSleepOverlay('out');
+    }, 2000);
+    window.setTimeout(() => {
       setSleepOverlay(null);
       setIsResting(false);
-    }, 2000);
+    }, 3500);
   };
 
   const hpPercent = (character.hp / character.maxHp) * 100;
@@ -301,14 +303,15 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   className="w-full h-full object-cover contrast-105 saturate-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/20" />
+                <div className="absolute top-1 left-1 z-10 bg-black/55 border border-white/10 rounded-[6px] px-1.5 py-0.5 pointer-events-none">
+                  <span className="text-[8px] font-bold text-white font-cinzel tracking-widest uppercase">
+                    ACAMPAMENTO
+                  </span>
+                </div>
               </div>
               
               {/* Right: Content */}
               <div className="relative z-10 p-2 flex flex-col h-full text-center">
-                <div className="w-full">
-                  <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">ACAMPAMENTO</h3>
-                </div>
-
                 <div className="flex-1" />
 
                 <div className="w-full flex flex-col items-center gap-1.5">
@@ -478,7 +481,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 >
                   {chest.status === 'unlocking' ? (
                     <div className="flex items-center justify-center gap-1">
-                      <Clock className="w-1.5 h-1.5 text-white/90" />
+                      <Clock className="w-1 h-1 text-white/90" />
                       <span className="text-white">
                         {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
                       </span>
@@ -495,13 +498,13 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       <motion.div variants={itemVariants} className="pt-0">
         <motion.button
           onClick={onEnterDungeon}
-          className="w-full h-14 rounded-2xl bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 p-[2px] shadow-[0_0_30px_rgba(245,158,11,0.2)] group active:scale-95 transition-all"
+          className="w-full h-[52px] rounded-2xl bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 p-[2px] shadow-[0_0_30px_rgba(245,158,11,0.2)] group active:scale-95 transition-all"
         >
           <div className="w-full h-full bg-[#0a0a0a] rounded-[14px] flex flex-col items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors" />
-            <div className="flex items-center gap-3 relative z-10">
-              <Sword className="w-5 h-5 text-yellow-500 group-hover:rotate-12 transition-transform" />
-              <span className="text-lg font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400 uppercase">ENTRAR NA DUNGEON</span>
+            <div className="flex items-center gap-2.5 relative z-10">
+              <Sword className="w-4 h-4 text-yellow-500 group-hover:rotate-12 transition-transform" />
+              <span className="text-base font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400 uppercase">ENTRAR NA DUNGEON</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5 relative z-10">
               <Zap className="w-3 h-3 text-yellow-500/70" />
@@ -734,8 +737,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       <motion.div
         className="fixed inset-0 z-[140] bg-black pointer-events-none"
         initial={{ opacity: 0 }}
-        animate={{ opacity: sleepOverlay === 'in' ? 0.85 : 0 }}
-        transition={{ duration: 1, ease: 'easeInOut' }}
+        animate={{ opacity: sleepOverlay === 'in' ? 1 : 0 }}
+        transition={{ duration: sleepOverlay === 'in' ? 2 : 1.5, ease: 'easeInOut' }}
       />
     )}
     </>
