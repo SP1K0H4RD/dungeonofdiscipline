@@ -535,8 +535,8 @@ const RATO_PEQUENO: MonsterSpawn = {
   name: 'Rato Pequeno', image: '🐀', hp: 40, damageMin: 6, damageMax: 9, defense: 1, dodge: 4, critChance: 2, xp: 8, goldMin: 4, goldMax: 7, chance: 60,
   drops: {
     common: [
-      { id: 'dagger-rato-p', name: 'Adaga Improvisada', description: 'Uma adaga pequena mas afiada.', type: 'weapon', rarity: 'common', icon: '🔪', stats: { attack: 2 }, durability: 40, maxDurability: 40, levelRequirement: 1, upgradeLevel: 0 },
-      { id: 'rag-rato-p', name: 'Trapo Costurado', description: 'Um pedaço de pano reforçado.', type: 'armor', rarity: 'common', icon: '👕', stats: { defense: 2 }, durability: 40, maxDurability: 40, levelRequirement: 1, upgradeLevel: 0 }
+      { id: 'dagger-rato-p', name: 'Adaga Improvisada', description: 'Uma adaga pequena mas afiada.', type: 'weapon', rarity: 'common', icon: '🔪', stats: { attack: 1 }, durability: 40, maxDurability: 40, levelRequirement: 1, upgradeLevel: 0 },
+      { id: 'rag-rato-p', name: 'Trapo Costurado', description: 'Um pedaço de pano reforçado.', type: 'armor', rarity: 'common', icon: '👕', stats: { defense: 1 }, durability: 40, maxDurability: 40, levelRequirement: 1, upgradeLevel: 0 }
     ]
   }
 };

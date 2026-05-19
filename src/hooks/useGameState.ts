@@ -1798,6 +1798,11 @@ export function useGameState() {
         return prev;
       }
 
+      if (prev.character.level < (item.levelRequirement || 0)) {
+        addDebugLog(`Nível insuficiente para equipar ${item.name} (Requer nível ${item.levelRequirement})`);
+        return prev;
+      }
+
       // Step 1: Create new equipped state
       const newEquipped = { ...prev.character.equipped };
       const currentItem = newEquipped[item.type as keyof typeof newEquipped];

@@ -387,18 +387,17 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
             const Icon = missionIcon(mission.kind);
             const isClaimable = mission.completed && !mission.claimed;
             const pct = mission.target > 0 ? Math.min(100, Math.floor((mission.progress / mission.target) * 100)) : 0;
+            const progressLabel = mission.kind === 'completeTasksPercent'
+              ? `(${mission.progress}/${mission.target}%)`
+              : `(${mission.progress}/${mission.target})`;
 
             return (
-              <button
+              <div
                 key={mission.id}
-                type="button"
-                onClick={() => {
-                  if (isClaimable) claimDailyMission(mission.id);
-                }}
                 className={cn(
-                  "p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9 text-left",
-                  isClaimable && "cursor-pointer hover:bg-black/50",
-                  mission.claimed && "opacity-50"
+                  "p-1.5 rounded-sm border flex items-center gap-2 h-9 text-left",
+                  isClaimable ? "border-green-500/60 bg-black/35" : "border-white/5 bg-black/40",
+                  mission.claimed && "bg-black/60 opacity-60"
                 )}
               >
                 <Icon className={cn(
@@ -408,9 +407,14 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
 
                 <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">
-                      {mission.title}
-                    </p>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">
+                        {mission.title}
+                      </p>
+                      <span className="text-[6px] font-black text-gray-500 leading-none font-cinzel flex-shrink-0">
+                        {progressLabel}
+                      </span>
+                    </div>
 
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       {mission.reward.type === 'energy' ? (
@@ -430,11 +434,31 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     </div>
                   </div>
 
-                  <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500" style={{ width: `${mission.completed ? 100 : pct}%` }} />
-                  </div>
+                  {!mission.completed ? (
+                    <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500" style={{ width: `${pct}%` }} />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-end">
+                      {isClaimable ? (
+                        <Button
+                          onClick={() => claimDailyMission(mission.id)}
+                          className="h-3 px-1.5 text-[6px] font-black uppercase rounded-[1px] bg-green-600 hover:bg-green-700 text-white font-cinzel"
+                        >
+                          RESGATAR
+                        </Button>
+                      ) : (
+                        <Button
+                          disabled
+                          className="h-3 px-1.5 text-[6px] font-black uppercase rounded-[1px] bg-green-700 text-white font-cinzel opacity-100"
+                        >
+                          COMPLETA
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
