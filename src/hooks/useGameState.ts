@@ -28,6 +28,8 @@ import type {
   MerchantOffer,
   PetShardRarity,
   SanctuaryBuffType,
+  DailyMission,
+  DailyMissionsState,
 } from '@/types/game';
 import { 
   attemptDodge, 
@@ -260,11 +262,7 @@ const INITIAL_GAME_STATE: GameState = {
       legendary: 0,
       mythic: 0,
     },
-    petShards: {
-      rare: 0,
-      epic: 0,
-      legendary: 0,
-    },
+    petShards: 0,
     totalCoinsEarned: 0,
     totalCoinsSpent: 0,
   },
@@ -279,6 +277,10 @@ const INITIAL_GAME_STATE: GameState = {
     dailyProgress: [],
     lastDailyReset: getBrazilDateString(),
     lastWeeklyReset: getWeekStart(getBrazilDate()),
+  },
+  dailyMissions: {
+    lastReset: getBrazilDateString(),
+    missions: [],
   },
   shop: [],
   ownedLootboxes: [],
@@ -483,16 +485,12 @@ const applyDungeonRewards = (state: GameState, rewards: DungeonEventReward[]): G
     }
 
     if (reward.type === 'petShard') {
-      const rarity = (reward.rarity as PetShardRarity) || 'rare';
       const amount = Math.max(0, Math.floor(reward.amount || 0));
       next = {
         ...next,
         economy: {
           ...next.economy,
-          petShards: {
-            ...(next.economy.petShards || { rare: 0, epic: 0, legendary: 0 }),
-            [rarity]: ((next.economy.petShards || { rare: 0, epic: 0, legendary: 0 })[rarity] || 0) + amount,
-          },
+          petShards: (next.economy.petShards || 0) + amount,
         },
       };
       continue;
@@ -536,45 +534,283 @@ const randInt = (min: number, max: number) => {
   return lo + Math.floor(Math.random() * (hi - lo + 1));
 };
 
+const pickOne = <T,>(items: T[]): T => {
+  return items[Math.floor(Math.random() * items.length)];
+};
+
+const getDailyTaskCompletionPercent = (state: GameState, day: string): number => {
+  const allDaily = state.quests.diaria.filter(q => (q.scheduledDate || getBrazilDateStringFromDate(new Date(q.createdAt))) === day);
+  const total = allDaily.length;
+  if (total <= 0) return 0;
+  const completed = allDaily.filter(q => q.completed).length;
+  return Math.floor((completed / total) * 100);
+};
+
+type DailyMissionEvent =
+  | { type: 'combatWin'; crits: number; gold: number; item?: Item }
+  | { type: 'crit'; amount: number }
+  | { type: 'gold'; amount: number }
+  | { type: 'itemObtained'; item: Item }
+  | { type: 'chestCollected'; rarity: ChestRarity }
+  | { type: 'merchantFound' }
+  | { type: 'sanctuaryFound' }
+  | { type: 'taskCompleted'; day: string; completionPercent: number }
+  | { type: 'itemUpgraded'; success: boolean; newLevel: number }
+  | { type: 'itemDestroyed'; amount: number };
+
+const applyDailyMissionEvent = (state: GameState, event: DailyMissionEvent): DailyMissionsState => {
+  const daily = state.dailyMissions;
+  const today = getBrazilDateString();
+  if (!daily || daily.lastReset !== today) return daily;
+
+  const missions = daily.missions.map(m => ({ ...m }));
+
+  const bump = (mission: DailyMission, amount: number) => {
+    if (mission.claimed) return;
+    if (mission.completed) return;
+    mission.progress = Math.min(mission.target, mission.progress + amount);
+    if (mission.progress >= mission.target) {
+      mission.completed = true;
+    }
+  };
+
+  for (const m of missions) {
+    if (m.day !== today) continue;
+
+    switch (event.type) {
+      case 'combatWin': {
+        bump(m, m.kind === 'defeatEnemies' ? 1 : 0);
+        if (m.kind === 'earnGold') bump(m, event.gold);
+        if (event.item) {
+          if (m.kind === 'obtainItem') bump(m, 1);
+          if (m.kind === 'obtainRareItem' && event.item.rarity === 'rare') bump(m, 1);
+          if (m.kind === 'obtainEpicItem' && event.item.rarity === 'epic') bump(m, 1);
+        }
+        break;
+      }
+      case 'crit': {
+        if (m.kind === 'dealCrits') bump(m, event.amount);
+        break;
+      }
+      case 'gold': {
+        if (m.kind === 'earnGold') bump(m, event.amount);
+        break;
+      }
+      case 'itemObtained': {
+        if (m.kind === 'obtainItem') bump(m, 1);
+        if (m.kind === 'obtainRareItem' && event.item.rarity === 'rare') bump(m, 1);
+        if (m.kind === 'obtainEpicItem' && event.item.rarity === 'epic') bump(m, 1);
+        break;
+      }
+      case 'chestCollected': {
+        if (m.kind === 'openChests') bump(m, 1);
+        if (m.kind === 'openEpicChest' && event.rarity === 'epic') bump(m, 1);
+        break;
+      }
+      case 'merchantFound': {
+        if (m.kind === 'findMerchant') bump(m, 1);
+        if (m.kind === 'findSpecialEvents') bump(m, 1);
+        break;
+      }
+      case 'sanctuaryFound': {
+        if (m.kind === 'findSanctuary') bump(m, 1);
+        if (m.kind === 'findSpecialEvents') bump(m, 1);
+        break;
+      }
+      case 'taskCompleted': {
+        if (m.kind === 'completeTasks') bump(m, 1);
+        if (m.kind === 'completeTasksPercent') {
+          const targetPercent = Math.max(0, Math.floor(m.params?.percentTarget || m.target || 0));
+          const pct = Math.min(100, Math.max(0, event.completionPercent));
+          m.progress = Math.min(targetPercent, pct);
+          m.target = targetPercent;
+          if (pct >= targetPercent) m.completed = true;
+        }
+        break;
+      }
+      case 'itemUpgraded': {
+        if (!event.success) break;
+        if (m.kind === 'upgradeItem') bump(m, 1);
+        if (m.kind === 'upgradeToLevel') {
+          const targetLevel = Math.max(0, Math.floor(m.params?.levelTarget || m.target || 0));
+          if (event.newLevel >= targetLevel) {
+            m.progress = targetLevel;
+            m.target = targetLevel;
+            m.completed = true;
+          }
+        }
+        break;
+      }
+      case 'itemDestroyed': {
+        if (m.kind === 'dismantleItems') bump(m, event.amount);
+        break;
+      }
+    }
+  }
+
+  return { ...daily, missions };
+};
+
+const generateDailyMissions = (day: string): DailyMission[] => {
+  const commonTemplates = [
+    { kind: 'defeatEnemies' as const, target: () => randInt(1, 4), title: (t: number) => `Derrote ${t} inimigo(s)` },
+    { kind: 'openChests' as const, target: () => randInt(1, 2), title: (t: number) => `Abra ${t} baú(s)` },
+    { kind: 'dealCrits' as const, target: () => randInt(5, 10), title: (t: number) => `Cause ${t} críticos` },
+    { kind: 'completeTasks' as const, target: () => 3, title: (t: number) => `Complete ${t} tarefas reais` },
+    { kind: 'earnGold' as const, target: () => 100, title: (t: number) => `Ganhe ${t} gold` },
+    { kind: 'upgradeItem' as const, target: () => 1, title: () => `Melhore 1 item` },
+    { kind: 'obtainItem' as const, target: () => 1, title: () => `Obtenha um novo item` },
+  ];
+
+  const uncommonTemplates = [
+    { kind: 'openChests' as const, target: () => randInt(2, 3), title: (t: number) => `Abra ${t} baús` },
+    { kind: 'dealCrits' as const, target: () => randInt(10, 20), title: (t: number) => `Cause ${t} críticos` },
+    { kind: 'findMerchant' as const, target: () => 1, title: () => `Encontre um mercador perdido` },
+    { kind: 'obtainRareItem' as const, target: () => 1, title: () => `Consiga um item raro` },
+    { kind: 'completeTasksPercent' as const, target: () => 50, title: () => `Complete 50% das tarefas do dia`, params: { percentTarget: 50 } },
+    { kind: 'earnGold' as const, target: () => 200, title: (t: number) => `Ganhe ${t} gold` },
+    { kind: 'defeatEnemies' as const, target: () => randInt(4, 6), title: (t: number) => `Derrote ${t} inimigos` },
+    { kind: 'upgradeToLevel' as const, target: () => 3, title: () => `Melhore um item para +3`, params: { levelTarget: 3 } },
+    { kind: 'dismantleItems' as const, target: () => 3, title: () => `Desmantele 3 itens` },
+  ];
+
+  const specialTemplates = [
+    { kind: 'earnGold' as const, target: () => 300, title: (t: number) => `Ganhe ${t} gold` },
+    { kind: 'findSanctuary' as const, target: () => 1, title: () => `Encontre o Santuário da Floresta` },
+    { kind: 'openEpicChest' as const, target: () => 1, title: () => `Abra um baú épico` },
+    { kind: 'completeTasksPercent' as const, target: () => 100, title: () => `Complete 100% das tarefas do dia`, params: { percentTarget: 100 } },
+    { kind: 'obtainEpicItem' as const, target: () => 1, title: () => `Obtenha item épico` },
+    { kind: 'upgradeToLevel' as const, target: () => 5, title: () => `Faça upgrade +5`, params: { levelTarget: 5 } },
+    { kind: 'findSpecialEvents' as const, target: () => 2, title: () => `Encontre 2 eventos especiais` },
+  ];
+
+  const rollRarity = (): 'common' | 'uncommon' | 'special' => {
+    const roll = Math.random() * 100;
+    if (roll < 60) return 'common';
+    if (roll < 90) return 'uncommon';
+    return 'special';
+  };
+
+  const pickedRarities: Array<'common' | 'uncommon' | 'special'> = [rollRarity(), rollRarity(), rollRarity()];
+  if (!pickedRarities.includes('common')) {
+    pickedRarities[randInt(0, 2)] = 'common';
+  }
+
+  const usedKinds = new Set<string>();
+  const buildMission = (slot: 2 | 3 | 4, rarity: 'common' | 'uncommon' | 'special'): DailyMission => {
+    const templatePool = rarity === 'common' ? commonTemplates : rarity === 'uncommon' ? uncommonTemplates : specialTemplates;
+    let template = pickOne(templatePool);
+    let tries = 0;
+    while (usedKinds.has(template.kind) && tries < 30) {
+      template = pickOne(templatePool);
+      tries += 1;
+    }
+    usedKinds.add(template.kind);
+
+    const target = template.target();
+    const title = template.title(target);
+    const rewardFragments =
+      rarity === 'common' ? randInt(1, 3) :
+      rarity === 'uncommon' ? randInt(3, 6) :
+      randInt(5, 10);
+
+    return {
+      id: `daily-mission-${day}-${slot}-${template.kind}-${generateId()}`,
+      slot,
+      day,
+      rarity,
+      kind: template.kind,
+      title,
+      target,
+      progress: 0,
+      reward: { type: 'energyFragment', amount: rewardFragments },
+      params: template.params,
+      completed: false,
+      claimed: false,
+    };
+  };
+
+  const loginMission: DailyMission = {
+    id: `daily-login-${day}`,
+    slot: 1,
+    day,
+    rarity: 'login',
+    kind: 'login',
+    title: 'Login diário',
+    target: 1,
+    progress: 1,
+    reward: { type: 'energy', amount: 5 },
+    completed: true,
+    claimed: false,
+  };
+
+  return [
+    loginMission,
+    buildMission(2, pickedRarities[0]),
+    buildMission(3, pickedRarities[1]),
+    buildMission(4, pickedRarities[2]),
+  ];
+};
+
 const generateChestRewards = (chestRarity: EventChestRarity): DungeonEventReward[] => {
   if (chestRarity === 'common') {
-    const rewards: DungeonEventReward[] = [
-      { type: 'gold', amount: randInt(20, 60) },
-      { type: 'forgeShard', rarity: 'common', amount: randInt(1, 3) },
-    ];
-    if (Math.random() < 0.10) rewards.push({ type: 'energyFragment', amount: 1 });
+    const rewards: DungeonEventReward[] = [{ type: 'gold', amount: randInt(20, 60) }];
+    const forgeAmount = randInt(0, 1);
+    if (forgeAmount > 0) rewards.push({ type: 'forgeShard', rarity: 'common', amount: forgeAmount });
+    if (Math.random() < 0.30) rewards.push({ type: 'energyFragment', amount: 1 });
+    if (Math.random() < 0.10) rewards.push({ type: 'petShard', amount: 1 });
     return rewards;
   }
 
   if (chestRarity === 'rare') {
-    const rewards: DungeonEventReward[] = [
-      { type: 'gold', amount: randInt(80, 180) },
-      { type: 'forgeShard', rarity: 'rare', amount: randInt(1, 3) },
-      { type: 'energyFragment', amount: randInt(1, 2) },
-    ];
-    if (Math.random() < 0.10) rewards.push({ type: 'petShard', rarity: 'rare', amount: 1 });
+    const rewards: DungeonEventReward[] = [{ type: 'gold', amount: randInt(80, 180) }];
+    if (Math.random() < 0.5) {
+      const rareAmount = randInt(0, 1);
+      if (rareAmount > 0) rewards.push({ type: 'forgeShard', rarity: 'rare', amount: rareAmount });
+    } else {
+      rewards.push({ type: 'forgeShard', rarity: 'common', amount: randInt(1, 2) });
+    }
+    if (Math.random() < 0.50) rewards.push({ type: 'energyFragment', amount: randInt(1, 2) });
+    if (Math.random() < 0.30) rewards.push({ type: 'petShard', amount: randInt(1, 2) });
     return rewards;
   }
 
   if (chestRarity === 'epic') {
-    const itemRarity: Rarity = Math.random() < 0.70 ? 'rare' : 'epic';
-    const rewards: DungeonEventReward[] = [
-      { type: 'gold', amount: randInt(200, 500) },
-      { type: 'forgeShard', rarity: 'epic', amount: randInt(1, 3) },
-      { type: 'energyFragment', amount: randInt(2, 4) },
-      { type: 'item', item: generateItem(itemRarity) },
-    ];
-    if (Math.random() < 0.10) rewards.push({ type: 'petShard', rarity: 'epic', amount: 1 });
+    const rewards: DungeonEventReward[] = [{ type: 'gold', amount: randInt(200, 400) }];
+    const shardRoll = Math.random();
+    if (shardRoll < 1 / 3) {
+      const epicAmount = randInt(0, 1);
+      if (epicAmount > 0) rewards.push({ type: 'forgeShard', rarity: 'epic', amount: epicAmount });
+    } else if (shardRoll < 2 / 3) {
+      rewards.push({ type: 'forgeShard', rarity: 'rare', amount: randInt(1, 2) });
+    } else {
+      rewards.push({ type: 'forgeShard', rarity: 'common', amount: randInt(2, 4) });
+    }
+    if (Math.random() < 0.65) rewards.push({ type: 'energyFragment', amount: randInt(2, 4) });
+    if (Math.random() < 0.50) {
+      const itemRarity: Rarity = Math.random() < 0.70 ? 'rare' : 'epic';
+      rewards.push({ type: 'item', item: generateItem(itemRarity) });
+    }
+    if (Math.random() < 0.50) rewards.push({ type: 'petShard', amount: randInt(2, 4) });
     return rewards;
   }
 
-  const rewards: DungeonEventReward[] = [
-    { type: 'gold', amount: randInt(500, 1200) },
-    { type: 'forgeShard', rarity: 'legendary', amount: randInt(1, 3) },
-    { type: 'energyFragment', amount: randInt(3, 6) },
-    { type: 'item', item: generateItem('epic') },
-  ];
-  if (Math.random() < 0.10) rewards.push({ type: 'petShard', rarity: 'legendary', amount: 1 });
+  const rewards: DungeonEventReward[] = [{ type: 'gold', amount: randInt(500, 800) }];
+  if (Math.random() < 0.85) {
+    const shardRoll = Math.random() * 100;
+    if (shardRoll < 25) {
+      rewards.push({ type: 'forgeShard', rarity: 'legendary', amount: 1 });
+    } else if (shardRoll < 50) {
+      rewards.push({ type: 'forgeShard', rarity: 'epic', amount: randInt(2, 3) });
+    } else if (shardRoll < 75) {
+      rewards.push({ type: 'forgeShard', rarity: 'rare', amount: randInt(4, 5) });
+    } else {
+      rewards.push({ type: 'forgeShard', rarity: 'common', amount: randInt(5, 10) });
+    }
+  }
+  if (Math.random() < 0.65) rewards.push({ type: 'energyFragment', amount: randInt(3, 6) });
+  if (Math.random() < 0.70) rewards.push({ type: 'item', item: generateItem('epic') });
+  rewards.push({ type: 'petShard', amount: randInt(1, 8) });
   if (Math.random() < 0.05) rewards.push({ type: 'item', item: generateItem('legendary') });
   return rewards;
 };
@@ -603,12 +839,13 @@ const generateMerchantOffers = (): MerchantOffer[] => {
         rarity === 'rare' ? randInt(300, 500) :
         rarity === 'epic' ? randInt(700, 900) :
         randInt(1500, 2300);
+      const amount = rarity === 'rare' ? 10 : rarity === 'epic' ? 30 : 50;
       return {
         id: generateId(),
-        title: `Estilhaço de Pet ${rarity.toUpperCase()}`,
-        description: 'Usado futuramente para desbloquear pets.',
+        title: `Fragmentos de Pet (${amount})`,
+        description: 'Use para desbloquear pets.',
         price,
-        reward: { type: 'petShard', rarity, amount: 1 },
+        reward: { type: 'petShard', amount },
       };
     }
 
@@ -706,12 +943,16 @@ const migrateGameState = (parsed: any): GameState => {
     };
   }
   
-  if (!baseEconomy.petShards) {
-    baseEconomy.petShards = {
-      rare: 0,
-      epic: 0,
-      legendary: 0,
-    };
+  if (typeof baseEconomy.petShards === 'object' && baseEconomy.petShards) {
+    const legacy = baseEconomy.petShards as any;
+    baseEconomy.petShards =
+      (Number(legacy.rare) || 0) +
+      (Number(legacy.epic) || 0) +
+      (Number(legacy.legendary) || 0);
+  }
+
+  if (typeof baseEconomy.petShards !== 'number') {
+    baseEconomy.petShards = 0;
   }
 
   const migrated = {
@@ -782,6 +1023,10 @@ const migrateGameState = (parsed: any): GameState => {
       events: parsed.calendar?.events || [],
       weeklyGoals: parsed.calendar?.weeklyGoals || [],
       dailyProgress: parsed.calendar?.dailyProgress || [],
+    },
+    dailyMissions: {
+      lastReset: parsed.dailyMissions?.lastReset || getBrazilDateString(),
+      missions: Array.isArray(parsed.dailyMissions?.missions) ? parsed.dailyMissions.missions : [],
     },
     playerProfile: {
       ...DEFAULT_PLAYER_PROFILE,
@@ -1015,22 +1260,32 @@ export function useGameState() {
     if (!isLoaded) return;
 
     const checkResets = () => {
-      const today = getBrazilDateString();
-      const weekStart = getWeekStart(getBrazilDate());
+      setGameState(prev => {
+        const today = getBrazilDateString();
+        const weekStart = getWeekStart(getBrazilDate());
 
-      // Daily reset
-      if (isNewDay(gameState.calendar.lastDailyReset)) {
-        addDebugLog(`Daily reset triggered: ${today}`);
-        setGameState(prev => {
+        const shouldDailyReset = isNewDay(prev.calendar.lastDailyReset);
+        const shouldWeeklyReset = isNewWeek(prev.calendar.lastWeeklyReset);
+
+        const needsDailyMissions =
+          !prev.dailyMissions ||
+          prev.dailyMissions.lastReset !== today ||
+          !Array.isArray(prev.dailyMissions.missions) ||
+          prev.dailyMissions.missions.length < 4 ||
+          prev.dailyMissions.missions.some(m => m.day !== today);
+
+        let next: GameState = prev;
+
+        if (shouldDailyReset) {
+          addDebugLog(`Daily reset triggered: ${today}`);
+
           const yesterday = new Date(getBrazilDate());
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = getBrazilDateStringFromDate(yesterday);
-          
-          // Check if yesterday had any completed tasks for streak calculation
+
           const yesterdayProgress = prev.calendar.dailyProgress.find(p => p.date === yesterdayStr);
           const hadProgressYesterday = yesterdayProgress && yesterdayProgress.completedTasks > 0;
-          
-          // Calculate new streak
+
           let newStreak = prev.character.stats.streak;
           if (!hadProgressYesterday) {
             newStreak = 0;
@@ -1039,22 +1294,18 @@ export function useGameState() {
             addDebugLog(`Streak maintained: ${newStreak} (Tasks completed yesterday)`);
           }
 
-          // Calculate real days survived based on account creation date
           const msPerDay = 24 * 60 * 60 * 1000;
           const creationDate = prev.createdAt || Date.now();
           const todayMs = getBrazilDate().getTime();
           const diffMs = todayMs - creationDate;
           const realDaysSurvived = Math.max(1, Math.floor(diffMs / msPerDay) + 1);
-          
-          // Get current day of week (0 = Sunday, 1 = Monday, etc.)
+
           const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
-          
-          // Generate habit quests for today based on habitDays
-          const todaysHabits = prev.quests.habito.filter(habit => 
+
+          const todaysHabits = prev.quests.habito.filter(habit =>
             habit.habitDays?.includes(currentDayOfWeek) && !habit.completed
           );
-          
-          // Create new daily quests from habits
+
           const newDailyQuests: Quest[] = todaysHabits.map(habit => ({
             ...habit,
             id: `daily-${habit.id}-${today}`,
@@ -1063,15 +1314,13 @@ export function useGameState() {
             createdAt: Date.now(),
             scheduledDate: today,
           }));
-          
+
           addDebugLog(`Generated ${newDailyQuests.length} daily quests from habits`);
 
-          return {
+          next = {
             ...prev,
             character: {
               ...prev.character,
-              energy: 5, // Daily reset to 5 base energy
-              energyFragments: 0,
               stats: {
                 ...prev.character.stats,
                 streak: newStreak,
@@ -1083,42 +1332,55 @@ export function useGameState() {
                 streak: newStreak,
                 maxStreak: Math.max(prev.character.progression.maxStreak, newStreak),
                 daysSurvived: realDaysSurvived,
-              }
+              },
             },
             calendar: {
               ...prev.calendar,
               lastDailyReset: today,
               dailyProgress: [
                 ...prev.calendar.dailyProgress,
-                { date: today, completedTasks: 0, streakCounted: false, extraEnergyGained: 0 }
-              ].slice(-30), // Keep last 30 days
+                { date: today, completedTasks: 0, streakCounted: false, extraEnergyGained: 0 },
+              ].slice(-30),
+            },
+            dailyMissions: {
+              lastReset: today,
+              missions: generateDailyMissions(today),
             },
             quests: {
               ...prev.quests,
               diaria: [...prev.quests.diaria.filter(q => !q.completed), ...newDailyQuests],
             },
           };
-        });
-      }
+        } else if (needsDailyMissions) {
+          next = {
+            ...prev,
+            dailyMissions: {
+              lastReset: today,
+              missions: generateDailyMissions(today),
+            },
+          };
+        }
 
-      // Weekly reset
-      if (isNewWeek(gameState.calendar.lastWeeklyReset)) {
-        addDebugLog(`Weekly reset triggered: ${weekStart}`);
-        setGameState(prev => ({
-          ...prev,
-          calendar: {
-            ...prev.calendar,
-            lastWeeklyReset: weekStart,
-            weeklyGoals: [], // Clear weekly goals
-          },
-        }));
-      }
+        if (shouldWeeklyReset) {
+          addDebugLog(`Weekly reset triggered: ${weekStart}`);
+          next = {
+            ...next,
+            calendar: {
+              ...next.calendar,
+              lastWeeklyReset: weekStart,
+              weeklyGoals: [],
+            },
+          };
+        }
+
+        return next;
+      });
     };
 
     checkResets();
     const interval = setInterval(checkResets, 60000); // Check every minute
     return () => clearInterval(interval);
-  }, [isLoaded, gameState.calendar.lastDailyReset, gameState.calendar.lastWeeklyReset]);
+  }, [isLoaded, addDebugLog]);
 
   // ============================================
   // CHARACTER ACTIONS
@@ -1334,15 +1596,23 @@ export function useGameState() {
 
       if (eventType === 'merchant') {
         addDebugLog('🧙 Mercador Perdido encontrado!');
+        const updatedDailyMissions = applyDailyMissionEvent(baseState, { type: 'merchantFound' });
         return {
           ...baseState,
+          dailyMissions: updatedDailyMissions,
           dungeonEvent: { type: 'merchant', offers: generateMerchantOffers(), mapId, nodeId, stage: node.stage },
         };
       }
 
       addDebugLog('🌿 Santuário da Floresta encontrado!');
+      const updatedDailyMissions = applyDailyMissionEvent(baseState, { type: 'sanctuaryFound' });
       return {
         ...baseState,
+        dailyMissions: updatedDailyMissions,
+        dungeonEvent: { type: 'sanctuary', mapId, nodeId, stage: node.stage },
+      };
+        ...baseState,
+        dailyMissions: updatedDailyMissions,
         dungeonEvent: { type: 'sanctuary', mapId, nodeId, stage: node.stage },
       };
     });
@@ -2017,6 +2287,21 @@ export function useGameState() {
           )
         : [...prev.calendar.dailyProgress, { date: today, completedTasks: 1, streakCounted: false, extraEnergyGained: newExtraEnergy }];
 
+      const updatedQuestsForType = prev.quests[type].map(q =>
+        q.id === questId ? { ...q, completed: true, completedAt: Date.now() } : q
+      );
+      const updatedQuests = {
+        ...prev.quests,
+        [type]: updatedQuestsForType,
+      };
+
+      const completionPercent = getDailyTaskCompletionPercent({ ...prev, quests: updatedQuests }, today);
+      const updatedDailyMissions = applyDailyMissionEvent(prev, {
+        type: 'taskCompleted',
+        day: today,
+        completionPercent,
+      });
+
       return {
         ...prev,
         character: {
@@ -2041,8 +2326,7 @@ export function useGameState() {
           specialAttacks: prev.inventory.specialAttacks,
         },
         quests: {
-          ...prev.quests,
-          [type]: prev.quests[type].map(q => q.id === questId ? { ...q, completed: true, completedAt: Date.now() } : q),
+          ...updatedQuests,
         },
         playerProfile: newProfile,
         calendar: {
@@ -2050,6 +2334,7 @@ export function useGameState() {
           weeklyGoals: updatedGoals,
           dailyProgress: updatedDailyProgress,
         },
+        dailyMissions: updatedDailyMissions,
       };
     });
   }, [addDebugLog]);
@@ -2382,8 +2667,22 @@ export function useGameState() {
 
         addDebugLog(`Victory! +${xpReward} XP, +${goldReward} Gold${droppedItem ? ` | Drop: ${droppedItem.name}` : ''}`);
         
+        let updatedDailyMissions = applyDailyMissionEvent(stateAfterXP, {
+          type: 'combatWin',
+          crits: 0,
+          gold: goldReward,
+          item: droppedItem || undefined,
+        });
+        if (playerCrit) {
+          updatedDailyMissions = applyDailyMissionEvent(
+            { ...stateAfterXP, dailyMissions: updatedDailyMissions },
+            { type: 'crit', amount: 1 }
+          );
+        }
+
         return {
           ...stateAfterXP,
+          dailyMissions: updatedDailyMissions,
           sanctuaryBuff: nextBuff,
           character: {
             ...stateAfterXP.character,
@@ -2429,8 +2728,13 @@ export function useGameState() {
           ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
           : null;
 
+        const updatedDailyMissions = playerCrit
+          ? applyDailyMissionEvent(prev, { type: 'crit', amount: 1 })
+          : prev.dailyMissions;
+
         return {
           ...prev,
+          dailyMissions: updatedDailyMissions,
           sanctuaryBuff: nextBuff,
           character: {
             ...prev.character,
@@ -2456,8 +2760,13 @@ export function useGameState() {
       }
 
       // Combat continues
+      const updatedDailyMissions = playerCrit
+        ? applyDailyMissionEvent(prev, { type: 'crit', amount: 1 })
+        : prev.dailyMissions;
+
       return {
         ...prev,
+        dailyMissions: updatedDailyMissions,
         character: {
           ...prev.character,
           hp: newPlayerHp,
@@ -2930,8 +3239,10 @@ export function useGameState() {
 
       addDebugLog(`Desmantelou ${itemToDestroy.name}: +${shardAmount} cristal(is) ${rarity}`);
 
+      const updatedDailyMissions = applyDailyMissionEvent(prev, { type: 'itemDestroyed', amount: 1 });
       return {
         ...prev,
+        dailyMissions: updatedDailyMissions,
         economy: {
           ...prev.economy,
           shards: newShards,
@@ -3060,7 +3371,8 @@ export function useGameState() {
         },
       };
 
-      return newState;
+      const updatedDailyMissions = applyDailyMissionEvent(newState, { type: 'itemUpgraded', success: isSuccess, newLevel });
+      return { ...newState, dailyMissions: updatedDailyMissions };
     });
 
     // We need to return the actual result from the state update
@@ -3161,7 +3473,7 @@ export function useGameState() {
         ? [...prev.inventory.specialAttacks, specialAttack]
         : prev.inventory.specialAttacks;
 
-      return {
+      const baseState: GameState = {
         ...prev,
         inventory: {
           ...prev.inventory,
@@ -3171,6 +3483,16 @@ export function useGameState() {
         },
         ownedLootboxes: newOwnedLootboxes,
       };
+
+      let updatedDailyMissions = baseState.dailyMissions;
+      for (const item of items) {
+        updatedDailyMissions = applyDailyMissionEvent(
+          { ...baseState, dailyMissions: updatedDailyMissions },
+          { type: 'itemObtained', item }
+        );
+      }
+
+      return { ...baseState, dailyMissions: updatedDailyMissions };
     });
 
     return { items, specialAttack };
@@ -3426,10 +3748,75 @@ export function useGameState() {
 
       const base = { ...prev, chests: newChests };
       const rewarded = applyDungeonRewards(base, rewards);
+      let updatedDailyMissions = applyDailyMissionEvent(rewarded, { type: 'chestCollected', rarity: chest.rarity });
+      for (const reward of rewards) {
+        if (reward.type === 'gold') {
+          updatedDailyMissions = applyDailyMissionEvent(
+            { ...rewarded, dailyMissions: updatedDailyMissions },
+            { type: 'gold', amount: Math.max(0, Math.floor(reward.amount || 0)) }
+          );
+        }
+        if (reward.type === 'item' && reward.item) {
+          updatedDailyMissions = applyDailyMissionEvent(
+            { ...rewarded, dailyMissions: updatedDailyMissions },
+            { type: 'itemObtained', item: reward.item }
+          );
+        }
+      }
       addDebugLog(`Baú ${chest.rarity} aberto!`);
       return {
         ...rewarded,
+        dailyMissions: updatedDailyMissions,
         lootOverlay: { title: `Baú ${chest.rarity.toUpperCase()}`, rewards },
+      };
+    });
+  }, [addDebugLog]);
+
+  const claimDailyMission = useCallback((missionId: string) => {
+    setGameState(prev => {
+      const today = getBrazilDateString();
+      if (!prev.dailyMissions || prev.dailyMissions.lastReset !== today) return prev;
+
+      const idx = prev.dailyMissions.missions.findIndex(m => m.id === missionId && m.day === today);
+      if (idx === -1) return prev;
+
+      const mission = prev.dailyMissions.missions[idx];
+      if (!mission.completed || mission.claimed) return prev;
+
+      let newEnergy = prev.character.energy;
+      let newFragments = prev.character.energyFragments;
+
+      if (mission.reward.type === 'energy') {
+        const amount = Math.max(0, Math.floor(mission.reward.amount || 0));
+        newEnergy = Math.min(prev.character.maxEnergy, newEnergy + amount);
+      } else {
+        const amount = Math.max(0, Math.floor(mission.reward.amount || 0));
+        newFragments += amount;
+        while (newFragments >= 5 && newEnergy < prev.character.maxEnergy) {
+          newFragments -= 5;
+          newEnergy += 1;
+        }
+      }
+
+      const newMissions = prev.dailyMissions.missions.map((m, i) => i === idx ? { ...m, claimed: true } : m);
+
+      if (mission.reward.type === 'energy') {
+        addDebugLog(`Missão diária resgatada: ${mission.title} (+${mission.reward.amount} ⚡)`);
+      } else {
+        addDebugLog(`Missão diária resgatada: ${mission.title} (+${mission.reward.amount} fragmentos)`);
+      }
+
+      return {
+        ...prev,
+        character: {
+          ...prev.character,
+          energy: newEnergy,
+          energyFragments: newFragments,
+        },
+        dailyMissions: {
+          ...prev.dailyMissions,
+          missions: newMissions,
+        },
       };
     });
   }, [addDebugLog]);
@@ -3500,6 +3887,7 @@ export function useGameState() {
     // Chest System
     startUnlockingChest,
     collectChestRewards,
+    claimDailyMission,
     restCharacter: () => {
       setGameState(prev => {
         if (!prev.settings?.infiniteEnergy && prev.character.energy < 1) {
@@ -3542,8 +3930,7 @@ export function useGameState() {
         const pet = PETS[petId];
         if (!pet) return prev;
 
-        const petShards = prev.economy.petShards || { rare: 0, epic: 0, legendary: 0 };
-        const current = petShards[pet.shardRarity] || 0;
+        const current = prev.economy.petShards || 0;
         if (current < pet.unlockCost) {
           addDebugLog(`Fragmentos de pet insuficientes para desbloquear ${pet.name}`);
           return prev;
@@ -3555,10 +3942,7 @@ export function useGameState() {
           selectedPetId: prev.selectedPetId ?? petId,
           economy: {
             ...prev.economy,
-            petShards: {
-              ...petShards,
-              [pet.shardRarity]: Math.max(0, current - pet.unlockCost),
-            },
+            petShards: Math.max(0, current - pet.unlockCost),
           },
         };
       });

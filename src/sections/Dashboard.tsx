@@ -17,7 +17,7 @@ import {
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PETS } from '@/types/game';
+import { PETS, getBrazilDate, getBrazilDateStringFromDate } from '@/types/game';
 import {
   Dialog,
   DialogContent,
@@ -55,7 +55,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     selectPet,
     unlockPet,
     startUnlockingChest,
-    collectChestRewards
+    collectChestRewards,
+    claimDailyMission
   } = useGame();
   const { character, recoveryMode, selectedPetId, economy, unlockedPets, playerProfile } = gameState;
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -66,14 +67,12 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
   const [isResting, setIsResting] = useState(false);
   const [sleepOverlay, setSleepOverlay] = useState<'in' | 'out' | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const hasUnlockingChest = (gameState.chests || []).some(c => c?.status === 'unlocking');
 
   useEffect(() => {
-    if (!hasUnlockingChest) return;
     setNow(Date.now());
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [hasUnlockingChest]);
+  }, []);
 
   const handleRecoverEnergy = () => {
     recoverEnergy();
@@ -116,6 +115,47 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     return `${hours}h ${minutes}m ${seconds}s`;
+  };
+
+  const formatTimeHM = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  const brazilNow = getBrazilDate();
+  const nextBrazilMidnight = new Date(brazilNow);
+  nextBrazilMidnight.setHours(24, 0, 0, 0);
+  const dailyResetInMs = Math.max(0, nextBrazilMidnight.getTime() - brazilNow.getTime());
+
+  const dailyMissions = (gameState.dailyMissions?.missions || [])
+    .slice()
+    .sort((a, b) => a.slot - b.slot);
+
+  const missionIcon = (kind: string) => {
+    switch (kind) {
+      case 'login':
+        return Zap;
+      case 'defeatEnemies':
+        return Sword;
+      case 'openChests':
+        return Lock;
+      case 'dealCrits':
+        return Star;
+      case 'completeTasks':
+      case 'completeTasksPercent':
+        return Target;
+      case 'earnGold':
+        return Sparkles;
+      case 'upgradeItem':
+      case 'upgradeToLevel':
+        return Star;
+      case 'dismantleItems':
+        return Skull;
+      default:
+        return Target;
+    }
   };
 
   const rarityColors = {
@@ -339,89 +379,64 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       <motion.div variants={itemVariants} className="card-dungeon p-1.5">
         <div className="flex items-center justify-between mb-1.5">
           <h3 className="text-[9px] font-bold text-white font-cinzel tracking-widest uppercase">MISSÕES DIÁRIAS</h3>
-          <span className="text-[5px] text-gray-500 font-bold uppercase">11h 32m</span>
+          <span className="text-[5px] text-gray-500 font-bold uppercase">{formatTimeHM(dailyResetInMs)}</span>
         </div>
 
         <div className="grid grid-cols-2 gap-1.5">
-          {/* Mission 1 */}
-          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
-            <Skull className="w-3 h-3 text-gray-500 flex-shrink-0" />
-            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
-              <div className="flex items-center justify-between gap-1">
-                <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Derrote 3 Elites</p>
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <div 
-                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
-                  />
-                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">2</span>
-                </div>
-              </div>
-              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-[66%]" />
-              </div>
-            </div>
-          </div>
+          {dailyMissions.map(mission => {
+            const Icon = missionIcon(mission.kind);
+            const isClaimable = mission.completed && !mission.claimed;
+            const pct = mission.target > 0 ? Math.min(100, Math.floor((mission.progress / mission.target) * 100)) : 0;
 
-          {/* Mission 2 */}
-          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
-            <Target className="w-3 h-3 text-orange-500 flex-shrink-0" />
-            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
-              <div className="flex items-center justify-between gap-1">
-                <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Ganhe 500 Ouro</p>
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <div 
-                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
-                  />
-                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">1</span>
-                </div>
-              </div>
-              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-[50%]" />
-              </div>
-            </div>
-          </div>
+            return (
+              <button
+                key={mission.id}
+                type="button"
+                onClick={() => {
+                  if (isClaimable) claimDailyMission(mission.id);
+                }}
+                className={cn(
+                  "p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9 text-left",
+                  isClaimable && "cursor-pointer hover:bg-black/50",
+                  mission.claimed && "opacity-50"
+                )}
+              >
+                <Icon className={cn(
+                  "w-3 h-3 flex-shrink-0",
+                  mission.kind === 'login' ? "text-yellow-500" : "text-gray-500"
+                )} />
 
-          {/* Mission 3 */}
-          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
-            <Zap className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
-              <div className="flex items-center justify-between gap-1">
-                <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Gaste Energia</p>
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <div 
-                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
-                  />
-                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">3</span>
-                </div>
-              </div>
-              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-[20%]" />
-              </div>
-            </div>
-          </div>
+                <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">
+                      {mission.title}
+                    </p>
 
-          {/* Mission 4 */}
-          <div className="p-1.5 bg-black/40 rounded-sm border border-white/5 flex items-center gap-2 h-9">
-            <Sword className="w-3 h-3 text-red-500 flex-shrink-0" />
-            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
-              <div className="flex items-center justify-between gap-1">
-                <p className="text-[6px] font-bold text-gray-400 truncate leading-none font-cinzel tracking-widest">Derrote Bosses</p>
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <div 
-                    className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
-                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
-                  />
-                  <span className="text-cyan-400 font-black text-[7px] font-cinzel">5</span>
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      {mission.reward.type === 'energy' ? (
+                        <>
+                          <Zap className="w-2.5 h-2.5 text-yellow-400" />
+                          <span className="text-yellow-400 font-black text-[7px] font-cinzel">{mission.reward.amount}</span>
+                        </>
+                      ) : (
+                        <>
+                          <div 
+                            className="w-[5px] h-[7px] bg-cyan-500 border border-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)]"
+                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', transform: 'rotate(30deg)' }}
+                          />
+                          <span className="text-cyan-400 font-black text-[7px] font-cinzel">{mission.reward.amount}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{ width: `${mission.completed ? 100 : pct}%` }} />
+                  </div>
                 </div>
-              </div>
-              <div className="h-0.5 bg-black/60 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-[0%]" />
-              </div>
-            </div>
-          </div>
+              </button>
+            );
+          })}
         </div>
       </motion.div>
 
@@ -583,7 +598,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 {Object.values(PETS).map((pet) => {
                   const isUnlocked = (unlockedPets || []).includes(pet.id);
                   const isActive = selectedPetId === pet.id;
-                  const have = economy.petShards?.[pet.shardRarity] || 0;
+                  const have = economy.petShards || 0;
                   const need = pet.unlockCost;
                   const canUnlock = !isUnlocked && have >= need;
                   const progress = Math.min(1, need > 0 ? have / need : 0);
@@ -675,7 +690,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                       Fragmentos de Pet
                     </p>
                     <p className="text-[10px] text-gray-500 font-bold leading-tight truncate">
-                      {(economy.petShards?.rare || 0) + (economy.petShards?.epic || 0) + (economy.petShards?.legendary || 0)} disponíveis
+                      {(economy.petShards || 0)} disponíveis
                     </p>
                   </div>
                 </div>

@@ -71,7 +71,7 @@ export const PETS: Record<PetId, Pet> = {
     abilityDescription: '5% de chance de atacar. Garante crítico (1.3x) no próximo ataque do player.',
     chance: 0.05,
     shardRarity: 'rare',
-    unlockCost: 30,
+    unlockCost: 10,
   },
   'morcego-vampirico': {
     id: 'morcego-vampirico',
@@ -101,7 +101,7 @@ export const PETS: Record<PetId, Pet> = {
     abilityDescription: '5% de chance de atacar. Garante esquiva no próximo ataque inimigo.',
     chance: 0.05,
     shardRarity: 'rare',
-    unlockCost: 30,
+    unlockCost: 10,
   },
   'pantera-espectral': {
     id: 'pantera-espectral',
@@ -131,7 +131,7 @@ export const PETS: Record<PetId, Pet> = {
     abilityDescription: '5% de chance de atacar. Aumenta a chance de crítico no próximo ataque do player.',
     chance: 0.05,
     shardRarity: 'rare',
-    unlockCost: 30,
+    unlockCost: 10,
   },
   'salamandra-ignea': {
     id: 'salamandra-ignea',
@@ -161,7 +161,7 @@ export const PETS: Record<PetId, Pet> = {
     abilityDescription: '5% de chance de atacar. Reduz o dano do próximo ataque inimigo.',
     chance: 0.05,
     shardRarity: 'legendary',
-    unlockCost: 30,
+    unlockCost: 50,
   },
   'drako-lendario': {
     id: 'drako-lendario',
@@ -176,7 +176,7 @@ export const PETS: Record<PetId, Pet> = {
     abilityDescription: '5% de chance de atacar. Garante crítico no próximo ataque do player.',
     chance: 0.05,
     shardRarity: 'legendary',
-    unlockCost: 30,
+    unlockCost: 50,
   },
   'fenix-celestial': {
     id: 'fenix-celestial',
@@ -191,7 +191,7 @@ export const PETS: Record<PetId, Pet> = {
     abilityDescription: '5% de chance de atacar. Recupera parte da vida no próximo ataque do player.',
     chance: 0.05,
     shardRarity: 'legendary',
-    unlockCost: 30,
+    unlockCost: 50,
   },
 };
 
@@ -399,7 +399,7 @@ export type DungeonEventRewardType =
 export interface DungeonEventReward {
   type: DungeonEventRewardType;
   amount?: number;
-  rarity?: Rarity | PetShardRarity;
+  rarity?: Rarity;
   item?: Item;
 }
 
@@ -1871,11 +1871,7 @@ export interface Economy {
     legendary: number;
     mythic: number;
   };
-  petShards?: {
-    rare: number;
-    epic: number;
-    legendary: number;
-  };
+  petShards?: number;
   totalCoinsEarned: number;
   totalCoinsSpent: number;
 }
@@ -1942,6 +1938,56 @@ export const CHEST_UNLOCK_TIMES: Record<ChestRarity, number> = {
   legendary: 24 * 60 * 60 * 1000, // 24 hours
 };
 
+// ============================================
+// DAILY MISSIONS
+// ============================================
+
+export type DailyMissionRarity = 'login' | 'common' | 'uncommon' | 'special';
+
+export type DailyMissionKind =
+  | 'login'
+  | 'defeatEnemies'
+  | 'openChests'
+  | 'dealCrits'
+  | 'completeTasks'
+  | 'earnGold'
+  | 'upgradeItem'
+  | 'obtainItem'
+  | 'findMerchant'
+  | 'obtainRareItem'
+  | 'completeTasksPercent'
+  | 'upgradeToLevel'
+  | 'dismantleItems'
+  | 'findSanctuary'
+  | 'openEpicChest'
+  | 'obtainEpicItem'
+  | 'findSpecialEvents';
+
+export type DailyMissionRewardType = 'energy' | 'energyFragment';
+
+export interface DailyMission {
+  id: string;
+  slot: 1 | 2 | 3 | 4;
+  day: string; // YYYY-MM-DD (Brazil)
+  rarity: DailyMissionRarity;
+  kind: DailyMissionKind;
+  title: string;
+  target: number;
+  progress: number;
+  reward: {
+    type: DailyMissionRewardType;
+    amount: number;
+  };
+  params?: Record<string, any>;
+  completed: boolean;
+  claimed: boolean;
+}
+
+export interface DailyMissionsState {
+  lastReset: string; // YYYY-MM-DD (Brazil)
+  missions: DailyMission[];
+}
+
 // GAME STATE
 // ============================================
 
@@ -1971,6 +2017,7 @@ export interface GameState {
     meta: Quest[];
   };
   calendar: CalendarState;
+  dailyMissions: DailyMissionsState;
   shop: ShopItem[];
   ownedLootboxes: { lootboxId: string; quantity: number }[];
   history: RunHistory;

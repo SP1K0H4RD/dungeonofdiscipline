@@ -448,7 +448,7 @@ function AppContent() {
     if (reward.type === 'petShard') {
       return (
         <div key={index} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-md px-2 py-1">
-          <span className="text-xs text-gray-300">Fragmento de Pet {reward.rarity?.toString().toUpperCase()}</span>
+          <span className="text-xs text-gray-300">Fragmentos de Pet</span>
           <span className="text-xs font-mono text-pink-400">+{reward.amount}</span>
         </div>
       );
