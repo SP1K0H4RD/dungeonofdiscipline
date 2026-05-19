@@ -29,6 +29,7 @@ import type {
   PetShardRarity,
   SanctuaryBuffType,
   DailyMission,
+  DailyMissionKind,
   DailyMissionsState,
 } from '@/types/game';
 import { 
@@ -652,36 +653,43 @@ const applyDailyMissionEvent = (state: GameState, event: DailyMissionEvent): Dai
 };
 
 const generateDailyMissions = (day: string): DailyMission[] => {
-  const commonTemplates = [
-    { kind: 'defeatEnemies' as const, target: () => randInt(1, 4), title: (t: number) => `Derrote ${t} inimigo(s)` },
-    { kind: 'openChests' as const, target: () => randInt(1, 2), title: (t: number) => `Abra ${t} baú(s)` },
-    { kind: 'dealCrits' as const, target: () => randInt(5, 10), title: (t: number) => `Cause ${t} críticos` },
-    { kind: 'completeTasks' as const, target: () => 3, title: (t: number) => `Complete ${t} tarefas reais` },
-    { kind: 'earnGold' as const, target: () => 100, title: (t: number) => `Ganhe ${t} gold` },
-    { kind: 'upgradeItem' as const, target: () => 1, title: () => `Melhore 1 item` },
-    { kind: 'obtainItem' as const, target: () => 1, title: () => `Obtenha um novo item` },
+  type DailyMissionTemplate = {
+    kind: DailyMissionKind;
+    target: () => number;
+    title: (t: number) => string;
+    params?: Record<string, any>;
+  };
+
+  const commonTemplates: DailyMissionTemplate[] = [
+    { kind: 'defeatEnemies', target: () => randInt(1, 4), title: (t: number) => `Derrote ${t} inimigo(s)` },
+    { kind: 'openChests', target: () => randInt(1, 2), title: (t: number) => `Abra ${t} baú(s)` },
+    { kind: 'dealCrits', target: () => randInt(5, 10), title: (t: number) => `Cause ${t} críticos` },
+    { kind: 'completeTasks', target: () => 3, title: (t: number) => `Complete ${t} tarefas reais` },
+    { kind: 'earnGold', target: () => 100, title: (t: number) => `Ganhe ${t} gold` },
+    { kind: 'upgradeItem', target: () => 1, title: (_t: number) => `Melhore 1 item` },
+    { kind: 'obtainItem', target: () => 1, title: (_t: number) => `Obtenha um novo item` },
   ];
 
-  const uncommonTemplates = [
-    { kind: 'openChests' as const, target: () => randInt(2, 3), title: (t: number) => `Abra ${t} baús` },
-    { kind: 'dealCrits' as const, target: () => randInt(10, 20), title: (t: number) => `Cause ${t} críticos` },
-    { kind: 'findMerchant' as const, target: () => 1, title: () => `Encontre um mercador perdido` },
-    { kind: 'obtainRareItem' as const, target: () => 1, title: () => `Consiga um item raro` },
-    { kind: 'completeTasksPercent' as const, target: () => 50, title: () => `Complete 50% das tarefas do dia`, params: { percentTarget: 50 } },
-    { kind: 'earnGold' as const, target: () => 200, title: (t: number) => `Ganhe ${t} gold` },
-    { kind: 'defeatEnemies' as const, target: () => randInt(4, 6), title: (t: number) => `Derrote ${t} inimigos` },
-    { kind: 'upgradeToLevel' as const, target: () => 3, title: () => `Melhore um item para +3`, params: { levelTarget: 3 } },
-    { kind: 'dismantleItems' as const, target: () => 3, title: () => `Desmantele 3 itens` },
+  const uncommonTemplates: DailyMissionTemplate[] = [
+    { kind: 'openChests', target: () => randInt(2, 3), title: (t: number) => `Abra ${t} baús` },
+    { kind: 'dealCrits', target: () => randInt(10, 20), title: (t: number) => `Cause ${t} críticos` },
+    { kind: 'findMerchant', target: () => 1, title: (_t: number) => `Encontre um mercador perdido` },
+    { kind: 'obtainRareItem', target: () => 1, title: (_t: number) => `Consiga um item raro` },
+    { kind: 'completeTasksPercent', target: () => 50, title: (_t: number) => `Complete 50% das tarefas do dia`, params: { percentTarget: 50 } },
+    { kind: 'earnGold', target: () => 200, title: (t: number) => `Ganhe ${t} gold` },
+    { kind: 'defeatEnemies', target: () => randInt(4, 6), title: (t: number) => `Derrote ${t} inimigos` },
+    { kind: 'upgradeToLevel', target: () => 3, title: (_t: number) => `Melhore um item para +3`, params: { levelTarget: 3 } },
+    { kind: 'dismantleItems', target: () => 3, title: (_t: number) => `Desmantele 3 itens` },
   ];
 
-  const specialTemplates = [
-    { kind: 'earnGold' as const, target: () => 300, title: (t: number) => `Ganhe ${t} gold` },
-    { kind: 'findSanctuary' as const, target: () => 1, title: () => `Encontre o Santuário da Floresta` },
-    { kind: 'openEpicChest' as const, target: () => 1, title: () => `Abra um baú épico` },
-    { kind: 'completeTasksPercent' as const, target: () => 100, title: () => `Complete 100% das tarefas do dia`, params: { percentTarget: 100 } },
-    { kind: 'obtainEpicItem' as const, target: () => 1, title: () => `Obtenha item épico` },
-    { kind: 'upgradeToLevel' as const, target: () => 5, title: () => `Faça upgrade +5`, params: { levelTarget: 5 } },
-    { kind: 'findSpecialEvents' as const, target: () => 2, title: () => `Encontre 2 eventos especiais` },
+  const specialTemplates: DailyMissionTemplate[] = [
+    { kind: 'earnGold', target: () => 300, title: (t: number) => `Ganhe ${t} gold` },
+    { kind: 'findSanctuary', target: () => 1, title: (_t: number) => `Encontre o Santuário da Floresta` },
+    { kind: 'openEpicChest', target: () => 1, title: (_t: number) => `Abra um baú épico` },
+    { kind: 'completeTasksPercent', target: () => 100, title: (_t: number) => `Complete 100% das tarefas do dia`, params: { percentTarget: 100 } },
+    { kind: 'obtainEpicItem', target: () => 1, title: (_t: number) => `Obtenha item épico` },
+    { kind: 'upgradeToLevel', target: () => 5, title: (_t: number) => `Faça upgrade +5`, params: { levelTarget: 5 } },
+    { kind: 'findSpecialEvents', target: () => 2, title: (_t: number) => `Encontre 2 eventos especiais` },
   ];
 
   const rollRarity = (): 'common' | 'uncommon' | 'special' => {
@@ -1493,10 +1501,10 @@ export function useGameState() {
         };
 
         if (eventType === 'chest') {
-          const chestRarity = rollEventChestRarity();
-          const rewards = generateChestRewards(chestRarity);
           const emptySlot = baseState.chests.findIndex(c => !c);
           if (emptySlot !== -1) {
+            const chestRarity = rollEventChestRarity();
+            const rewards = generateChestRewards(chestRarity);
             const newChests = [...baseState.chests];
             newChests[emptySlot] = createDungeonChest(chestRarity, rewards);
             addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);
@@ -1513,15 +1521,19 @@ export function useGameState() {
 
         if (eventType === 'merchant') {
           addDebugLog('🧙 Mercador Perdido encontrado!');
+          const updatedDailyMissions = applyDailyMissionEvent(baseState, { type: 'merchantFound' });
           return {
             ...baseState,
+            dailyMissions: updatedDailyMissions,
             dungeonEvent: { type: 'merchant', offers: generateMerchantOffers(), mapId, nodeId, stage: node.stage },
           };
         }
 
         addDebugLog('🌿 Santuário da Floresta encontrado!');
+        const updatedDailyMissions = applyDailyMissionEvent(baseState, { type: 'sanctuaryFound' });
         return {
           ...baseState,
+          dailyMissions: updatedDailyMissions,
           dungeonEvent: { type: 'sanctuary', mapId, nodeId, stage: node.stage },
         };
       }
@@ -1576,10 +1588,10 @@ export function useGameState() {
       };
 
       if (eventType === 'chest') {
-        const chestRarity = rollEventChestRarity();
-        const rewards = generateChestRewards(chestRarity);
         const emptySlot = baseState.chests.findIndex(c => !c);
         if (emptySlot !== -1) {
+          const chestRarity = rollEventChestRarity();
+          const rewards = generateChestRewards(chestRarity);
           const newChests = [...baseState.chests];
           newChests[emptySlot] = createDungeonChest(chestRarity, rewards);
           addDebugLog(`🧰 Baú encontrado! (${chestRarity.toUpperCase()})`);

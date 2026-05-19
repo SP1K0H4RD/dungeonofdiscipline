@@ -17,7 +17,7 @@ import {
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PETS, getBrazilDate, getBrazilDateStringFromDate } from '@/types/game';
+import { PETS, getBrazilDate } from '@/types/game';
 import {
   Dialog,
   DialogContent,
