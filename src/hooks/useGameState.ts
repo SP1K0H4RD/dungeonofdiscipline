@@ -89,6 +89,20 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const getRandomElement = () => ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
 
+const getEffectiveItemLevelRequirement = (item: Item | undefined): number => {
+  if (!item) return 0;
+  const req = Number((item as any).levelRequirement);
+  if (Number.isFinite(req) && req > 0) return Math.floor(req);
+  const byRarity: Record<Rarity, number> = {
+    common: 2,
+    rare: 3,
+    epic: 5,
+    legendary: 8,
+    mythic: 12,
+  };
+  return byRarity[item.rarity] ?? 0;
+};
+
 const getBossForFloor = (floor: number, previousIntelligence?: Boss['intelligence']): Boss => {
   const bossTemplate = BOSS_NAMES[(floor - 1) % BOSS_NAMES.length];
   const hpMultiplier = 1 + (floor - 1) * 0.05;
@@ -1101,6 +1115,34 @@ const migrateGameState = (parsed: any): GameState => {
     migrated.createdAt = Date.now() - ((migrated.character.stats.daysSurvived || 1) * 24 * 60 * 60 * 1000);
   }
 
+  {
+    const level = Number(migrated.character.level) || 0;
+    const slots = ['weapon', 'armor', 'helmet', 'boots', 'accessory'] as const;
+    const newEquipped = { ...(migrated.character.equipped || {}) } as Character['equipped'];
+    const toReturn: Item[] = [];
+
+    for (const slot of slots) {
+      const item = newEquipped[slot];
+      const req = getEffectiveItemLevelRequirement(item);
+      if (item && req > level) {
+        delete (newEquipped as any)[slot];
+        toReturn.push(item);
+      }
+    }
+
+    if (toReturn.length > 0) {
+      const invIds = new Set((migrated.inventory.items || []).map((i: Item) => i.id));
+      migrated.inventory.items = [
+        ...(migrated.inventory.items || []),
+        ...toReturn.filter(i => !invIds.has(i.id)),
+      ];
+      migrated.character = recalculatePlayerStats({
+        ...migrated.character,
+        equipped: newEquipped,
+      });
+    }
+  }
+
   return migrated as GameState;
 };
 
@@ -1253,6 +1295,59 @@ export function useGameState() {
       localStorage.setItem('dungeon-of-discipline', JSON.stringify(gameState));
     }
   }, [gameState, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const level = Number(gameState.character.level) || 0;
+    const slots = ['weapon', 'armor', 'helmet', 'boots', 'accessory'] as const;
+    const hasInvalid = slots.some(slot => {
+      const item = gameState.character.equipped?.[slot];
+      const req = getEffectiveItemLevelRequirement(item);
+      return Boolean(item && req > level);
+    });
+
+    if (!hasInvalid) return;
+
+    setGameState(prev => {
+      const lvl = Number(prev.character.level) || 0;
+      const newEquipped = { ...(prev.character.equipped || {}) } as Character['equipped'];
+      const toReturn: Item[] = [];
+      let changed = false;
+
+      for (const slot of slots) {
+        const item = newEquipped[slot];
+        const req = getEffectiveItemLevelRequirement(item);
+        if (item && req > lvl) {
+          delete (newEquipped as any)[slot];
+          toReturn.push(item);
+          changed = true;
+        }
+      }
+
+      if (!changed) return prev;
+
+      const invIds = new Set((prev.inventory.items || []).map(i => i.id));
+      const newItems = [
+        ...(prev.inventory.items || []),
+        ...toReturn.filter(i => !invIds.has(i.id)),
+      ];
+
+      const newCharacter = recalculatePlayerStats({
+        ...prev.character,
+        equipped: newEquipped,
+      });
+
+      return {
+        ...prev,
+        character: newCharacter,
+        inventory: {
+          ...prev.inventory,
+          items: newItems,
+        },
+      };
+    });
+  }, [isLoaded, gameState.character.level, gameState.character.equipped]);
 
   // Helper to set showLevelUp
   const setShowLevelUp = useCallback((show: boolean) => {
@@ -1798,8 +1893,9 @@ export function useGameState() {
         return prev;
       }
 
-      if (prev.character.level < (item.levelRequirement || 0)) {
-        addDebugLog(`Nível insuficiente para equipar ${item.name} (Requer nível ${item.levelRequirement})`);
+      const req = getEffectiveItemLevelRequirement(item);
+      if ((Number(prev.character.level) || 0) < req) {
+        addDebugLog(`Nível insuficiente para equipar ${item.name} (Requer nível ${req})`);
         return prev;
       }
 

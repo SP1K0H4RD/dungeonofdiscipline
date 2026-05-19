@@ -1004,8 +1004,29 @@ export function calculateEquipmentBonuses(equipped: Character['equipped']): Char
 // Central function to recalculate all player stats
 // Call this after: equip item, unequip item, level up
 export function recalculatePlayerStats(character: Character): Character {
+  const level = Number(character.level) || 0;
+  const slots = ['weapon', 'armor', 'helmet', 'boots', 'accessory'] as const;
+  const byRarity: Record<Rarity, number> = {
+    common: 2,
+    rare: 3,
+    epic: 5,
+    legendary: 8,
+    mythic: 12,
+  };
+
+  const effectiveEquipped = { ...(character.equipped || {}) } as Character['equipped'];
+  for (const slot of slots) {
+    const item = effectiveEquipped[slot];
+    if (!item) continue;
+    const reqRaw = Number((item as any).levelRequirement);
+    const req = Number.isFinite(reqRaw) && reqRaw > 0 ? Math.floor(reqRaw) : (byRarity[item.rarity] ?? 0);
+    if (req > level) {
+      delete (effectiveEquipped as any)[slot];
+    }
+  }
+
   // Calculate equipment bonuses
-  const equipmentBonuses = calculateEquipmentBonuses(character.equipped);
+  const equipmentBonuses = calculateEquipmentBonuses(effectiveEquipped);
 
   // Calculate total stats (base + equipment)
   // Keep decimals for "accumulated rounding" logic during combat
