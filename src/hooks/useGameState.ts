@@ -1611,10 +1611,6 @@ export function useGameState() {
         dailyMissions: updatedDailyMissions,
         dungeonEvent: { type: 'sanctuary', mapId, nodeId, stage: node.stage },
       };
-        ...baseState,
-        dailyMissions: updatedDailyMissions,
-        dungeonEvent: { type: 'sanctuary', mapId, nodeId, stage: node.stage },
-      };
     });
   }, [addDebugLog]);
 
