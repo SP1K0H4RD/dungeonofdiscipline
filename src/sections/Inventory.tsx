@@ -27,6 +27,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+const getEffectiveItemLevelRequirement = (item: Item): number => {
+  const raw = Number((item as any).levelRequirement);
+  if (Number.isFinite(raw) && raw > 0) return Math.floor(raw);
+
+  const byRarity: Record<Item['rarity'], number> = {
+    common: 2,
+    rare: 3,
+    epic: 5,
+    legendary: 8,
+    mythic: 12,
+  };
+  return byRarity[item.rarity] ?? 0;
+};
+
 const rarityColors: Record<string, { border: string; bg: string; text: string; glow: string }> = {
   common: { 
     border: 'border-gray-500', 
@@ -246,6 +260,7 @@ export function Inventory() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedSpecialAttack, setSelectedSpecialAttack] = useState<SpecialAttack | null>(null);
   const [selectedSpecialSlot, setSelectedSpecialSlot] = useState(false);
+  const [equipBlocked, setEquipBlocked] = useState<{ itemName: string; requiredLevel: number } | null>(null);
 
   const equippedItems = character.equipped;
 
@@ -300,6 +315,12 @@ export function Inventory() {
   const unequippedItems = inventory.items.filter(item => !equippedIds.has(item.id));
 
   const handleEquip = (item: Item) => {
+    const requiredLevel = getEffectiveItemLevelRequirement(item);
+    if ((Number(character.level) || 0) < requiredLevel) {
+      setSelectedItem(null);
+      setEquipBlocked({ itemName: item.name, requiredLevel });
+      return;
+    }
     equipItem(item);
     setSelectedItem(null);
   };
@@ -575,12 +596,22 @@ export function Inventory() {
               </DialogHeader>
               
               <div className="space-y-4 mt-4">
-                <div className={cn(
-                  'inline-block px-3 py-1 rounded-full text-sm font-medium capitalize',
-                  rarityColors[selectedItem.rarity].bg,
-                  rarityColors[selectedItem.rarity].text
-                )}>
-                  {selectedItem.rarity}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className={cn(
+                    'inline-block px-3 py-1 rounded-full text-sm font-medium capitalize',
+                    rarityColors[selectedItem.rarity].bg,
+                    rarityColors[selectedItem.rarity].text
+                  )}>
+                    {selectedItem.rarity}
+                  </div>
+                  <div className={cn(
+                    "inline-block px-3 py-1 rounded-full text-sm font-medium",
+                    (Number(character.level) || 0) >= getEffectiveItemLevelRequirement(selectedItem)
+                      ? "bg-green-500/10 text-green-400"
+                      : "bg-red-500/10 text-red-400"
+                  )}>
+                    Requer nível {getEffectiveItemLevelRequirement(selectedItem)}
+                  </div>
                 </div>
                 
                 <p className="text-gray-400">{selectedItem.description}</p>
@@ -666,6 +697,36 @@ export function Inventory() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!equipBlocked} onOpenChange={() => setEquipBlocked(null)}>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
+          {equipBlocked && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
+                  <X className="w-5 h-5 text-red-400" />
+                  Não é possível equipar
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-3 mt-3">
+                <p className="text-sm text-gray-300">{equipBlocked.itemName}</p>
+                <p className="text-sm text-gray-400">
+                  Seu nível: <span className="text-white font-bold">{character.level}</span> · Requerido:{' '}
+                  <span className="text-red-400 font-bold">{equipBlocked.requiredLevel}</span>
+                </p>
+
+                <Button
+                  onClick={() => setEquipBlocked(null)}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold"
+                >
+                  Entendi
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Equipped Item Modal - Complete Details */}
       <Dialog open={!!selectedSlot} onOpenChange={() => setSelectedSlot(null)}>
         <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md max-h-[90vh] overflow-y-auto">
@@ -702,6 +763,9 @@ export function Inventory() {
                           rarityColors[item.rarity].text
                         )}>
                           {item.rarity}
+                        </div>
+                        <div className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-white/5 text-gray-300">
+                          Requer nível {getEffectiveItemLevelRequirement(item)}
                         </div>
                         {item.element && (
                           <div className="inline-block px-3 py-1 rounded-full text-sm bg-orange-500/20 text-orange-400">

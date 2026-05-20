@@ -1092,6 +1092,60 @@ const migrateGameState = (parsed: any): GameState => {
     migrated.maps = generateAllMaps();
   }
 
+  {
+    const freshMaps = generateAllMaps();
+    const merged: Record<MapId, any> = { ...freshMaps };
+    for (const mapId of Object.keys(freshMaps) as MapId[]) {
+      const prevMap = (migrated.maps as any)?.[mapId];
+      const freshMap = freshMaps[mapId];
+      if (!prevMap || !prevMap.nodes) {
+        merged[mapId] = freshMap;
+        continue;
+      }
+
+      merged[mapId] = {
+        ...freshMap,
+        isUnlocked: Boolean(prevMap.isUnlocked),
+        nodes: freshMap.nodes.map((freshNode, idx) => {
+          const prevNode = prevMap.nodes?.[idx];
+          if (!prevNode) return freshNode;
+          return {
+            ...freshNode,
+            isUnlocked: Boolean(prevNode.isUnlocked),
+            isCompleted: Boolean(prevNode.isCompleted),
+            currentEnemy: prevNode.currentEnemy || null,
+          };
+        }),
+      };
+    }
+    migrated.maps = merged;
+  }
+
+  {
+    const normalize = (item: Item | undefined): Item | undefined => {
+      if (!item) return item;
+      if (item.name === 'Adaga Improvisada' && item.type === 'weapon') {
+        return { ...item, stats: { ...item.stats, attack: 1 } };
+      }
+      if (item.name === 'Trapo Costurado' && item.type === 'armor') {
+        return { ...item, stats: { ...item.stats, defense: 1 } };
+      }
+      return item;
+    };
+
+    migrated.inventory.items = (migrated.inventory.items || []).map((it: Item) => normalize(it) as Item);
+
+    const eq = { ...(migrated.character.equipped || {}) } as Character['equipped'];
+    const slots = ['weapon', 'armor', 'helmet', 'boots', 'accessory'] as const;
+    for (const slot of slots) {
+      const item = eq[slot];
+      if (item) {
+        (eq as any)[slot] = normalize(item);
+      }
+    }
+    migrated.character = recalculatePlayerStats({ ...migrated.character, equipped: eq });
+  }
+
   // Ensure name is present, otherwise it's an initial screen
   if (!migrated.character.name && parsed.character?.name) {
     migrated.character.name = parsed.character.name;
