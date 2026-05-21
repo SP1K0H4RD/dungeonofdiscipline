@@ -42,6 +42,19 @@ interface GameContextType {
   addQuest: (quest: Quest) => void;
   completeQuest: (questId: string, type: QuestType) => void;
   deleteQuest: (questId: string, type: QuestType) => void;
+  updateQuest: (
+    questId: string,
+    type: QuestType,
+    updates: {
+      title?: string;
+      description?: string;
+      difficulty?: Difficulty;
+      energyReward?: number;
+      scheduledDate?: string;
+      habitDays?: DayOfWeek[];
+      metaTarget?: number;
+    }
+  ) => void;
   
   // Combat
   startCombat: () => void;

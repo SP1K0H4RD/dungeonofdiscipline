@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
   Check, 
-  Trash2, 
+  Trash2,
+  MoreVertical,
+  Pencil,
   Zap, 
   Calendar, 
   Target,
@@ -34,6 +36,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const difficultyConfig: Record<Difficulty, { color: string; bg: string; label: string; border: string; emoji: string }> = {
   veryEasy: { color: 'text-green-400', bg: 'bg-green-500/20', label: 'Muito Fácil', border: 'border-green-500', emoji: '🟩' },
@@ -46,11 +64,12 @@ const difficultyConfig: Record<Difficulty, { color: string; bg: string; label: s
 
 interface QuestCardProps {
   quest: Quest;
-  onComplete: () => void;
-  onDelete: () => void;
+  onComplete?: () => void;
+  onEdit: () => void;
+  onRequestDelete: () => void;
 }
 
-function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
+function QuestCard({ quest, onComplete, onEdit, onRequestDelete }: QuestCardProps) {
   const diff = difficultyConfig[quest.difficulty];
   
   return (
@@ -71,21 +90,24 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
       )} />
 
       <div className="flex items-start gap-4 pl-3">
-        {/* Complete Button */}
-        <motion.button
-          onClick={onComplete}
-          disabled={quest.completed}
-          className={cn(
-            'w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all',
-            quest.completed
-              ? 'bg-green-500 border-green-500'
-              : 'border-gray-500 hover:border-green-500 hover:bg-green-500/20'
-          )}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          {quest.completed && <Check className="w-5 h-5 text-white" />}
-        </motion.button>
+        {onComplete ? (
+          <motion.button
+            onClick={onComplete}
+            disabled={quest.completed}
+            className={cn(
+              'w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all',
+              quest.completed
+                ? 'bg-green-500 border-green-500'
+                : 'border-gray-500 hover:border-green-500 hover:bg-green-500/20'
+            )}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            {quest.completed && <Check className="w-5 h-5 text-white" />}
+          </motion.button>
+        ) : (
+          <div className="w-8 h-8" />
+        )}
 
         {/* Content */}
         <div className="flex-1">
@@ -137,6 +159,14 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
             {quest.description}
           </p>
 
+          {quest.type === 'habito' && (quest.habitDays || []).length > 0 && (
+            <div className="text-[11px] text-orange-400 mb-3">
+              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+                .filter((_, idx) => (quest.habitDays || []).includes(idx as DayOfWeek))
+                .join(' • ')}
+            </div>
+          )}
+
           {/* Rewards */}
           <div className="flex items-center gap-4 flex-wrap">
             {quest.energyReward > 0 && (
@@ -154,15 +184,40 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
           </div>
         </div>
 
-        {/* Delete Button */}
-        <motion.button
-          onClick={onDelete}
-          className="p-2 text-gray-500 hover:text-red-400 transition-colors"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          <Trash2 className="w-5 h-5" />
-        </motion.button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <motion.button
+              className="p-2 text-gray-500 hover:text-gray-300 transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </motion.button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-[#1a1a2e] border-[#2d2d44] text-white">
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                onEdit();
+              }}
+              className="cursor-pointer"
+            >
+              <Pencil className="w-4 h-4 text-gray-300" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(e) => {
+                e.preventDefault();
+                onRequestDelete();
+              }}
+              className="cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </motion.div>
   );
@@ -171,16 +226,27 @@ function QuestCard({ quest, onComplete, onDelete }: QuestCardProps) {
 interface QuestsProps {}
 
 export function Quests({}: QuestsProps) {
-  const { gameState, createQuest, addQuest, completeQuest, deleteQuest } = useGame();
+  const { gameState, createQuest, addQuest, completeQuest, deleteQuest, updateQuest } = useGame();
   const { playerProfile } = gameState;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [showQuestModal, setShowQuestModal] = useState(false);
-  const [showCompletedHabitos, setShowCompletedHabitos] = useState(false);
   const [showCompletedDiarias, setShowCompletedDiarias] = useState(false);
   const [showCompletedMetas, setShowCompletedMetas] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Quest | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
+  const [editQuestDraft, setEditQuestDraft] = useState({
+    title: '',
+    description: '',
+    difficulty: 'normal' as Difficulty,
+    scheduledDate: '',
+    habitDays: [] as DayOfWeek[],
+    metaTarget: 100,
+    energyReward: 0,
+  });
   const [newQuest, setNewQuest] = useState({
     title: '',
     description: '',
@@ -216,6 +282,44 @@ export function Quests({}: QuestsProps) {
     setShowQuestModal(true);
   };
 
+  const startEditQuest = (quest: Quest) => {
+    setEditingQuest(quest);
+    setEditQuestDraft({
+      title: quest.title,
+      description: quest.description,
+      difficulty: quest.difficulty,
+      scheduledDate: quest.scheduledDate || '',
+      habitDays: quest.habitDays || [],
+      metaTarget: quest.metaProgress?.target ?? 100,
+      energyReward: quest.energyReward || 0,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const applyEditQuest = () => {
+    if (!editingQuest) return;
+    if (!editQuestDraft.title.trim()) return;
+
+    const isHabit = editingQuest.type === 'habito';
+    if (isHabit && editQuestDraft.habitDays.length === 0) return;
+    const nextScheduledDate = isHabit ? undefined : (editQuestDraft.scheduledDate || undefined);
+    const nextHabitDays = isHabit ? editQuestDraft.habitDays : undefined;
+    const nextMetaTarget = editingQuest.type === 'meta' ? editQuestDraft.metaTarget : undefined;
+
+    updateQuest(editingQuest.id, editingQuest.type, {
+      title: editQuestDraft.title.trim(),
+      description: editQuestDraft.description,
+      difficulty: editQuestDraft.difficulty,
+      energyReward: editQuestDraft.energyReward,
+      scheduledDate: nextScheduledDate,
+      habitDays: nextHabitDays,
+      metaTarget: nextMetaTarget,
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingQuest(null);
+  };
+
   const handleCompleteFromModal = () => {
     if (selectedQuest) {
       completeQuest(selectedQuest.id, selectedQuest.type);
@@ -224,16 +328,9 @@ export function Quests({}: QuestsProps) {
     }
   };
 
-  const handleDeleteFromModal = () => {
-    if (selectedQuest) {
-      deleteQuest(selectedQuest.id, selectedQuest.type);
-      setShowQuestModal(false);
-      setSelectedQuest(null);
-    }
-  };
-
   const handleCreateQuest = () => {
     if (!newQuest.title) return;
+    if (newQuest.type === 'habito' && newQuest.habitDays.length === 0) return;
     
     const quest = createQuest(
       newQuest.title,
@@ -242,7 +339,7 @@ export function Quests({}: QuestsProps) {
       newQuest.difficulty,
       false, // isEmergency
       false, // suggestedByMaster
-      newQuest.scheduledDate || undefined,
+      newQuest.type === 'habito' ? undefined : (newQuest.scheduledDate || undefined),
       playerProfile.activeFocusTag,
       newQuest.type === 'habito' ? newQuest.habitDays : undefined,
       newQuest.type === 'meta' ? newQuest.metaTarget : undefined,
@@ -272,8 +369,7 @@ export function Quests({}: QuestsProps) {
     });
   };
 
-  const activeHabitos = filterQuests(gameState.quests.habito).filter(q => !q.completed);
-  const completedHabitos = filterQuests(gameState.quests.habito).filter(q => q.completed);
+  const activeHabitos = gameState.quests.habito;
   const activeDiarias = filterQuests(gameState.quests.diaria).filter(q => !q.completed);
   const completedDiarias = filterQuests(gameState.quests.diaria).filter(q => q.completed);
   const activeMetas = filterQuests(gameState.quests.meta).filter(q => !q.completed);
@@ -344,7 +440,15 @@ export function Quests({}: QuestsProps) {
                   <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
                   <Select
                     value={newQuest.type}
-                    onValueChange={(v) => setNewQuest({ ...newQuest, type: v as QuestType })}
+                    onValueChange={(v) => {
+                      const nextType = v as QuestType;
+                      setNewQuest(prev => ({
+                        ...prev,
+                        type: nextType,
+                        scheduledDate: nextType === 'habito' ? '' : prev.scheduledDate,
+                        habitDays: nextType === 'habito' ? prev.habitDays : [],
+                      }));
+                    }}
                   >
                     <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
                       <SelectValue />
@@ -453,21 +557,23 @@ export function Quests({}: QuestsProps) {
                     </motion.div>
                   )}
 
-              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Data (opcional)
-                </label>
-                <Input
-                  type="date"
-                  value={newQuest.scheduledDate}
-                  onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
-                  className="bg-[#16213e] border-cyan-500/50 text-white"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Se definida, a tarefa aparece no calendário nesse dia
-                </p>
-              </div>
+              {newQuest.type !== 'habito' && (
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                  <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Dia (opcional)
+                  </label>
+                  <Input
+                    type="date"
+                    value={newQuest.scheduledDate}
+                    onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
+                    className="bg-[#16213e] border-cyan-500/50 text-white"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Se definido, a tarefa aparece no calendário nesse dia
+                  </p>
+                </div>
+              )}
 
               {/* Energy Reward Selector */}
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
@@ -647,39 +753,10 @@ export function Quests({}: QuestsProps) {
                   <QuestCard
                     key={quest.id}
                     quest={quest}
-                    onComplete={() => completeQuest(quest.id, 'habito')}
-                    onDelete={() => deleteQuest(quest.id, 'habito')}
+                    onEdit={() => startEditQuest(quest)}
+                    onRequestDelete={() => setPendingDelete(quest)}
                   />
                 ))}
-              </div>
-            )}
-            
-            {completedHabitos.length > 0 && (
-              <div className="mt-6 border-t border-[#2d2d44] pt-4">
-                <button 
-                  onClick={() => setShowCompletedHabitos(!showCompletedHabitos)}
-                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors w-full group"
-                >
-                  {showCompletedHabitos ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  <span className="font-bold uppercase tracking-widest text-[10px]">Concluídos Hoje ({completedHabitos.length})</span>
-                </button>
-                
-                {showCompletedHabitos && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="space-y-3 mt-4"
-                  >
-                    {completedHabitos.map((quest) => (
-                      <QuestCard
-                        key={quest.id}
-                        quest={quest}
-                        onComplete={() => {}}
-                        onDelete={() => deleteQuest(quest.id, 'habito')}
-                      />
-                    ))}
-                  </motion.div>
-                )}
               </div>
             )}
           </AnimatePresence>
@@ -704,7 +781,8 @@ export function Quests({}: QuestsProps) {
                     key={quest.id}
                     quest={quest}
                     onComplete={() => completeQuest(quest.id, 'diaria')}
-                    onDelete={() => deleteQuest(quest.id, 'diaria')}
+                    onEdit={() => startEditQuest(quest)}
+                    onRequestDelete={() => setPendingDelete(quest)}
                   />
                 ))}
               </div>
@@ -730,8 +808,8 @@ export function Quests({}: QuestsProps) {
                       <QuestCard
                         key={quest.id}
                         quest={quest}
-                        onComplete={() => {}}
-                        onDelete={() => deleteQuest(quest.id, 'diaria')}
+                        onEdit={() => startEditQuest(quest)}
+                        onRequestDelete={() => setPendingDelete(quest)}
                       />
                     ))}
                   </motion.div>
@@ -760,7 +838,8 @@ export function Quests({}: QuestsProps) {
                     key={quest.id}
                     quest={quest}
                     onComplete={() => completeQuest(quest.id, 'meta')}
-                    onDelete={() => deleteQuest(quest.id, 'meta')}
+                    onEdit={() => startEditQuest(quest)}
+                    onRequestDelete={() => setPendingDelete(quest)}
                   />
                 ))}
               </div>
@@ -786,8 +865,8 @@ export function Quests({}: QuestsProps) {
                       <QuestCard
                         key={quest.id}
                         quest={quest}
-                        onComplete={() => {}}
-                        onDelete={() => deleteQuest(quest.id, 'meta')}
+                        onEdit={() => startEditQuest(quest)}
+                        onRequestDelete={() => setPendingDelete(quest)}
                       />
                     ))}
                   </motion.div>
@@ -841,13 +920,20 @@ export function Quests({}: QuestsProps) {
                   <span className="text-lg">{difficultyConfig[selectedQuest.difficulty].emoji}</span>
                   <span className="text-gray-400 text-sm">{difficultyConfig[selectedQuest.difficulty].label}</span>
                 </div>
-                {selectedQuest.scheduledDate && (
+                {selectedQuest.type !== 'habito' && selectedQuest.scheduledDate && (
                   <p className="text-orange-400 text-sm">📅 {selectedQuest.scheduledDate.split('-').reverse().join('/')}</p>
+                )}
+                {selectedQuest.type === 'habito' && (selectedQuest.habitDays || []).length > 0 && (
+                  <p className="text-orange-400 text-sm">
+                    🔁 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+                      .filter((_, idx) => (selectedQuest.habitDays || []).includes(idx as DayOfWeek))
+                      .join(' • ')}
+                  </p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {!selectedQuest.completed && (
+                {selectedQuest.type !== 'habito' && !selectedQuest.completed && (
                   <Button
                     onClick={handleCompleteFromModal}
                     className="bg-green-600 hover:bg-green-700"
@@ -857,7 +943,15 @@ export function Quests({}: QuestsProps) {
                   </Button>
                 )}
                 <Button
-                  onClick={handleDeleteFromModal}
+                  onClick={() => startEditQuest(selectedQuest)}
+                  variant="outline"
+                  className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10"
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Editar
+                </Button>
+                <Button
+                  onClick={() => setPendingDelete(selectedQuest)}
                   variant="outline"
                   className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                 >
@@ -876,6 +970,211 @@ export function Quests({}: QuestsProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingQuest(null);
+        }}
+      >
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-xl">Editar</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm text-gray-400 mb-2 block">Nome</label>
+              <Input
+                value={editQuestDraft.title}
+                onChange={(e) => setEditQuestDraft(prev => ({ ...prev, title: e.target.value }))}
+                className="bg-black/40 border-gray-700"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 mb-2 block">Descrição (opcional)</label>
+              <Textarea
+                value={editQuestDraft.description}
+                onChange={(e) => setEditQuestDraft(prev => ({ ...prev, description: e.target.value }))}
+                className="bg-black/40 border-gray-700 resize-none h-20"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+              <Select
+                value={editQuestDraft.difficulty}
+                onValueChange={(v) => setEditQuestDraft(prev => ({ ...prev, difficulty: v as Difficulty }))}
+              >
+                <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                  {Object.entries(difficultyConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key} className="text-white">
+                      <div className="flex items-center gap-2">
+                        <span>{config.emoji}</span>
+                        {config.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {editingQuest?.type === 'habito' ? (
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400 block">Dias da Semana</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
+                    const dayVal = idx as DayOfWeek;
+                    const isSelected = editQuestDraft.habitDays.includes(dayVal);
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => {
+                          setEditQuestDraft(prev => ({
+                            ...prev,
+                            habitDays: isSelected
+                              ? prev.habitDays.filter(d => d !== dayVal)
+                              : [...prev.habitDays, dayVal],
+                          }));
+                        }}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-xs font-bold transition-all border",
+                          isSelected
+                            ? "bg-orange-500 border-orange-400 text-white shadow-lg"
+                            : "bg-black/40 border-gray-700 text-gray-400"
+                        )}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Dia (opcional)
+                </label>
+                <Input
+                  type="date"
+                  value={editQuestDraft.scheduledDate}
+                  onChange={(e) => setEditQuestDraft(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                  className="bg-[#16213e] border-cyan-500/50 text-white"
+                />
+              </div>
+            )}
+
+            {editingQuest?.type === 'meta' && (
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                <label className="text-sm text-purple-400 mb-2 block flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  Meta (quantidade)
+                </label>
+                <Input
+                  type="number"
+                  value={editQuestDraft.metaTarget}
+                  onChange={(e) => setEditQuestDraft(prev => ({ ...prev, metaTarget: parseInt(e.target.value) || 100 }))}
+                  className="bg-[#16213e] border-purple-500/50 text-white"
+                  min={1}
+                />
+              </div>
+            )}
+
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+              <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Ganho de Energia
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="5"
+                        value={editQuestDraft.energyReward}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) {
+                            setEditQuestDraft(prev => ({ ...prev, energyReward: Math.min(5, Math.max(0, val)) }));
+                          } else if (e.target.value === '') {
+                            setEditQuestDraft(prev => ({ ...prev, energyReward: 0 }));
+                          }
+                        }}
+                        className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                      />
+                      <span className="text-sm font-black text-yellow-500">NRG</span>
+                    </div>
+                    <div className="text-[10px] text-purple-400 font-bold mt-1">
+                      ≈ {Math.round(editQuestDraft.energyReward * 5)} Fragmentos
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={applyEditQuest}
+                className="bg-purple-600 hover:bg-purple-700 flex-1"
+              >
+                Salvar
+              </Button>
+              <Button
+                onClick={() => setIsEditDialogOpen(false)}
+                variant="outline"
+                className="border-gray-600 text-gray-400"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Excluir {pendingDelete?.type === 'habito' ? 'hábito' : 'tarefa'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[#2d2d44] bg-transparent text-gray-300 hover:bg-[#16213e]">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (!pendingDelete) return;
+                deleteQuest(pendingDelete.id, pendingDelete.type);
+                setPendingDelete(null);
+                if (selectedQuest?.id === pendingDelete.id) {
+                  setShowQuestModal(false);
+                  setSelectedQuest(null);
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
@@ -925,6 +1224,28 @@ function CalendarView({ quests, onSelectDate, selectedDate, onQuestClick }: Cale
         // Use Brazil timezone for quest date comparison
         const questDate = getBrazilDateStringFromDate(new Date(q.createdAt));
         return questDate === dateStr;
+      }
+      if (q.type === 'habito' && Array.isArray(q.habitDays) && q.habitDays.length > 0) {
+        const [yearStr, monthStr, dayStr] = dateStr.split('-');
+        const year = parseInt(yearStr);
+        const month = parseInt(monthStr);
+        const day = parseInt(dayStr);
+        if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return false;
+        const dateForTz = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+        const weekday = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', weekday: 'short' })
+          .format(dateForTz);
+        const dayMap: Record<string, DayOfWeek> = {
+          Sun: 0,
+          Mon: 1,
+          Tue: 2,
+          Wed: 3,
+          Thu: 4,
+          Fri: 5,
+          Sat: 6,
+        };
+        const dow = dayMap[weekday];
+        if (dow === undefined) return false;
+        return q.habitDays.includes(dow);
       }
       return false;
     });

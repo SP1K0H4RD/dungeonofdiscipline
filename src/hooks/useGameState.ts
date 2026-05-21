@@ -1082,6 +1082,30 @@ const migrateGameState = (parsed: any): GameState => {
     debugLogs: [],
   };
 
+  {
+    const allDays: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
+    const normalizeHabitDays = (value: any): DayOfWeek[] => {
+      if (!Array.isArray(value)) return allDays;
+      const filtered = value
+        .map((d: any) => Number(d))
+        .filter((d: number) => Number.isInteger(d) && d >= 0 && d <= 6) as DayOfWeek[];
+      return filtered.length > 0 ? filtered : allDays;
+    };
+
+    migrated.quests = {
+      ...migrated.quests,
+      habito: (migrated.quests.habito || []).map((q: Quest) => ({
+        ...q,
+        type: 'habito',
+        scheduledDate: undefined,
+        expiresAt: undefined,
+        completed: false,
+        completedAt: undefined,
+        habitDays: normalizeHabitDays((q as any).habitDays),
+      })),
+    };
+  }
+
   migrated.unlockedPets = Array.isArray(parsed.unlockedPets) ? parsed.unlockedPets : [];
 
   // Migration: Force energy limits
@@ -1459,18 +1483,22 @@ export function useGameState() {
 
           const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
 
-          const todaysHabits = prev.quests.habito.filter(habit =>
-            habit.habitDays?.includes(currentDayOfWeek) && !habit.completed
-          );
+          const existingDailyIds = new Set(prev.quests.diaria.map(q => q.id));
+          const todaysHabits = prev.quests.habito.filter(habit => habit.habitDays?.includes(currentDayOfWeek) && !habit.completed);
 
-          const newDailyQuests: Quest[] = todaysHabits.map(habit => ({
-            ...habit,
-            id: `daily-${habit.id}-${today}`,
-            type: 'diaria',
-            completed: false,
-            createdAt: Date.now(),
-            scheduledDate: today,
-          }));
+          const newDailyQuests: Quest[] = todaysHabits.flatMap(habit => {
+            const id = `daily-${habit.id}-${today}`;
+            if (existingDailyIds.has(id)) return [];
+            const dailyQuest: Quest = {
+              ...habit,
+              id,
+              type: 'diaria',
+              completed: false,
+              createdAt: Date.now(),
+              scheduledDate: today,
+            };
+            return [dailyQuest];
+          });
 
           addDebugLog(`Generated ${newDailyQuests.length} daily quests from habits`);
 
@@ -2265,12 +2293,36 @@ export function useGameState() {
         addDebugLog(`Meta quest "${quest.title}" added to calendar for ${quest.scheduledDate}`);
       }
 
+      let nextQuests = {
+        ...prev.quests,
+        [quest.type]: [...prev.quests[quest.type], quest],
+      } as GameState['quests'];
+
+      if (quest.type === 'habito') {
+        const today = getBrazilDateString();
+        const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
+        const shouldSpawnToday = quest.habitDays?.includes(currentDayOfWeek);
+        const dailyId = `daily-${quest.id}-${today}`;
+        const alreadyExists = prev.quests.diaria.some(q => q.id === dailyId);
+        if (shouldSpawnToday && !alreadyExists) {
+          const dailyQuest: Quest = {
+            ...quest,
+            id: dailyId,
+            type: 'diaria',
+            completed: false,
+            createdAt: Date.now(),
+            scheduledDate: today,
+          };
+          nextQuests = {
+            ...nextQuests,
+            diaria: [...nextQuests.diaria, dailyQuest],
+          };
+        }
+      }
+
       return {
         ...prev,
-        quests: {
-          ...prev.quests,
-          [quest.type]: [...prev.quests[quest.type], quest],
-        },
+        quests: nextQuests,
         calendar: {
           ...prev.calendar,
           events: newEvents,
@@ -2510,6 +2562,94 @@ export function useGameState() {
         [type]: prev.quests[type].filter(q => q.id !== questId),
       },
     }));
+  }, []);
+
+  const updateQuest = useCallback((
+    questId: string,
+    type: QuestType,
+    updates: Partial<Pick<Quest, 'title' | 'description' | 'difficulty' | 'energyReward' | 'scheduledDate' | 'habitDays'>> & {
+      metaTarget?: number;
+    }
+  ) => {
+    setGameState(prev => {
+      const existing = prev.quests[type].find(q => q.id === questId);
+      if (!existing) return prev;
+
+      const nextQuest: Quest = (() => {
+        if (type === 'habito') {
+          const nextDays = Array.isArray(updates.habitDays) ? updates.habitDays : (existing.habitDays || [0, 1, 2, 3, 4, 5, 6]);
+          return {
+            ...existing,
+            title: updates.title ?? existing.title,
+            description: updates.description ?? existing.description,
+            difficulty: updates.difficulty ?? existing.difficulty,
+            energyReward: updates.energyReward ?? existing.energyReward,
+            scheduledDate: undefined,
+            expiresAt: undefined,
+            completed: false,
+            completedAt: undefined,
+            habitDays: nextDays,
+          };
+        }
+
+        if (type === 'meta') {
+          const nextTarget = typeof updates.metaTarget === 'number'
+            ? Math.max(1, Math.floor(updates.metaTarget))
+            : (existing.metaProgress?.target ?? 100);
+          const currentProgress = existing.metaProgress?.current ?? 0;
+          return {
+            ...existing,
+            title: updates.title ?? existing.title,
+            description: updates.description ?? existing.description,
+            difficulty: updates.difficulty ?? existing.difficulty,
+            energyReward: updates.energyReward ?? existing.energyReward,
+            scheduledDate: updates.scheduledDate ?? existing.scheduledDate,
+            metaProgress: { current: currentProgress, target: nextTarget },
+          };
+        }
+
+        return {
+          ...existing,
+          title: updates.title ?? existing.title,
+          description: updates.description ?? existing.description,
+          difficulty: updates.difficulty ?? existing.difficulty,
+          energyReward: updates.energyReward ?? existing.energyReward,
+          scheduledDate: updates.scheduledDate ?? existing.scheduledDate,
+        };
+      })();
+
+      const nextQuestsForType = prev.quests[type].map(q => q.id === questId ? nextQuest : q);
+
+      let nextEvents = prev.calendar.events;
+      if (type === 'meta') {
+        const eventId = `event-${questId}`;
+        const hasEvent = nextEvents.some(e => e.id === eventId);
+        const nextDate = nextQuest.scheduledDate;
+        if (nextDate) {
+          if (hasEvent) {
+            nextEvents = nextEvents.map(e => e.id === eventId ? { ...e, date: nextDate, title: nextQuest.title } : e);
+          } else {
+            nextEvents = [...nextEvents, { id: eventId, date: nextDate, title: nextQuest.title, type: 'quest' as const, questId }];
+          }
+        } else if (hasEvent) {
+          nextEvents = nextEvents.filter(e => e.id !== eventId);
+        } else {
+          nextEvents = nextEvents.map(e => e.questId === questId ? { ...e, title: nextQuest.title } : e);
+        }
+      }
+
+      return {
+        ...prev,
+        quests: {
+          ...prev.quests,
+          [type]: nextQuestsForType,
+        },
+        calendar: {
+          ...prev.calendar,
+          events: nextEvents,
+        },
+      };
+    });
   }, []);
 
   // ============================================
@@ -4014,6 +4154,7 @@ export function useGameState() {
     addQuest,
     completeQuest,
     deleteQuest,
+    updateQuest,
     // Combat
     startCombat,
     playerAttack,
