@@ -304,29 +304,40 @@ export function Quests({}: QuestsProps) {
     return 'hard';
   };
 
-  const getTasksForToday = () => {
-    const habitos = gameState.quests.habito.filter(q => q.habitDays?.includes(currentDayOfWeek));
-    const diarias = gameState.quests.diaria
-      .filter(q => (q.scheduledDate === todayStr || getBrazilDateStringFromDate(new Date(q.createdAt)) === todayStr) && !q.id.startsWith('daily-'));
-    const metas = gameState.quests.meta.filter(q => q.scheduledDate === todayStr);
-    return [...habitos, ...diarias, ...metas];
-  };
-
   const getRewardFragmentsForQuest = (quest: Quest): number => {
+    if (quest.completed) return 0;
+
+    const dailyProg = gameState.calendar.dailyProgress.find(dp => dp.date === todayStr);
+    const currentExtraEnergy = dailyProg?.extraEnergyGained || 0;
+    const remainingEnergyBudget = Math.max(0, dailyCapEnergy - currentExtraEnergy);
+    const remainingFragmentsBudget = remainingEnergyBudget * 5;
+
     const fragmentsFromManual = Math.max(0, Math.floor((quest.energyReward || 0) * 5));
-    if (!autoRewardsEnabled) return fragmentsFromManual;
+    if (!autoRewardsEnabled || quest.type === 'meta') {
+      return Math.max(0, Math.min(fragmentsFromManual, Math.floor(remainingFragmentsBudget)));
+    }
 
     if (quest.type === 'habito' && !quest.habitDays?.includes(currentDayOfWeek)) return 0;
 
-    const fragmentsBudget = dailyCapEnergy * 5;
-    const tasksForTodayBase = getTasksForToday();
+    const todaysHabits = gameState.quests.habito
+      .filter(h => h.habitDays?.includes(currentDayOfWeek))
+      .filter(h => !gameState.quests.diaria.find(q => q.id === `daily-${h.id}-${todayStr}`)?.completed);
+
+    const todaysManualDiarias = gameState.quests.diaria
+      .filter(q =>
+        (q.scheduledDate === todayStr || getBrazilDateStringFromDate(new Date(q.createdAt)) === todayStr) &&
+        !q.id.startsWith('daily-') &&
+        !q.completed
+      );
+
+    const tasksForTodayBase: Quest[] = [...todaysHabits, ...todaysManualDiarias];
     const weightSource = quest.type === 'diaria' && quest.id.startsWith('daily-')
       ? gameState.quests.habito.find(h => `daily-${h.id}-${todayStr}` === quest.id) || quest
       : quest;
     const totalWeight = tasksForTodayBase.reduce((sum, q) => sum + (weightByDifficulty[q.difficulty] || 0), 0);
     const w = weightByDifficulty[weightSource.difficulty] || 0;
     if (totalWeight <= 0 || w <= 0) return 0;
-    return Math.max(0, Math.floor((w / totalWeight) * fragmentsBudget));
+    return Math.max(0, Math.floor((w / totalWeight) * remainingFragmentsBudget));
   };
 
   const getHabitDailyQuest = (habit: Quest) => {
@@ -401,7 +412,7 @@ export function Quests({}: QuestsProps) {
       title: editQuestDraft.title.trim(),
       description: editQuestDraft.description,
       difficulty: autoRewardsEnabled ? autoDifficultyForType(editingQuest.type) : editQuestDraft.difficulty,
-      energyReward: autoRewardsEnabled ? 0 : editQuestDraft.energyReward,
+      energyReward: autoRewardsEnabled && editingQuest.type !== 'meta' ? 0 : editQuestDraft.energyReward,
       scheduledDate: nextScheduledDate,
       habitDays: nextHabitDays,
       metaTarget: nextMetaTarget,
@@ -436,7 +447,7 @@ export function Quests({}: QuestsProps) {
       playerProfile.activeFocusTag,
       newQuest.type === 'habito' ? newQuest.habitDays : undefined,
       newQuest.type === 'meta' ? newQuest.metaTarget : undefined,
-      autoRewardsEnabled ? 0 : newQuest.energyReward,
+      autoRewardsEnabled && newQuest.type !== 'meta' ? 0 : newQuest.energyReward,
       newQuest.isMultitask ? newQuest.checkpointTitles : undefined
     );
     
@@ -527,7 +538,7 @@ export function Quests({}: QuestsProps) {
               Nova Tarefa
             </motion.button>
           </DialogTrigger>
-          <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
               <DialogTitle className="font-cinzel text-xl">
                 Criar Nova Tarefa
@@ -756,7 +767,7 @@ export function Quests({}: QuestsProps) {
                 </div>
               )}
 
-              {!autoRewardsEnabled && (
+              {(!autoRewardsEnabled || newQuest.type === 'meta') && (
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                   <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1370,7 +1381,7 @@ export function Quests({}: QuestsProps) {
               </div>
             )}
 
-            {!autoRewardsEnabled && (
+            {(!autoRewardsEnabled || editingQuest?.type === 'meta') && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                 <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
                   <div className="flex items-center gap-2">

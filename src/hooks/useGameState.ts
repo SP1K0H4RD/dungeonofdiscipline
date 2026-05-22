@@ -2456,25 +2456,36 @@ export function useGameState() {
     const remainingEnergyBudget = Math.max(0, dailyCapEnergy - currentExtraEnergy);
 
     const weightByDifficulty: Record<Difficulty, number> = { easy: 1.0, medium: 1.3, hard: 1.6 };
-    const fragmentsBudget = dailyCapEnergy * 5;
+    const remainingFragmentsBudget = remainingEnergyBudget * 5;
 
-    const todaysHabits = baseQuests.habito.filter(h => h.habitDays?.includes(currentDayOfWeek));
+    const todaysHabits = baseQuests.habito
+      .filter(h => h.habitDays?.includes(currentDayOfWeek))
+      .filter(h => {
+        const dailyId = `daily-${h.id}-${today}`;
+        const daily = baseQuests.diaria.find(q => q.id === dailyId);
+        return !daily?.completed;
+      });
+
     const todaysManualDiarias = baseQuests.diaria
-      .filter(q => (q.scheduledDate === today || getBrazilDateStringFromDate(new Date(q.createdAt)) === today) && !q.id.startsWith('daily-'));
-    const todaysMetas = baseQuests.meta.filter(q => q.scheduledDate === today);
+      .filter(q =>
+        (q.scheduledDate === today || getBrazilDateStringFromDate(new Date(q.createdAt)) === today) &&
+        !q.id.startsWith('daily-') &&
+        !q.completed
+      );
 
-    const tasksForToday: Quest[] = [...todaysHabits, ...todaysManualDiarias, ...todaysMetas];
+    const tasksForAutoRewards: Quest[] = [...todaysHabits, ...todaysManualDiarias];
 
-    const totalWeight = tasksForToday.reduce((sum, q) => sum + (weightByDifficulty[q.difficulty] || 0), 0);
+    const totalWeight = tasksForAutoRewards.reduce((sum, q) => sum + (weightByDifficulty[q.difficulty] || 0), 0);
 
     const weightSource = (questTypeToComplete === 'diaria' && questIdToComplete.startsWith('daily-'))
       ? baseQuests.habito.find(h => `daily-${h.id}-${today}` === questIdToComplete) || questToComplete
       : questToComplete;
     const questWeight = weightByDifficulty[weightSource.difficulty] || 0;
 
-    const computedFragments = totalWeight > 0 ? (questWeight / totalWeight) * fragmentsBudget : 0;
-    const fragmentsToAddInternal = prev.settings?.autoQuestRewards
-      ? Math.max(0, Math.min(computedFragments, remainingEnergyBudget * 5))
+    const computedFragments = totalWeight > 0 ? (questWeight / totalWeight) * remainingFragmentsBudget : 0;
+    const shouldUseAutoRewards = Boolean(prev.settings?.autoQuestRewards) && questToComplete.type !== 'meta';
+    const fragmentsToAddInternal = shouldUseAutoRewards
+      ? Math.max(0, computedFragments)
       : Math.max(0, Math.min(questToComplete.energyReward, remainingEnergyBudget)) * 5;
 
     const oldFragments = prev.character.energyFragments || 0;
