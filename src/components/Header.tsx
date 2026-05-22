@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Castle, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Sparkles, Settings, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Sword, Scroll, Backpack, Castle, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Sparkles, Settings, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
