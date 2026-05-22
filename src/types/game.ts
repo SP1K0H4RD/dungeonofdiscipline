@@ -380,7 +380,7 @@ export type MapId = 'map1' | 'map2' | 'map3' | 'map4' | 'map5';
 
 export type DungeonEventType = 'combat' | 'chest' | 'merchant' | 'sanctuary';
 export type EventChestRarity = 'common' | 'rare' | 'epic' | 'legendary';
-export type SanctuaryBuffType = 'attack' | 'defense' | 'crit' | 'gold';
+export type SanctuaryBuffType = 'attack' | 'defense' | 'gold' | 'xp';
 export type PetShardRarity = 'rare' | 'epic' | 'legendary';
 
 export interface ActiveSanctuaryBuff {
@@ -1252,6 +1252,7 @@ export interface Quest {
   type: QuestType;
   difficulty: Difficulty;
   energyReward: number;
+  checkpoints?: { id: string; title: string; completed: boolean }[];
   completed: boolean;
   createdAt: number;
   completedAt?: number;

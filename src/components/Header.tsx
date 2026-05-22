@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, Scroll, Backpack, Castle, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Settings, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Sword, Scroll, Backpack, Castle, Heart, Zap, Coins, Flame, LogOut, RefreshCw, Shield, Star, Sparkles, Settings, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { useAuth } from '@/context/AuthContext';
 import { ProgressBar } from './ProgressBar';
@@ -163,8 +163,8 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               <div className="hidden sm:flex items-center gap-2 bg-green-500/10 px-2 py-1.5 rounded-lg border border-green-500/30">
                 {sanctuaryBuff.type === 'attack' && <Sword className="w-4 h-4 text-green-400" />}
                 {sanctuaryBuff.type === 'defense' && <Shield className="w-4 h-4 text-green-400" />}
-                {sanctuaryBuff.type === 'crit' && <Star className="w-4 h-4 text-green-400" />}
                 {sanctuaryBuff.type === 'gold' && <Coins className="w-4 h-4 text-green-400" />}
+                {sanctuaryBuff.type === 'xp' && <Sparkles className="w-4 h-4 text-green-400" />}
                 <span className="text-xs text-green-300">
                   Buff: {sanctuaryBuff.type} ({sanctuaryBuff.remainingCombats})
                 </span>

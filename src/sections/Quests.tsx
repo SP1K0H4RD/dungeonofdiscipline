@@ -66,11 +66,16 @@ interface QuestCardProps {
   onEdit: () => void;
   onRequestDelete: () => void;
   rewardFragments: number;
+  onToggleCheckpoint?: (checkpointId: string) => void;
 }
 
-function QuestCard({ quest, onComplete, onEdit, onRequestDelete, rewardFragments }: QuestCardProps) {
+function QuestCard({ quest, onComplete, onEdit, onRequestDelete, rewardFragments, onToggleCheckpoint }: QuestCardProps) {
   const diff = difficultyConfig[quest.difficulty];
   
+  const checkpoints = quest.checkpoints || [];
+  const hasCheckpoints = checkpoints.length > 0;
+  const completedCheckpoints = hasCheckpoints ? checkpoints.filter(c => c.completed).length : 0;
+
   return (
     <motion.div
       layout
@@ -89,7 +94,7 @@ function QuestCard({ quest, onComplete, onEdit, onRequestDelete, rewardFragments
       )} />
 
       <div className="flex items-start gap-4 pl-3">
-        {onComplete ? (
+        {onComplete && !hasCheckpoints ? (
           <motion.button
             onClick={onComplete}
             disabled={quest.completed}
@@ -158,6 +163,33 @@ function QuestCard({ quest, onComplete, onEdit, onRequestDelete, rewardFragments
             {quest.description}
           </p>
 
+          {hasCheckpoints && (
+            <div className="space-y-1.5 mb-3">
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                {completedCheckpoints}/{checkpoints.length} checkpoints
+              </div>
+              <div className="space-y-1">
+                {checkpoints.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => onToggleCheckpoint?.(c.id)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1 rounded border text-left transition-colors",
+                      c.completed
+                        ? "bg-green-500/10 border-green-500/20 text-green-300"
+                        : "bg-black/30 border-white/10 text-gray-300 hover:bg-white/5"
+                    )}
+                  >
+                    <span className={cn("w-3 h-3 rounded-sm border flex items-center justify-center shrink-0", c.completed ? "border-green-500 bg-green-500/30" : "border-gray-600")}>
+                      {c.completed ? <Check className="w-2.5 h-2.5 text-green-300" /> : null}
+                    </span>
+                    <span className={cn("text-[11px] font-semibold", c.completed && "line-through opacity-70")}>{c.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {quest.type === 'habito' && (quest.habitDays || []).length > 0 && (
             <div className="text-[11px] text-orange-400 mb-3">
               {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -221,7 +253,7 @@ function QuestCard({ quest, onComplete, onEdit, onRequestDelete, rewardFragments
 interface QuestsProps {}
 
 export function Quests({}: QuestsProps) {
-  const { gameState, createQuest, addQuest, completeQuest, deleteQuest, updateQuest, setGameState } = useGame();
+  const { gameState, createQuest, addQuest, completeQuest, deleteQuest, updateQuest, toggleQuestCheckpoint, setGameState } = useGame();
   const { playerProfile } = gameState;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -242,6 +274,8 @@ export function Quests({}: QuestsProps) {
     habitDays: [] as DayOfWeek[],
     metaTarget: 100,
     energyReward: 0,
+    isMultitask: false,
+    checkpointTitles: [] as string[],
   });
   const [newQuest, setNewQuest] = useState({
     title: '',
@@ -252,7 +286,11 @@ export function Quests({}: QuestsProps) {
     habitDays: [] as DayOfWeek[],
     metaTarget: 100,
     energyReward: 0,
+    isMultitask: false,
+    checkpointTitles: [] as string[],
   });
+  const [checkpointText, setCheckpointText] = useState('');
+  const [editCheckpointText, setEditCheckpointText] = useState('');
 
   const todayStr = getBrazilDateStringFromDate(new Date());
   const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
@@ -291,6 +329,24 @@ export function Quests({}: QuestsProps) {
     return Math.max(0, Math.floor((w / totalWeight) * fragmentsBudget));
   };
 
+  const getHabitDailyQuest = (habit: Quest) => {
+    const dailyId = `daily-${habit.id}-${todayStr}`;
+    return gameState.quests.diaria.find(q => q.id === dailyId);
+  };
+
+  const buildHabitDisplayQuest = (habit: Quest): Quest => {
+    const daily = getHabitDailyQuest(habit);
+    const baseCheckpoints = habit.checkpoints || [];
+    const nextCheckpoints = daily?.checkpoints
+      ? daily.checkpoints
+      : baseCheckpoints.map(c => ({ ...c, completed: false }));
+    return {
+      ...habit,
+      completed: Boolean(daily?.completed),
+      checkpoints: nextCheckpoints.length > 0 ? nextCheckpoints : undefined,
+    };
+  };
+
   const addEnergyReward = (delta: number) => {
     setNewQuest(prev => {
       const current = Math.round(prev.energyReward * 100);
@@ -323,7 +379,10 @@ export function Quests({}: QuestsProps) {
       habitDays: quest.habitDays || [],
       metaTarget: quest.metaProgress?.target ?? 100,
       energyReward: quest.energyReward || 0,
+      isMultitask: (quest.checkpoints || []).length > 0,
+      checkpointTitles: (quest.checkpoints || []).map(c => c.title),
     });
+    setEditCheckpointText('');
     setIsEditDialogOpen(true);
   };
 
@@ -333,6 +392,7 @@ export function Quests({}: QuestsProps) {
 
     const isHabit = editingQuest.type === 'habito';
     if (isHabit && editQuestDraft.habitDays.length === 0) return;
+    if (editQuestDraft.isMultitask && editQuestDraft.checkpointTitles.length === 0) return;
     const nextScheduledDate = isHabit ? undefined : (editQuestDraft.scheduledDate || undefined);
     const nextHabitDays = isHabit ? editQuestDraft.habitDays : undefined;
     const nextMetaTarget = editingQuest.type === 'meta' ? editQuestDraft.metaTarget : undefined;
@@ -345,6 +405,7 @@ export function Quests({}: QuestsProps) {
       scheduledDate: nextScheduledDate,
       habitDays: nextHabitDays,
       metaTarget: nextMetaTarget,
+      checkpointTitles: editQuestDraft.isMultitask ? editQuestDraft.checkpointTitles : [],
     });
 
     setIsEditDialogOpen(false);
@@ -362,6 +423,7 @@ export function Quests({}: QuestsProps) {
   const handleCreateQuest = () => {
     if (!newQuest.title) return;
     if (newQuest.type === 'habito' && newQuest.habitDays.length === 0) return;
+    if (newQuest.isMultitask && newQuest.checkpointTitles.length === 0) return;
     
     const quest = createQuest(
       newQuest.title,
@@ -374,7 +436,8 @@ export function Quests({}: QuestsProps) {
       playerProfile.activeFocusTag,
       newQuest.type === 'habito' ? newQuest.habitDays : undefined,
       newQuest.type === 'meta' ? newQuest.metaTarget : undefined,
-      autoRewardsEnabled ? 0 : newQuest.energyReward
+      autoRewardsEnabled ? 0 : newQuest.energyReward,
+      newQuest.isMultitask ? newQuest.checkpointTitles : undefined
     );
     
     addQuest(quest);
@@ -387,7 +450,10 @@ export function Quests({}: QuestsProps) {
       habitDays: [],
       metaTarget: 100,
       energyReward: 0,
+      isMultitask: false,
+      checkpointTitles: [],
     });
+    setCheckpointText('');
     setIsDialogOpen(false);
   };
 
@@ -405,6 +471,10 @@ export function Quests({}: QuestsProps) {
   const completedDiarias = filterQuests(gameState.quests.diaria).filter(q => q.completed && !q.id.startsWith('daily-'));
   const activeMetas = filterQuests(gameState.quests.meta).filter(q => !q.completed);
   const completedMetas = filterQuests(gameState.quests.meta).filter(q => q.completed);
+
+  const scheduledHabitsToday = activeHabitos.filter(h => h.habitDays?.includes(currentDayOfWeek));
+  const completedHabitsToday = scheduledHabitsToday.filter(h => getHabitDailyQuest(h)?.completed);
+  const pendingHabitsTodayCount = Math.max(0, scheduledHabitsToday.length - completedHabitsToday.length);
 
   return (
     <motion.div
@@ -484,6 +554,64 @@ export function Quests({}: QuestsProps) {
                   className="bg-black/40 border-gray-700 resize-none h-20"
                 />
               </div>
+
+              <div className="flex items-center justify-between gap-4 bg-black/30 border border-white/10 rounded-lg p-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white truncate">Multitarefa</p>
+                  <p className="text-[10px] text-gray-500 truncate">Complete todos os checkpoints para receber a recompensa.</p>
+                </div>
+                <Switch
+                  checked={newQuest.isMultitask}
+                  onCheckedChange={(checked) => {
+                    setNewQuest(prev => ({
+                      ...prev,
+                      isMultitask: checked,
+                      checkpointTitles: checked ? prev.checkpointTitles : [],
+                    }));
+                    setCheckpointText('');
+                  }}
+                />
+              </div>
+
+              {newQuest.isMultitask && (
+                <div className="bg-black/30 border border-white/10 rounded-lg p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Novo checkpoint..."
+                      value={checkpointText}
+                      onChange={(e) => setCheckpointText(e.target.value)}
+                      className="bg-black/40 border-gray-700"
+                    />
+                    <Button
+                      type="button"
+                      className="bg-purple-600 hover:bg-purple-700"
+                      onClick={() => {
+                        const title = checkpointText.trim();
+                        if (!title) return;
+                        setNewQuest(prev => ({ ...prev, checkpointTitles: [...prev.checkpointTitles, title] }));
+                        setCheckpointText('');
+                      }}
+                    >
+                      Adicionar
+                    </Button>
+                  </div>
+
+                  <div className="space-y-1">
+                    {newQuest.checkpointTitles.map((t, idx) => (
+                      <div key={`${t}-${idx}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded px-2 py-1">
+                        <span className="text-xs text-gray-300">{t}</span>
+                        <button
+                          type="button"
+                          className="text-red-400 hover:text-red-300 text-xs font-bold"
+                          onClick={() => setNewQuest(prev => ({ ...prev, checkpointTitles: prev.checkpointTitles.filter((_, i) => i !== idx) }))}
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               <div className={cn("grid gap-4", autoRewardsEnabled ? "grid-cols-1" : "grid-cols-2")}>
                 <div>
@@ -755,7 +883,7 @@ export function Quests({}: QuestsProps) {
         <TabsList className="bg-[#1a1a2e] border border-[#2d2d44] w-full flex">
           <TabsTrigger value="habito" className="flex-1 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 text-[10px] sm:text-xs">
             <Flame className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="truncate">Hábitos ({activeHabitos.length})</span>
+            <span className="truncate">Hábitos ({pendingHabitsTodayCount})</span>
           </TabsTrigger>
           <TabsTrigger value="diaria" className="flex-1 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-[10px] sm:text-xs">
             <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
@@ -789,16 +917,23 @@ export function Quests({}: QuestsProps) {
                     const dailyQuest = gameState.quests.diaria.find(q => q.id === dailyId);
                     return !dailyQuest?.completed;
                   })
-                  .map((habit) => (
-                    <QuestCard
-                      key={habit.id}
-                      quest={habit}
-                      onComplete={() => completeQuest(habit.id, 'habito')}
-                      onEdit={() => startEditQuest(habit)}
-                      onRequestDelete={() => setPendingDelete(habit)}
-                      rewardFragments={getRewardFragmentsForQuest(habit)}
-                    />
-                  ))}
+                  .map((habit) => {
+                    const isScheduledToday = habit.habitDays?.includes(currentDayOfWeek);
+                    const displayQuest = buildHabitDisplayQuest(habit);
+                    const hasCheckpoints = (displayQuest.checkpoints || []).length > 0;
+
+                    return (
+                      <QuestCard
+                        key={habit.id}
+                        quest={displayQuest}
+                        onComplete={isScheduledToday && !hasCheckpoints ? () => completeQuest(habit.id, 'habito') : undefined}
+                        onToggleCheckpoint={isScheduledToday && hasCheckpoints ? (checkpointId) => toggleQuestCheckpoint(habit.id, 'habito', checkpointId) : undefined}
+                        onEdit={() => startEditQuest(habit)}
+                        onRequestDelete={() => setPendingDelete(habit)}
+                        rewardFragments={getRewardFragmentsForQuest(habit)}
+                      />
+                    );
+                  })}
 
                 {activeHabitos.some(h => h.habitDays?.includes(currentDayOfWeek) && gameState.quests.diaria.find(q => q.id === `daily-${h.id}-${todayStr}`)?.completed) && (
                   <div className="mt-6 border-t border-[#2d2d44] pt-4">
@@ -823,7 +958,7 @@ export function Quests({}: QuestsProps) {
                           .map((habit) => (
                             <QuestCard
                               key={habit.id}
-                              quest={{ ...habit, completed: true }}
+                              quest={{ ...buildHabitDisplayQuest(habit), completed: true }}
                               onComplete={() => {}}
                               onEdit={() => startEditQuest(habit)}
                               onRequestDelete={() => setPendingDelete(habit)}
@@ -853,16 +988,20 @@ export function Quests({}: QuestsProps) {
               </motion.div>
             ) : (
               <div className="space-y-3">
-                {activeDiarias.map((quest) => (
-                  <QuestCard
-                    key={quest.id}
-                    quest={quest}
-                    onComplete={() => completeQuest(quest.id, 'diaria')}
-                    onEdit={() => startEditQuest(quest)}
-                    onRequestDelete={() => setPendingDelete(quest)}
-                    rewardFragments={getRewardFragmentsForQuest(quest)}
-                  />
-                ))}
+                {activeDiarias.map((quest) => {
+                  const hasCheckpoints = (quest.checkpoints || []).length > 0;
+                  return (
+                    <QuestCard
+                      key={quest.id}
+                      quest={quest}
+                      onComplete={!hasCheckpoints ? () => completeQuest(quest.id, 'diaria') : undefined}
+                      onToggleCheckpoint={hasCheckpoints ? (checkpointId) => toggleQuestCheckpoint(quest.id, 'diaria', checkpointId) : undefined}
+                      onEdit={() => startEditQuest(quest)}
+                      onRequestDelete={() => setPendingDelete(quest)}
+                      rewardFragments={getRewardFragmentsForQuest(quest)}
+                    />
+                  );
+                })}
               </div>
             )}
             
@@ -912,16 +1051,20 @@ export function Quests({}: QuestsProps) {
               </motion.div>
             ) : (
               <div className="space-y-3">
-                {activeMetas.map((quest) => (
-                  <QuestCard
-                    key={quest.id}
-                    quest={quest}
-                    onComplete={() => completeQuest(quest.id, 'meta')}
-                    onEdit={() => startEditQuest(quest)}
-                    onRequestDelete={() => setPendingDelete(quest)}
-                    rewardFragments={getRewardFragmentsForQuest(quest)}
-                  />
-                ))}
+                {activeMetas.map((quest) => {
+                  const hasCheckpoints = (quest.checkpoints || []).length > 0;
+                  return (
+                    <QuestCard
+                      key={quest.id}
+                      quest={quest}
+                      onComplete={!hasCheckpoints ? () => completeQuest(quest.id, 'meta') : undefined}
+                      onToggleCheckpoint={hasCheckpoints ? (checkpointId) => toggleQuestCheckpoint(quest.id, 'meta', checkpointId) : undefined}
+                      onEdit={() => startEditQuest(quest)}
+                      onRequestDelete={() => setPendingDelete(quest)}
+                      rewardFragments={getRewardFragmentsForQuest(quest)}
+                    />
+                  );
+                })}
               </div>
             )}
             
@@ -1015,7 +1158,7 @@ export function Quests({}: QuestsProps) {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {selectedQuest.type !== 'habito' && !selectedQuest.completed && (
+                {selectedQuest.type !== 'habito' && !selectedQuest.completed && (selectedQuest.checkpoints || []).length === 0 && (
                   <Button
                     onClick={handleCompleteFromModal}
                     className="bg-green-600 hover:bg-green-700"
@@ -1082,6 +1225,64 @@ export function Quests({}: QuestsProps) {
                 className="bg-black/40 border-gray-700 resize-none h-20"
               />
             </div>
+
+            <div className="flex items-center justify-between gap-4 bg-black/30 border border-white/10 rounded-lg p-3">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white truncate">Multitarefa</p>
+                <p className="text-[10px] text-gray-500 truncate">Complete todos os checkpoints para receber a recompensa.</p>
+              </div>
+              <Switch
+                checked={editQuestDraft.isMultitask}
+                onCheckedChange={(checked) => {
+                  setEditQuestDraft(prev => ({
+                    ...prev,
+                    isMultitask: checked,
+                    checkpointTitles: checked ? prev.checkpointTitles : [],
+                  }));
+                  setEditCheckpointText('');
+                }}
+              />
+            </div>
+
+            {editQuestDraft.isMultitask && (
+              <div className="bg-black/30 border border-white/10 rounded-lg p-3 space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Novo checkpoint..."
+                    value={editCheckpointText}
+                    onChange={(e) => setEditCheckpointText(e.target.value)}
+                    className="bg-black/40 border-gray-700"
+                  />
+                  <Button
+                    type="button"
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      const title = editCheckpointText.trim();
+                      if (!title) return;
+                      setEditQuestDraft(prev => ({ ...prev, checkpointTitles: [...prev.checkpointTitles, title] }));
+                      setEditCheckpointText('');
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+
+                <div className="space-y-1">
+                  {editQuestDraft.checkpointTitles.map((t, idx) => (
+                    <div key={`${t}-${idx}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded px-2 py-1">
+                      <span className="text-xs text-gray-300">{t}</span>
+                      <button
+                        type="button"
+                        className="text-red-400 hover:text-red-300 text-xs font-bold"
+                        onClick={() => setEditQuestDraft(prev => ({ ...prev, checkpointTitles: prev.checkpointTitles.filter((_, i) => i !== idx) }))}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {!autoRewardsEnabled && (
               <div>

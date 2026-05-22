@@ -1096,6 +1096,27 @@ const migrateGameState = (parsed: any): GameState => {
       if (value === 'meta') return 'hard';
       return 'medium';
     };
+    const normalizeCheckpoints = (value: any): Quest['checkpoints'] => {
+      if (!Array.isArray(value)) return undefined;
+      const normalized = value
+        .map((c: any) => {
+          if (!c) return null;
+          if (typeof c === 'string') {
+            const title = c.trim();
+            if (!title) return null;
+            return { id: generateId(), title, completed: false };
+          }
+          const title = typeof c.title === 'string'
+            ? c.title.trim()
+            : (typeof c.name === 'string' ? c.name.trim() : '');
+          if (!title) return null;
+          const id = typeof c.id === 'string' ? c.id : generateId();
+          const completed = Boolean(c.completed);
+          return { id, title, completed };
+        })
+        .filter(Boolean) as { id: string; title: string; completed: boolean }[];
+      return normalized.length > 0 ? normalized : undefined;
+    };
     const normalizeHabitDays = (value: any): DayOfWeek[] => {
       if (!Array.isArray(value)) return allDays;
       const filtered = value
@@ -1114,17 +1135,23 @@ const migrateGameState = (parsed: any): GameState => {
         completed: false,
         completedAt: undefined,
         difficulty: mapDifficulty((q as any).difficulty),
+        checkpoints: (() => {
+          const cps = normalizeCheckpoints((q as any).checkpoints);
+          return cps && cps.length > 0 ? cps.map(c => ({ ...c, completed: false })) : undefined;
+        })(),
         habitDays: normalizeHabitDays((q as any).habitDays),
       })),
       diaria: (migrated.quests.diaria || []).map((q: Quest) => ({
         ...q,
         type: 'diaria',
         difficulty: mapDifficulty((q as any).difficulty),
+        checkpoints: normalizeCheckpoints((q as any).checkpoints),
       })),
       meta: (migrated.quests.meta || []).map((q: Quest) => ({
         ...q,
         type: 'meta',
         difficulty: mapDifficulty((q as any).difficulty),
+        checkpoints: normalizeCheckpoints((q as any).checkpoints),
       })),
     };
   }
@@ -2258,7 +2285,8 @@ export function useGameState() {
     focusTag?: FocusTag,
     habitDays?: DayOfWeek[],
     metaTarget?: number,
-    energyReward = 0
+    energyReward = 0,
+    checkpointTitles?: string[]
   ): Quest => {
     return {
       id: generateId(),
@@ -2267,6 +2295,9 @@ export function useGameState() {
       type,
       difficulty,
       energyReward: energyReward,
+      checkpoints: Array.isArray(checkpointTitles) && checkpointTitles.length > 0
+        ? checkpointTitles.map(t => ({ id: generateId(), title: t, completed: false }))
+        : undefined,
       completed: false,
       createdAt: Date.now(),
       expiresAt: type === 'diaria' ? Date.now() + 24 * 60 * 60 * 1000 : undefined,
@@ -2386,6 +2417,159 @@ export function useGameState() {
     return newState;
   }, [addDebugLog]);
 
+  const applyQuestCompletion = useCallback((
+    prev: GameState,
+    params: {
+      today: string;
+      currentDayOfWeek: DayOfWeek;
+      baseQuests: GameState['quests'];
+      questTypeToComplete: QuestType;
+      questIdToComplete: string;
+      questToComplete: Quest;
+    }
+  ): GameState => {
+    const { today, currentDayOfWeek, baseQuests, questTypeToComplete, questIdToComplete, questToComplete } = params;
+
+    let updatedGoals = [...prev.calendar.weeklyGoals];
+    if (questToComplete.focusTag) {
+      updatedGoals = updatedGoals.map(goal => {
+        if (goal.category === questToComplete.focusTag && !goal.completed) {
+          const newCount = goal.currentCount + 1;
+          const completed = newCount >= goal.targetCount;
+          return {
+            ...goal,
+            currentCount: newCount,
+            completed,
+          };
+        }
+        return goal;
+      });
+    }
+
+    let dailyProg = prev.calendar.dailyProgress.find(dp => dp.date === today);
+    if (!dailyProg) {
+      dailyProg = { date: today, completedTasks: 0, streakCounted: false, extraEnergyGained: 0 };
+    }
+
+    const currentExtraEnergy = dailyProg.extraEnergyGained || 0;
+    const dailyCapEnergy = prev.settings?.doubleTaskEnergyCap ? 10 : 5;
+    const remainingEnergyBudget = Math.max(0, dailyCapEnergy - currentExtraEnergy);
+
+    const weightByDifficulty: Record<Difficulty, number> = { easy: 1.0, medium: 1.3, hard: 1.6 };
+    const fragmentsBudget = dailyCapEnergy * 5;
+
+    const todaysHabits = baseQuests.habito.filter(h => h.habitDays?.includes(currentDayOfWeek));
+    const todaysManualDiarias = baseQuests.diaria
+      .filter(q => (q.scheduledDate === today || getBrazilDateStringFromDate(new Date(q.createdAt)) === today) && !q.id.startsWith('daily-'));
+    const todaysMetas = baseQuests.meta.filter(q => q.scheduledDate === today);
+
+    const tasksForToday: Quest[] = [...todaysHabits, ...todaysManualDiarias, ...todaysMetas];
+
+    const totalWeight = tasksForToday.reduce((sum, q) => sum + (weightByDifficulty[q.difficulty] || 0), 0);
+
+    const weightSource = (questTypeToComplete === 'diaria' && questIdToComplete.startsWith('daily-'))
+      ? baseQuests.habito.find(h => `daily-${h.id}-${today}` === questIdToComplete) || questToComplete
+      : questToComplete;
+    const questWeight = weightByDifficulty[weightSource.difficulty] || 0;
+
+    const computedFragments = totalWeight > 0 ? (questWeight / totalWeight) * fragmentsBudget : 0;
+    const fragmentsToAddInternal = prev.settings?.autoQuestRewards
+      ? Math.max(0, Math.min(computedFragments, remainingEnergyBudget * 5))
+      : Math.max(0, Math.min(questToComplete.energyReward, remainingEnergyBudget)) * 5;
+
+    const oldFragments = prev.character.energyFragments || 0;
+    const fragmentsBeforeConversion = oldFragments + fragmentsToAddInternal;
+    const wholeFragmentsProduced = Math.max(0, Math.floor(fragmentsBeforeConversion) - Math.floor(oldFragments));
+    const res = applyEnergyFragments(prev.character, fragmentsToAddInternal);
+
+    const newExtraEnergy = currentExtraEnergy + (fragmentsToAddInternal / 5);
+
+    if (wholeFragmentsProduced > 0) {
+      addDebugLog(`Fragmentos obtidos: +${wholeFragmentsProduced}`);
+    }
+    if (res.energyGained > 0) {
+      addDebugLog(`Energia obtida: +${res.energyGained} NRG`);
+    }
+
+    const currentQuestHistory = Array.isArray(prev.playerProfile?.questHistory)
+      ? prev.playerProfile.questHistory
+      : [];
+
+    const newProfile = {
+      ...prev.playerProfile,
+      consecutiveFailures: 0,
+      questHistory: [
+        ...currentQuestHistory,
+        { questType: questToComplete.title, completed: true, timestamp: Date.now() }
+      ].slice(-50),
+    };
+
+    let newStreak = prev.character.stats.streak;
+    const isFirstTaskToday = !dailyProg || dailyProg.completedTasks === 0;
+    if (isFirstTaskToday) {
+      newStreak += 1;
+      addDebugLog(`First task of the day! Streak increased to ${newStreak}`);
+    }
+
+    const updatedDailyProgress = prev.calendar.dailyProgress.some(dp => dp.date === today)
+      ? prev.calendar.dailyProgress.map(dp =>
+          dp.date === today
+            ? { ...dp, completedTasks: dp.completedTasks + 1, extraEnergyGained: newExtraEnergy }
+            : dp
+        )
+      : [...prev.calendar.dailyProgress, { date: today, completedTasks: 1, streakCounted: false, extraEnergyGained: newExtraEnergy }];
+
+    const updatedQuestsForType = baseQuests[questTypeToComplete].map(q =>
+      q.id === questIdToComplete ? { ...q, completed: true, completedAt: Date.now() } : q
+    );
+    const updatedQuests = {
+      ...baseQuests,
+      [questTypeToComplete]: updatedQuestsForType,
+    };
+
+    const completionPercent = getDailyTaskCompletionPercent({ ...prev, quests: updatedQuests }, today);
+    const updatedDailyMissions = applyDailyMissionEvent(prev, {
+      type: 'taskCompleted',
+      day: today,
+      completionPercent,
+    });
+
+    return {
+      ...prev,
+      character: {
+        ...prev.character,
+        energy: res.character.energy,
+        energyFragments: res.character.energyFragments,
+        stats: {
+          ...prev.character.stats,
+          streak: newStreak,
+          maxStreak: Math.max(prev.character.stats.maxStreak, newStreak),
+        },
+        progression: {
+          ...prev.character.progression,
+          streak: newStreak,
+          maxStreak: Math.max(prev.character.progression.maxStreak, newStreak),
+        }
+      },
+      inventory: { 
+        ...prev.inventory, 
+        items: prev.inventory.items,
+        gems: prev.inventory.gems,
+        specialAttacks: prev.inventory.specialAttacks,
+      },
+      quests: {
+        ...updatedQuests,
+      },
+      playerProfile: newProfile,
+      calendar: {
+        ...prev.calendar,
+        weeklyGoals: updatedGoals,
+        dailyProgress: updatedDailyProgress,
+      },
+      dailyMissions: updatedDailyMissions,
+    };
+  }, [addDebugLog]);
+
   const completeQuest = useCallback((questId: string, type: QuestType) => {
     setGameState(prev => {
       const today = getBrazilDateString();
@@ -2444,153 +2628,95 @@ export function useGameState() {
       }
 
       addDebugLog(`Completing quest: ${questToComplete.title}`);
-
-      // Step 4: Update weekly goal progress if applicable
-      let updatedGoals = [...prev.calendar.weeklyGoals];
-      if (questToComplete.focusTag) {
-        updatedGoals = updatedGoals.map(goal => {
-          if (goal.category === questToComplete.focusTag && !goal.completed) {
-            const newCount = goal.currentCount + 1;
-            const completed = newCount >= goal.targetCount;
-            return {
-              ...goal,
-              currentCount: newCount,
-              completed,
-            };
-          }
-          return goal;
-        });
+      const checkpoints = questToComplete.checkpoints || [];
+      if (checkpoints.length > 0 && checkpoints.some(c => !c.completed)) {
+        addDebugLog('Complete todos os checkpoints antes de receber a recompensa.');
+        return prev;
       }
 
-      // Step 5 & 6: Replaced XP/Coins/HP logic
-      let dailyProg = prev.calendar.dailyProgress.find(dp => dp.date === today);
-      
-      if (!dailyProg) {
-        dailyProg = { date: today, completedTasks: 0, streakCounted: false, extraEnergyGained: 0 };
+      return applyQuestCompletion(prev, {
+        today,
+        currentDayOfWeek,
+        baseQuests,
+        questTypeToComplete,
+        questIdToComplete,
+        questToComplete,
+      });
+    });
+  }, [addDebugLog]);
+
+  const toggleQuestCheckpoint = useCallback((questId: string, type: QuestType, checkpointId: string) => {
+    setGameState(prev => {
+      const today = getBrazilDateString();
+      const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
+
+      let baseQuests = prev.quests;
+      let questTypeToComplete: QuestType = type;
+      let questIdToComplete = questId;
+      let questToUpdate = prev.quests[type].find(q => q.id === questId);
+
+      if (type === 'habito') {
+        const habit = prev.quests.habito.find(q => q.id === questId);
+        if (!habit) return prev;
+        if (!habit.habitDays?.includes(currentDayOfWeek)) return prev;
+
+        const dailyId = `daily-${habit.id}-${today}`;
+        const existingDaily = prev.quests.diaria.find(q => q.id === dailyId);
+        if (existingDaily?.completed) return prev;
+
+        if (!existingDaily) {
+          const dailyQuest: Quest = {
+            ...habit,
+            id: dailyId,
+            type: 'diaria',
+            completed: false,
+            createdAt: Date.now(),
+            scheduledDate: today,
+            checkpoints: (habit.checkpoints || []).map(c => ({ ...c, completed: false })),
+          };
+          baseQuests = {
+            ...prev.quests,
+            diaria: [...prev.quests.diaria, dailyQuest],
+          };
+          questToUpdate = dailyQuest;
+        } else {
+          questToUpdate = existingDaily;
+        }
+
+        questTypeToComplete = 'diaria';
+        questIdToComplete = dailyId;
       }
 
-      const currentExtraEnergy = dailyProg.extraEnergyGained || 0;
-      const dailyCapEnergy = prev.settings?.doubleTaskEnergyCap ? 10 : 5;
-      const remainingEnergyBudget = Math.max(0, dailyCapEnergy - currentExtraEnergy);
+      if (!questToUpdate || questToUpdate.completed) return prev;
+      const checkpoints = questToUpdate.checkpoints || [];
+      if (checkpoints.length === 0) return prev;
 
-      const weightByDifficulty: Record<Difficulty, number> = { easy: 1.0, medium: 1.3, hard: 1.6 };
-      const fragmentsBudget = dailyCapEnergy * 5;
-
-      const todaysHabits = baseQuests.habito.filter(h => h.habitDays?.includes(currentDayOfWeek));
-      const todaysManualDiarias = baseQuests.diaria
-        .filter(q => (q.scheduledDate === today || getBrazilDateStringFromDate(new Date(q.createdAt)) === today) && !q.id.startsWith('daily-'));
-      const todaysMetas = baseQuests.meta.filter(q => q.scheduledDate === today);
-
-      const tasksForToday: Quest[] = [...todaysHabits, ...todaysManualDiarias, ...todaysMetas];
-
-      const totalWeight = tasksForToday.reduce((sum, q) => sum + (weightByDifficulty[q.difficulty] || 0), 0);
-
-      const weightSource = (questTypeToComplete === 'diaria' && questIdToComplete.startsWith('daily-'))
-        ? baseQuests.habito.find(h => `daily-${h.id}-${today}` === questIdToComplete) || questToComplete
-        : questToComplete;
-      const questWeight = weightByDifficulty[weightSource.difficulty] || 0;
-
-      const computedFragments = totalWeight > 0 ? (questWeight / totalWeight) * fragmentsBudget : 0;
-      const fragmentsToAddInternal = prev.settings?.autoQuestRewards
-        ? Math.max(0, Math.min(computedFragments, remainingEnergyBudget * 5))
-        : Math.max(0, Math.min(questToComplete.energyReward, remainingEnergyBudget)) * 5;
-
-      const oldFragments = prev.character.energyFragments || 0;
-      const fragmentsBeforeConversion = oldFragments + fragmentsToAddInternal;
-      const wholeFragmentsProduced = Math.max(0, Math.floor(fragmentsBeforeConversion) - Math.floor(oldFragments));
-      const res = applyEnergyFragments(prev.character, fragmentsToAddInternal);
-
-      const newExtraEnergy = currentExtraEnergy + (fragmentsToAddInternal / 5);
-
-      if (wholeFragmentsProduced > 0) {
-        addDebugLog(`Fragmentos obtidos: +${wholeFragmentsProduced}`);
-      }
-      if (res.energyGained > 0) {
-        addDebugLog(`Energia obtida: +${res.energyGained} NRG`);
-      }
-
-      // Step 7: Update profile - CRITICAL: Ensure questHistory is always an array
-      const currentQuestHistory = Array.isArray(prev.playerProfile?.questHistory) 
-        ? prev.playerProfile.questHistory 
-        : [];
-      
-      const newProfile = {
-        ...prev.playerProfile,
-        consecutiveFailures: 0,
-        questHistory: [
-          ...currentQuestHistory,
-          { questType: questToComplete.title, completed: true, timestamp: Date.now() }
-        ].slice(-50),
+      const updatedQuest: Quest = {
+        ...questToUpdate,
+        checkpoints: checkpoints.map(c => c.id === checkpointId ? { ...c, completed: !c.completed } : c),
       };
 
-      // Step 8: Update daily progress for streak calculation
-      let newStreak = prev.character.stats.streak;
-      const isFirstTaskToday = !dailyProg || dailyProg.completedTasks === 0;
-      
-      if (isFirstTaskToday) {
-        newStreak += 1;
-        addDebugLog(`First task of the day! Streak increased to ${newStreak}`);
-      }
-
-      const updatedDailyProgress = prev.calendar.dailyProgress.some(dp => dp.date === today)
-        ? prev.calendar.dailyProgress.map(dp => 
-            dp.date === today 
-              ? { ...dp, completedTasks: dp.completedTasks + 1, extraEnergyGained: newExtraEnergy }
-              : dp
-          )
-        : [...prev.calendar.dailyProgress, { date: today, completedTasks: 1, streakCounted: false, extraEnergyGained: newExtraEnergy }];
-
-      const updatedQuestsForType = baseQuests[questTypeToComplete].map(q =>
-        q.id === questIdToComplete ? { ...q, completed: true, completedAt: Date.now() } : q
-      );
-      const updatedQuests = {
+      const updatedQuestsForType = baseQuests[questTypeToComplete].map(q => q.id === questIdToComplete ? updatedQuest : q);
+      const updatedBaseQuests = {
         ...baseQuests,
         [questTypeToComplete]: updatedQuestsForType,
       };
 
-      const completionPercent = getDailyTaskCompletionPercent({ ...prev, quests: updatedQuests }, today);
-      const updatedDailyMissions = applyDailyMissionEvent(prev, {
-        type: 'taskCompleted',
-        day: today,
-        completionPercent,
-      });
+      const isFullyCompleted = (updatedQuest.checkpoints || []).length > 0 && (updatedQuest.checkpoints || []).every(c => c.completed);
+      if (!isFullyCompleted) {
+        return { ...prev, quests: updatedBaseQuests };
+      }
 
-      return {
-        ...prev,
-        character: {
-          ...prev.character,
-          energy: res.character.energy,
-          energyFragments: res.character.energyFragments,
-          stats: {
-            ...prev.character.stats,
-            streak: newStreak,
-            maxStreak: Math.max(prev.character.stats.maxStreak, newStreak),
-          },
-          progression: {
-            ...prev.character.progression,
-            streak: newStreak,
-            maxStreak: Math.max(prev.character.progression.maxStreak, newStreak),
-          }
-        },
-        inventory: { 
-          ...prev.inventory, 
-          items: prev.inventory.items,
-          gems: prev.inventory.gems,
-          specialAttacks: prev.inventory.specialAttacks,
-        },
-        quests: {
-          ...updatedQuests,
-        },
-        playerProfile: newProfile,
-        calendar: {
-          ...prev.calendar,
-          weeklyGoals: updatedGoals,
-          dailyProgress: updatedDailyProgress,
-        },
-        dailyMissions: updatedDailyMissions,
-      };
+      return applyQuestCompletion(prev, {
+        today,
+        currentDayOfWeek,
+        baseQuests: updatedBaseQuests,
+        questTypeToComplete,
+        questIdToComplete,
+        questToComplete: updatedQuest,
+      });
     });
-  }, [addDebugLog]);
+  }, [applyQuestCompletion]);
 
   const deleteQuest = useCallback((questId: string, type: QuestType) => {
     setGameState(prev => ({
@@ -2607,11 +2733,18 @@ export function useGameState() {
     type: QuestType,
     updates: Partial<Pick<Quest, 'title' | 'description' | 'difficulty' | 'energyReward' | 'scheduledDate' | 'habitDays'>> & {
       metaTarget?: number;
+      checkpointTitles?: string[];
     }
   ) => {
     setGameState(prev => {
       const existing = prev.quests[type].find(q => q.id === questId);
       if (!existing) return prev;
+
+      const nextCheckpoints = Array.isArray(updates.checkpointTitles)
+        ? (updates.checkpointTitles.length > 0
+            ? updates.checkpointTitles.map(t => ({ id: generateId(), title: t, completed: false }))
+            : undefined)
+        : existing.checkpoints;
 
       const nextQuest: Quest = (() => {
         if (type === 'habito') {
@@ -2622,6 +2755,7 @@ export function useGameState() {
             description: updates.description ?? existing.description,
             difficulty: updates.difficulty ?? existing.difficulty,
             energyReward: updates.energyReward ?? existing.energyReward,
+            checkpoints: nextCheckpoints,
             scheduledDate: undefined,
             expiresAt: undefined,
             completed: false,
@@ -2641,6 +2775,7 @@ export function useGameState() {
             description: updates.description ?? existing.description,
             difficulty: updates.difficulty ?? existing.difficulty,
             energyReward: updates.energyReward ?? existing.energyReward,
+            checkpoints: nextCheckpoints,
             scheduledDate: updates.scheduledDate ?? existing.scheduledDate,
             metaProgress: { current: currentProgress, target: nextTarget },
           };
@@ -2652,11 +2787,28 @@ export function useGameState() {
           description: updates.description ?? existing.description,
           difficulty: updates.difficulty ?? existing.difficulty,
           energyReward: updates.energyReward ?? existing.energyReward,
+          checkpoints: nextCheckpoints,
           scheduledDate: updates.scheduledDate ?? existing.scheduledDate,
         };
       })();
 
       const nextQuestsForType = prev.quests[type].map(q => q.id === questId ? nextQuest : q);
+      let nextDiarias = prev.quests.diaria;
+      if (type === 'habito' && Array.isArray(updates.checkpointTitles)) {
+        const today = getBrazilDateString();
+        const dailyId = `daily-${questId}-${today}`;
+        nextDiarias = prev.quests.diaria.map(q => {
+          if (q.id !== dailyId) return q;
+          return {
+            ...q,
+            checkpoints: nextCheckpoints
+              ? nextCheckpoints.map(c => ({ ...c, completed: false }))
+              : undefined,
+            completed: false,
+            completedAt: undefined,
+          };
+        });
+      }
 
       let nextEvents = prev.calendar.events;
       if (type === 'meta') {
@@ -2681,6 +2833,7 @@ export function useGameState() {
         quests: {
           ...prev.quests,
           [type]: nextQuestsForType,
+          diaria: nextDiarias,
         },
         calendar: {
           ...prev.calendar,
@@ -2871,11 +3024,10 @@ export function useGameState() {
       }
 
       const buffType = prev.sanctuaryBuff?.type;
-      const attackMult = buffType === 'attack' ? 1.05 : 1;
-      const defenseMult = buffType === 'defense' ? 1.05 : 1;
-      const critBonus = buffType === 'crit' ? 0.03 : 0;
+      const attackMult = buffType === 'attack' ? 1.2 : 1;
+      const defenseMult = buffType === 'defense' ? 1.2 : 1;
 
-      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(Math.min(1, prev.character.totalStats.critChance + critBonus));
+      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(Math.min(1, prev.character.totalStats.critChance));
       
       let damage = 0;
       let log = '';
@@ -2985,9 +3137,10 @@ export function useGameState() {
         // Victory!
         const isBoss = currentNode?.isBoss || false;
         // XP and Gold from spawned enemy
-        const xpReward = spawnedEnemy?.xp || 10;
+        const baseXpReward = spawnedEnemy?.xp || 10;
+        const xpReward = buffType === 'xp' ? Math.floor(baseXpReward * 1.5) : baseXpReward;
         const baseGoldReward = spawnedEnemy?.gold || 0;
-        const goldReward = buffType === 'gold' ? Math.floor(baseGoldReward * 1.15) : baseGoldReward;
+        const goldReward = buffType === 'gold' ? Math.floor(baseGoldReward * 1.5) : baseGoldReward;
         const nextBuff = prev.sanctuaryBuff
           ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
           : null;
@@ -3158,11 +3311,10 @@ export function useGameState() {
 
       const bossDodged = attemptDodge(enemyDodgeChance * 0.5); // Harder to dodge special
       const buffType = prev.sanctuaryBuff?.type;
-      const attackMult = buffType === 'attack' ? 1.05 : 1;
-      const defenseMult = buffType === 'defense' ? 1.05 : 1;
-      const critBonus = buffType === 'crit' ? 0.03 : 0;
+      const attackMult = buffType === 'attack' ? 1.2 : 1;
+      const defenseMult = buffType === 'defense' ? 1.2 : 1;
 
-      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(Math.min(1, prev.character.totalStats.critChance + critBonus + 0.10)); // Higher crit chance
+      const playerCrit = prev.combat.nextPlayerAttackCrit || attemptCrit(Math.min(1, prev.character.totalStats.critChance + 0.10)); // Higher crit chance
       
       let newPlayerAttackRemainder = prev.combat.playerAttackRemainder || 0;
       
@@ -3266,9 +3418,10 @@ export function useGameState() {
       if (newBossHp <= 0) {
         // Use enemy stats for rewards
         const isBoss = currentNode?.isBoss || false;
-        const xpReward = spawnedEnemy?.xp || 20;
+        const baseXpReward = spawnedEnemy?.xp || 20;
+        const xpReward = buffType === 'xp' ? Math.floor(baseXpReward * 1.5) : baseXpReward;
         const baseGoldReward = spawnedEnemy?.gold || 10;
-        const goldReward = buffType === 'gold' ? Math.floor(baseGoldReward * 1.15) : baseGoldReward;
+        const goldReward = buffType === 'gold' ? Math.floor(baseGoldReward * 1.5) : baseGoldReward;
         const nextBuff = prev.sanctuaryBuff
           ? (prev.sanctuaryBuff.remainingCombats <= 1 ? null : { ...prev.sanctuaryBuff, remainingCombats: prev.sanctuaryBuff.remainingCombats - 1 })
           : null;
@@ -4193,6 +4346,7 @@ export function useGameState() {
     createQuest,
     addQuest,
     completeQuest,
+    toggleQuestCheckpoint,
     deleteQuest,
     updateQuest,
     // Combat

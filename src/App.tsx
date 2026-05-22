@@ -720,15 +720,15 @@ function AppContent() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-cinzel text-xl">Santuário da Floresta</h3>
-                          <p className="text-xs text-gray-400 mt-1">Escolha 1 buff por 3 combates</p>
+                          <p className="text-xs text-gray-400 mt-1">Escolha 1 buff por 3 turnos seguidos</p>
                         </div>
                         <Button onClick={closeDungeonEvent} variant="outline" className="h-8 px-3 text-xs">Sair</Button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <BuffButton label="+5% attack" type="attack" />
-                        <BuffButton label="+5% defense" type="defense" />
-                        <BuffButton label="+3% crit chance" type="crit" />
-                        <BuffButton label="+15% gold ganho" type="gold" />
+                        <BuffButton label="+20% ATK" type="attack" />
+                        <BuffButton label="+20% DEF" type="defense" />
+                        <BuffButton label="+50% Gold" type="gold" />
+                        <BuffButton label="+50% XP" type="xp" />
                       </div>
                     </div>
                   )}

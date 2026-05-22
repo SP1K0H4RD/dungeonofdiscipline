@@ -4,7 +4,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
-import type { GameState, Quest, Item, Gem, PlayerProfile, Lootbox, SpecialAttack, FocusTag, QuestType, Difficulty, DayOfWeek, MapId, Rarity, PetId } from '@/types/game';
+import type { GameState, Quest, Item, Gem, PlayerProfile, Lootbox, SpecialAttack, FocusTag, QuestType, Difficulty, DayOfWeek, MapId, Rarity, PetId, SanctuaryBuffType } from '@/types/game';
 import { DIFFICULTY_CONFIG } from '@/types/game';
 
 // ============================================
@@ -38,9 +38,10 @@ interface GameContextType {
   unequipSpecialAttack: () => void;
   
   // Quests
-  createQuest: (title: string, description: string, type: QuestType, difficulty: Difficulty, isEmergency?: boolean, suggestedByMaster?: boolean, scheduledDate?: string, focusTag?: FocusTag, habitDays?: DayOfWeek[], metaTarget?: number, energyReward?: number) => Quest;
+  createQuest: (title: string, description: string, type: QuestType, difficulty: Difficulty, isEmergency?: boolean, suggestedByMaster?: boolean, scheduledDate?: string, focusTag?: FocusTag, habitDays?: DayOfWeek[], metaTarget?: number, energyReward?: number, checkpointTitles?: string[]) => Quest;
   addQuest: (quest: Quest) => void;
   completeQuest: (questId: string, type: QuestType) => void;
+  toggleQuestCheckpoint: (questId: string, type: QuestType, checkpointId: string) => void;
   deleteQuest: (questId: string, type: QuestType) => void;
   updateQuest: (
     questId: string,
@@ -53,6 +54,7 @@ interface GameContextType {
       scheduledDate?: string;
       habitDays?: DayOfWeek[];
       metaTarget?: number;
+      checkpointTitles?: string[];
     }
   ) => void;
   
@@ -75,7 +77,7 @@ interface GameContextType {
   resetMaps: () => void;
   spawnEnemyForNode: (mapId: MapId, nodeId: string) => void;
   closeDungeonEvent: () => void;
-  chooseSanctuaryBuff: (buffType: 'attack' | 'defense' | 'crit' | 'gold') => void;
+  chooseSanctuaryBuff: (buffType: SanctuaryBuffType) => void;
   skipMerchant: () => void;
   buyMerchantOffer: (offerId: string) => void;
   
