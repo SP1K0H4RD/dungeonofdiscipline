@@ -295,8 +295,26 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               setGameState(prev => ({
                 ...prev,
                 settings: {
-                  ...(prev.settings || { infiniteEnergy: false }),
+                  ...(prev.settings || { infiniteEnergy: false, doubleTaskEnergyCap: false }),
                   infiniteEnergy: checked,
+                },
+              }));
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-4 py-2">
+          <div>
+            <p className="text-sm font-bold text-white">Limite de energia por tarefas</p>
+            <p className="text-xs text-gray-500">Aumenta o máximo diário de 5 para 10.</p>
+          </div>
+          <Switch
+            checked={!!gameState.settings?.doubleTaskEnergyCap}
+            onCheckedChange={(checked) => {
+              setGameState(prev => ({
+                ...prev,
+                settings: {
+                  ...(prev.settings || { infiniteEnergy: false, doubleTaskEnergyCap: false }),
+                  doubleTaskEnergyCap: checked,
                 },
               }));
             }}

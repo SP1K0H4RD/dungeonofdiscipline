@@ -2068,6 +2068,7 @@ export interface GameState {
   } | null;
   settings: {
     infiniteEnergy: boolean;
+    doubleTaskEnergyCap: boolean;
   };
   // Debug logs
   debugLogs: string[];

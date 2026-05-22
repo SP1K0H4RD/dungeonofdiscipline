@@ -327,6 +327,7 @@ const INITIAL_GAME_STATE: GameState = {
   lootOverlay: null,
   settings: {
     infiniteEnergy: false,
+    doubleTaskEnergyCap: false,
   },
   debugLogs: [],
 };
@@ -2408,20 +2409,68 @@ export function useGameState() {
 
   const completeQuest = useCallback((questId: string, type: QuestType) => {
     setGameState(prev => {
-      // Step 1: Find and validate quest
-      const quest = prev.quests[type].find(q => q.id === questId);
-      if (!quest || quest.completed) {
-        addDebugLog(`Quest ${questId} not found or already completed`);
+      const today = getBrazilDateString();
+      const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
+
+      let baseQuests = prev.quests;
+      let questTypeToComplete: QuestType = type;
+      let questIdToComplete = questId;
+      let questToComplete = prev.quests[type].find(q => q.id === questId);
+
+      if (type === 'habito') {
+        const habit = prev.quests.habito.find(q => q.id === questId);
+        if (!habit) {
+          addDebugLog(`Habit ${questId} not found`);
+          return prev;
+        }
+
+        if (!habit.habitDays?.includes(currentDayOfWeek)) {
+          addDebugLog(`Habit "${habit.title}" is not scheduled for today`);
+          return prev;
+        }
+
+        const dailyId = `daily-${habit.id}-${today}`;
+        const existingDaily = prev.quests.diaria.find(q => q.id === dailyId);
+        if (existingDaily?.completed) {
+          addDebugLog(`Habit "${habit.title}" already completed today`);
+          return prev;
+        }
+
+        if (!existingDaily) {
+          const dailyQuest: Quest = {
+            ...habit,
+            id: dailyId,
+            type: 'diaria',
+            completed: false,
+            createdAt: Date.now(),
+            scheduledDate: today,
+          };
+
+          baseQuests = {
+            ...prev.quests,
+            diaria: [...prev.quests.diaria, dailyQuest],
+          };
+          questToComplete = dailyQuest;
+        } else {
+          questToComplete = existingDaily;
+        }
+
+        questTypeToComplete = 'diaria';
+        questIdToComplete = dailyId;
+      }
+
+      if (!questToComplete || questToComplete.completed) {
+        addDebugLog(`Quest ${questIdToComplete} not found or already completed`);
         return prev;
       }
 
-      addDebugLog(`Completing quest: ${quest.title}`);
+      addDebugLog(`Completing quest: ${questToComplete.title}`);
 
       // Step 4: Update weekly goal progress if applicable
       let updatedGoals = [...prev.calendar.weeklyGoals];
-      if (quest.focusTag) {
+      if (questToComplete.focusTag) {
         updatedGoals = updatedGoals.map(goal => {
-          if (goal.category === quest.focusTag && !goal.completed) {
+          if (goal.category === questToComplete.focusTag && !goal.completed) {
             const newCount = goal.currentCount + 1;
             const completed = newCount >= goal.targetCount;
             return {
@@ -2435,7 +2484,6 @@ export function useGameState() {
       }
 
       // Step 5 & 6: Replaced XP/Coins/HP logic
-      const today = getBrazilDateString();
       let dailyProg = prev.calendar.dailyProgress.find(dp => dp.date === today);
       
       if (!dailyProg) {
@@ -2444,7 +2492,8 @@ export function useGameState() {
 
       // Calculate how much energy can actually be gained (limit 5 per day)
       const currentExtraEnergy = dailyProg.extraEnergyGained || 0;
-      const energyCanGain = Math.max(0, Math.min(quest.energyReward, 5 - currentExtraEnergy));
+      const dailyCap = prev.settings?.doubleTaskEnergyCap ? 10 : 5;
+      const energyCanGain = Math.max(0, Math.min(questToComplete.energyReward, dailyCap - currentExtraEnergy));
       const newExtraEnergy = currentExtraEnergy + energyCanGain;
 
       // FRAGMENT SYSTEM: Convert energy reward to fragments (1 energy = 5 fragments)
@@ -2467,7 +2516,7 @@ export function useGameState() {
         addDebugLog(`Fragmentos de Energia obtidos: +${fragmentsToAdd.toFixed(1)}`);
       }
 
-      if (energyCanGain < quest.energyReward && energyCanGain <= 0) {
+      if (energyCanGain < questToComplete.energyReward && energyCanGain <= 0) {
         addDebugLog(`Limite diário de energia extra atingido.`);
       }
 
@@ -2481,7 +2530,7 @@ export function useGameState() {
         consecutiveFailures: 0,
         questHistory: [
           ...currentQuestHistory,
-          { questType: quest.title, completed: true, timestamp: Date.now() }
+          { questType: questToComplete.title, completed: true, timestamp: Date.now() }
         ].slice(-50),
       };
 
@@ -2502,12 +2551,12 @@ export function useGameState() {
           )
         : [...prev.calendar.dailyProgress, { date: today, completedTasks: 1, streakCounted: false, extraEnergyGained: newExtraEnergy }];
 
-      const updatedQuestsForType = prev.quests[type].map(q =>
-        q.id === questId ? { ...q, completed: true, completedAt: Date.now() } : q
+      const updatedQuestsForType = baseQuests[questTypeToComplete].map(q =>
+        q.id === questIdToComplete ? { ...q, completed: true, completedAt: Date.now() } : q
       );
       const updatedQuests = {
-        ...prev.quests,
-        [type]: updatedQuestsForType,
+        ...baseQuests,
+        [questTypeToComplete]: updatedQuestsForType,
       };
 
       const completionPercent = getDailyTaskCompletionPercent({ ...prev, quests: updatedQuests }, today);

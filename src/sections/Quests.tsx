@@ -749,14 +749,22 @@ export function Quests({}: QuestsProps) {
               </motion.div>
             ) : (
               <div className="space-y-3">
-                {activeHabitos.map((quest) => (
-                  <QuestCard
-                    key={quest.id}
-                    quest={quest}
-                    onEdit={() => startEditQuest(quest)}
-                    onRequestDelete={() => setPendingDelete(quest)}
-                  />
-                ))}
+                {activeHabitos.map((habit) => {
+                  const dailyId = `daily-${habit.id}-${todayStr}`;
+                  const dailyQuest = gameState.quests.diaria.find(q => q.id === dailyId);
+                  const isCompletedToday = Boolean(dailyQuest?.completed);
+                  const displayQuest: Quest = { ...habit, completed: isCompletedToday };
+
+                  return (
+                    <QuestCard
+                      key={habit.id}
+                      quest={displayQuest}
+                      onComplete={() => completeQuest(habit.id, 'habito')}
+                      onEdit={() => startEditQuest(habit)}
+                      onRequestDelete={() => setPendingDelete(habit)}
+                    />
+                  );
+                })}
               </div>
             )}
           </AnimatePresence>
