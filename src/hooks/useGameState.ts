@@ -328,6 +328,7 @@ const INITIAL_GAME_STATE: GameState = {
   settings: {
     infiniteEnergy: false,
     doubleTaskEnergyCap: false,
+    autoQuestRewards: true,
   },
   debugLogs: [],
 };
@@ -1085,6 +1086,16 @@ const migrateGameState = (parsed: any): GameState => {
 
   {
     const allDays: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
+    const mapDifficulty = (value: any): Difficulty => {
+      if (value === 'easy') return 'easy';
+      if (value === 'medium') return 'medium';
+      if (value === 'hard') return 'hard';
+      if (value === 'veryEasy') return 'easy';
+      if (value === 'normal') return 'medium';
+      if (value === 'veryHard') return 'hard';
+      if (value === 'meta') return 'hard';
+      return 'medium';
+    };
     const normalizeHabitDays = (value: any): DayOfWeek[] => {
       if (!Array.isArray(value)) return allDays;
       const filtered = value
@@ -1102,7 +1113,18 @@ const migrateGameState = (parsed: any): GameState => {
         expiresAt: undefined,
         completed: false,
         completedAt: undefined,
+        difficulty: mapDifficulty((q as any).difficulty),
         habitDays: normalizeHabitDays((q as any).habitDays),
+      })),
+      diaria: (migrated.quests.diaria || []).map((q: Quest) => ({
+        ...q,
+        type: 'diaria',
+        difficulty: mapDifficulty((q as any).difficulty),
+      })),
+      meta: (migrated.quests.meta || []).map((q: Quest) => ({
+        ...q,
+        type: 'meta',
+        difficulty: mapDifficulty((q as any).difficulty),
       })),
     };
   }
@@ -1482,27 +1504,6 @@ export function useGameState() {
           const diffMs = todayMs - creationDate;
           const realDaysSurvived = Math.max(1, Math.floor(diffMs / msPerDay) + 1);
 
-          const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
-
-          const existingDailyIds = new Set(prev.quests.diaria.map(q => q.id));
-          const todaysHabits = prev.quests.habito.filter(habit => habit.habitDays?.includes(currentDayOfWeek) && !habit.completed);
-
-          const newDailyQuests: Quest[] = todaysHabits.flatMap(habit => {
-            const id = `daily-${habit.id}-${today}`;
-            if (existingDailyIds.has(id)) return [];
-            const dailyQuest: Quest = {
-              ...habit,
-              id,
-              type: 'diaria',
-              completed: false,
-              createdAt: Date.now(),
-              scheduledDate: today,
-            };
-            return [dailyQuest];
-          });
-
-          addDebugLog(`Generated ${newDailyQuests.length} daily quests from habits`);
-
           next = {
             ...prev,
             character: {
@@ -1534,7 +1535,7 @@ export function useGameState() {
             },
             quests: {
               ...prev.quests,
-              diaria: [...prev.quests.diaria.filter(q => !q.completed), ...newDailyQuests],
+              diaria: prev.quests.diaria.filter(q => !q.completed && !q.id.startsWith('daily-')),
             },
           };
         } else if (needsDailyMissions) {
@@ -2294,32 +2295,10 @@ export function useGameState() {
         addDebugLog(`Meta quest "${quest.title}" added to calendar for ${quest.scheduledDate}`);
       }
 
-      let nextQuests = {
+      const nextQuests = {
         ...prev.quests,
         [quest.type]: [...prev.quests[quest.type], quest],
       } as GameState['quests'];
-
-      if (quest.type === 'habito') {
-        const today = getBrazilDateString();
-        const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
-        const shouldSpawnToday = quest.habitDays?.includes(currentDayOfWeek);
-        const dailyId = `daily-${quest.id}-${today}`;
-        const alreadyExists = prev.quests.diaria.some(q => q.id === dailyId);
-        if (shouldSpawnToday && !alreadyExists) {
-          const dailyQuest: Quest = {
-            ...quest,
-            id: dailyId,
-            type: 'diaria',
-            completed: false,
-            createdAt: Date.now(),
-            scheduledDate: today,
-          };
-          nextQuests = {
-            ...nextQuests,
-            diaria: [...nextQuests.diaria, dailyQuest],
-          };
-        }
-      }
 
       return {
         ...prev,
@@ -2490,34 +2469,44 @@ export function useGameState() {
         dailyProg = { date: today, completedTasks: 0, streakCounted: false, extraEnergyGained: 0 };
       }
 
-      // Calculate how much energy can actually be gained (limit 5 per day)
       const currentExtraEnergy = dailyProg.extraEnergyGained || 0;
-      const dailyCap = prev.settings?.doubleTaskEnergyCap ? 10 : 5;
-      const energyCanGain = Math.max(0, Math.min(questToComplete.energyReward, dailyCap - currentExtraEnergy));
-      const newExtraEnergy = currentExtraEnergy + energyCanGain;
+      const dailyCapEnergy = prev.settings?.doubleTaskEnergyCap ? 10 : 5;
+      const remainingEnergyBudget = Math.max(0, dailyCapEnergy - currentExtraEnergy);
 
-      // FRAGMENT SYSTEM: Convert energy reward to fragments (1 energy = 5 fragments)
-      const fragmentsToAdd = energyCanGain * 5;
-      let newFragments = prev.character.energyFragments + fragmentsToAdd;
-      let energyToGain = 0;
+      const weightByDifficulty: Record<Difficulty, number> = { easy: 1.0, medium: 1.3, hard: 1.6 };
+      const fragmentsBudget = dailyCapEnergy * 5;
 
-      // Check for conversion
-      while (newFragments >= 5) {
-        newFragments -= 5;
-        energyToGain += 1;
+      const todaysHabits = baseQuests.habito.filter(h => h.habitDays?.includes(currentDayOfWeek));
+      const todaysManualDiarias = baseQuests.diaria
+        .filter(q => (q.scheduledDate === today || getBrazilDateStringFromDate(new Date(q.createdAt)) === today) && !q.id.startsWith('daily-'));
+      const todaysMetas = baseQuests.meta.filter(q => q.scheduledDate === today);
+
+      const tasksForToday: Quest[] = [...todaysHabits, ...todaysManualDiarias, ...todaysMetas];
+
+      const totalWeight = tasksForToday.reduce((sum, q) => sum + (weightByDifficulty[q.difficulty] || 0), 0);
+
+      const weightSource = (questTypeToComplete === 'diaria' && questIdToComplete.startsWith('daily-'))
+        ? baseQuests.habito.find(h => `daily-${h.id}-${today}` === questIdToComplete) || questToComplete
+        : questToComplete;
+      const questWeight = weightByDifficulty[weightSource.difficulty] || 0;
+
+      const computedFragments = totalWeight > 0 ? (questWeight / totalWeight) * fragmentsBudget : 0;
+      const fragmentsToAddInternal = prev.settings?.autoQuestRewards
+        ? Math.max(0, Math.min(computedFragments, remainingEnergyBudget * 5))
+        : Math.max(0, Math.min(questToComplete.energyReward, remainingEnergyBudget)) * 5;
+
+      const oldFragments = prev.character.energyFragments || 0;
+      const fragmentsBeforeConversion = oldFragments + fragmentsToAddInternal;
+      const wholeFragmentsProduced = Math.max(0, Math.floor(fragmentsBeforeConversion) - Math.floor(oldFragments));
+      const res = applyEnergyFragments(prev.character, fragmentsToAddInternal);
+
+      const newExtraEnergy = currentExtraEnergy + (fragmentsToAddInternal / 5);
+
+      if (wholeFragmentsProduced > 0) {
+        addDebugLog(`Fragmentos obtidos: +${wholeFragmentsProduced}`);
       }
-
-      // Update energy with conversion result
-      const newEnergy = Math.min(10, prev.character.energy + energyToGain);
-      
-      if (energyToGain > 0) {
-        addDebugLog(`Conversão de Fragmentos! +${energyToGain} NRG`);
-      } else if (fragmentsToAdd > 0) {
-        addDebugLog(`Fragmentos de Energia obtidos: +${fragmentsToAdd.toFixed(1)}`);
-      }
-
-      if (energyCanGain < questToComplete.energyReward && energyCanGain <= 0) {
-        addDebugLog(`Limite diário de energia extra atingido.`);
+      if (res.energyGained > 0) {
+        addDebugLog(`Energia obtida: +${res.energyGained} NRG`);
       }
 
       // Step 7: Update profile - CRITICAL: Ensure questHistory is always an array
@@ -2570,8 +2559,8 @@ export function useGameState() {
         ...prev,
         character: {
           ...prev.character,
-          energy: newEnergy,
-          energyFragments: newFragments,
+          energy: res.character.energy,
+          energyFragments: res.character.energyFragments,
           stats: {
             ...prev.character.stats,
             streak: newStreak,
@@ -3952,9 +3941,11 @@ export function useGameState() {
   };
 
   const generateSuggestedQuest = (state: GameState, focusTag?: FocusTag): Quest => {
-    const difficulty = state.playerProfile.difficultyPreference === 'easier' ? 'easy' 
-      : state.playerProfile.difficultyPreference === 'challenging' ? 'hard' 
-      : 'normal';
+    const difficulty: Difficulty = state.playerProfile.difficultyPreference === 'easier'
+      ? 'easy'
+      : state.playerProfile.difficultyPreference === 'challenging'
+        ? 'hard'
+        : 'medium';
     
     // Focus-based quest templates
     const questTemplates: Record<string, { title: string; desc: string }[]> = {

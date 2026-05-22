@@ -17,7 +17,7 @@ import {
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import type { Quest, Difficulty, QuestType, DayOfWeek } from '@/types/game';
-import { getBrazilDateStringFromDate } from '@/types/game';
+import { getBrazilDate, getBrazilDateStringFromDate } from '@/types/game';
 import {
     Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,12 +55,9 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const difficultyConfig: Record<Difficulty, { color: string; bg: string; label: string; border: string; emoji: string }> = {
-  veryEasy: { color: 'text-green-400', bg: 'bg-green-500/20', label: 'Muito Fácil', border: 'border-green-500', emoji: '🟩' },
   easy: { color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Fácil', border: 'border-emerald-500', emoji: '🟢' },
-  normal: { color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Normal', border: 'border-blue-500', emoji: '🔵' },
+  medium: { color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Médio', border: 'border-blue-500', emoji: '🔵' },
   hard: { color: 'text-purple-400', bg: 'bg-purple-500/20', label: 'Difícil', border: 'border-purple-500', emoji: '🟣' },
-  veryHard: { color: 'text-red-400', bg: 'bg-red-500/20', label: 'Muito Difícil', border: 'border-red-500', emoji: '🔴' },
-  meta: { color: 'text-yellow-400', bg: 'bg-yellow-500/20', label: 'Meta', border: 'border-yellow-500', emoji: '🟡' },
 };
 
 interface QuestCardProps {
@@ -67,9 +65,10 @@ interface QuestCardProps {
   onComplete?: () => void;
   onEdit: () => void;
   onRequestDelete: () => void;
+  rewardFragments: number;
 }
 
-function QuestCard({ quest, onComplete, onEdit, onRequestDelete }: QuestCardProps) {
+function QuestCard({ quest, onComplete, onEdit, onRequestDelete, rewardFragments }: QuestCardProps) {
   const diff = difficultyConfig[quest.difficulty];
   
   return (
@@ -169,15 +168,11 @@ function QuestCard({ quest, onComplete, onEdit, onRequestDelete }: QuestCardProp
 
           {/* Rewards */}
           <div className="flex items-center gap-4 flex-wrap">
-            {quest.energyReward > 0 && (
+            {rewardFragments > 0 && (
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 text-yellow-500">
-                  <Zap className="w-3.5 h-3.5 fill-yellow-500/50" />
-                  <span className="text-xs font-bold">+{quest.energyReward.toFixed(2).replace(/\.?0+$/, '')} NRG</span>
-                </div>
                 <div className="flex items-center gap-1 text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
                   <span className="text-[10px]">💎</span>
-                  <span className="text-xs font-bold">+{Math.round(quest.energyReward * 5)} Frag.</span>
+                  <span className="text-xs font-bold">+{rewardFragments} Frag.</span>
                 </div>
               </div>
             )}
@@ -226,13 +221,14 @@ function QuestCard({ quest, onComplete, onEdit, onRequestDelete }: QuestCardProp
 interface QuestsProps {}
 
 export function Quests({}: QuestsProps) {
-  const { gameState, createQuest, addQuest, completeQuest, deleteQuest, updateQuest } = useGame();
+  const { gameState, createQuest, addQuest, completeQuest, deleteQuest, updateQuest, setGameState } = useGame();
   const { playerProfile } = gameState;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [showQuestModal, setShowQuestModal] = useState(false);
+  const [showCompletedHabitos, setShowCompletedHabitos] = useState(false);
   const [showCompletedDiarias, setShowCompletedDiarias] = useState(false);
   const [showCompletedMetas, setShowCompletedMetas] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Quest | null>(null);
@@ -241,7 +237,7 @@ export function Quests({}: QuestsProps) {
   const [editQuestDraft, setEditQuestDraft] = useState({
     title: '',
     description: '',
-    difficulty: 'normal' as Difficulty,
+    difficulty: 'medium' as Difficulty,
     scheduledDate: '',
     habitDays: [] as DayOfWeek[],
     metaTarget: 100,
@@ -251,7 +247,7 @@ export function Quests({}: QuestsProps) {
     title: '',
     description: '',
     type: 'diaria' as QuestType,
-    difficulty: 'normal' as Difficulty,
+    difficulty: 'medium' as Difficulty,
     scheduledDate: '',
     habitDays: [] as DayOfWeek[],
     metaTarget: 100,
@@ -259,12 +255,47 @@ export function Quests({}: QuestsProps) {
   });
 
   const todayStr = getBrazilDateStringFromDate(new Date());
+  const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
+  const autoRewardsEnabled = !!gameState.settings?.autoQuestRewards;
+  const dailyCapEnergy = gameState.settings?.doubleTaskEnergyCap ? 10 : 5;
+  const weightByDifficulty: Record<Difficulty, number> = { easy: 1.0, medium: 1.3, hard: 1.6 };
+
+  const autoDifficultyForType = (type: QuestType): Difficulty => {
+    if (type === 'habito') return 'easy';
+    if (type === 'diaria') return 'medium';
+    return 'hard';
+  };
+
+  const getTasksForToday = () => {
+    const habitos = gameState.quests.habito.filter(q => q.habitDays?.includes(currentDayOfWeek));
+    const diarias = gameState.quests.diaria
+      .filter(q => (q.scheduledDate === todayStr || getBrazilDateStringFromDate(new Date(q.createdAt)) === todayStr) && !q.id.startsWith('daily-'));
+    const metas = gameState.quests.meta.filter(q => q.scheduledDate === todayStr);
+    return [...habitos, ...diarias, ...metas];
+  };
+
+  const getRewardFragmentsForQuest = (quest: Quest): number => {
+    const fragmentsFromManual = Math.max(0, Math.floor((quest.energyReward || 0) * 5));
+    if (!autoRewardsEnabled) return fragmentsFromManual;
+
+    if (quest.type === 'habito' && !quest.habitDays?.includes(currentDayOfWeek)) return 0;
+
+    const fragmentsBudget = dailyCapEnergy * 5;
+    const tasksForTodayBase = getTasksForToday();
+    const weightSource = quest.type === 'diaria' && quest.id.startsWith('daily-')
+      ? gameState.quests.habito.find(h => `daily-${h.id}-${todayStr}` === quest.id) || quest
+      : quest;
+    const totalWeight = tasksForTodayBase.reduce((sum, q) => sum + (weightByDifficulty[q.difficulty] || 0), 0);
+    const w = weightByDifficulty[weightSource.difficulty] || 0;
+    if (totalWeight <= 0 || w <= 0) return 0;
+    return Math.max(0, Math.floor((w / totalWeight) * fragmentsBudget));
+  };
 
   const addEnergyReward = (delta: number) => {
     setNewQuest(prev => {
       const current = Math.round(prev.energyReward * 100);
       const next = current + Math.round(delta * 100);
-      const clamped = Math.min(500, Math.max(0, next));
+      const clamped = Math.min(1000, Math.max(0, next));
       return { ...prev, energyReward: clamped / 100 };
     });
   };
@@ -272,7 +303,7 @@ export function Quests({}: QuestsProps) {
   const setEnergyReward = (value: number) => {
     setNewQuest(prev => {
       const normalized = Math.round(value * 100);
-      const clamped = Math.min(500, Math.max(0, normalized));
+      const clamped = Math.min(1000, Math.max(0, normalized));
       return { ...prev, energyReward: clamped / 100 };
     });
   };
@@ -287,7 +318,7 @@ export function Quests({}: QuestsProps) {
     setEditQuestDraft({
       title: quest.title,
       description: quest.description,
-      difficulty: quest.difficulty,
+      difficulty: autoRewardsEnabled ? autoDifficultyForType(quest.type) : quest.difficulty,
       scheduledDate: quest.scheduledDate || '',
       habitDays: quest.habitDays || [],
       metaTarget: quest.metaProgress?.target ?? 100,
@@ -309,8 +340,8 @@ export function Quests({}: QuestsProps) {
     updateQuest(editingQuest.id, editingQuest.type, {
       title: editQuestDraft.title.trim(),
       description: editQuestDraft.description,
-      difficulty: editQuestDraft.difficulty,
-      energyReward: editQuestDraft.energyReward,
+      difficulty: autoRewardsEnabled ? autoDifficultyForType(editingQuest.type) : editQuestDraft.difficulty,
+      energyReward: autoRewardsEnabled ? 0 : editQuestDraft.energyReward,
       scheduledDate: nextScheduledDate,
       habitDays: nextHabitDays,
       metaTarget: nextMetaTarget,
@@ -336,14 +367,14 @@ export function Quests({}: QuestsProps) {
       newQuest.title,
       newQuest.description,
       newQuest.type,
-      newQuest.difficulty,
+      autoRewardsEnabled ? autoDifficultyForType(newQuest.type) : newQuest.difficulty,
       false, // isEmergency
       false, // suggestedByMaster
       newQuest.type === 'habito' ? undefined : (newQuest.scheduledDate || undefined),
       playerProfile.activeFocusTag,
       newQuest.type === 'habito' ? newQuest.habitDays : undefined,
       newQuest.type === 'meta' ? newQuest.metaTarget : undefined,
-      newQuest.energyReward
+      autoRewardsEnabled ? 0 : newQuest.energyReward
     );
     
     addQuest(quest);
@@ -351,7 +382,7 @@ export function Quests({}: QuestsProps) {
       title: '', 
       description: '', 
       type: 'diaria', 
-      difficulty: 'normal',
+      difficulty: 'medium',
       scheduledDate: '',
       habitDays: [],
       metaTarget: 100,
@@ -370,8 +401,8 @@ export function Quests({}: QuestsProps) {
   };
 
   const activeHabitos = gameState.quests.habito;
-  const activeDiarias = filterQuests(gameState.quests.diaria).filter(q => !q.completed);
-  const completedDiarias = filterQuests(gameState.quests.diaria).filter(q => q.completed);
+  const activeDiarias = filterQuests(gameState.quests.diaria).filter(q => !q.completed && !q.id.startsWith('daily-'));
+  const completedDiarias = filterQuests(gameState.quests.diaria).filter(q => q.completed && !q.id.startsWith('daily-'));
   const activeMetas = filterQuests(gameState.quests.meta).filter(q => !q.completed);
   const completedMetas = filterQuests(gameState.quests.meta).filter(q => q.completed);
 
@@ -384,6 +415,25 @@ export function Quests({}: QuestsProps) {
       {/* Header */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel mb-3">Tarefas</h2>
+
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-white truncate">Cálculo automático</p>
+            <p className="text-xs text-gray-500 truncate">Distribui fragmentos automaticamente por dificuldade • Energia: {gameState.character.energy}</p>
+          </div>
+          <Switch
+            checked={!!gameState.settings?.autoQuestRewards}
+            onCheckedChange={(checked) => {
+              setGameState(prev => ({
+                ...prev,
+                settings: {
+                  ...(prev.settings || { infiniteEnergy: false, doubleTaskEnergyCap: false, autoQuestRewards: true }),
+                  autoQuestRewards: checked,
+                },
+              }));
+            }}
+          />
+        </div>
         
         <div className="flex gap-2">
           <motion.button
@@ -435,7 +485,7 @@ export function Quests({}: QuestsProps) {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className={cn("grid gap-4", autoRewardsEnabled ? "grid-cols-1" : "grid-cols-2")}>
                 <div>
                   <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
                   <Select
@@ -447,6 +497,7 @@ export function Quests({}: QuestsProps) {
                         type: nextType,
                         scheduledDate: nextType === 'habito' ? '' : prev.scheduledDate,
                         habitDays: nextType === 'habito' ? prev.habitDays : [],
+                        difficulty: autoRewardsEnabled ? autoDifficultyForType(nextType) : prev.difficulty,
                       }));
                     }}
                   >
@@ -476,27 +527,29 @@ export function Quests({}: QuestsProps) {
                   </Select>
                 </div>
                 
-                <div>
-                  <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
-                  <Select
-                    value={newQuest.difficulty}
-                    onValueChange={(v) => setNewQuest({ ...newQuest, difficulty: v as Difficulty })}
-                  >
-                    <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                      {Object.entries(difficultyConfig).map(([key, config]) => (
-                        <SelectItem key={key} value={key} className="text-white">
-                          <div className="flex items-center gap-2">
-                            <span>{config.emoji}</span>
-                            {config.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!autoRewardsEnabled && (
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+                    <Select
+                      value={newQuest.difficulty}
+                      onValueChange={(v) => setNewQuest({ ...newQuest, difficulty: v as Difficulty })}
+                    >
+                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                        {Object.entries(difficultyConfig).map(([key, config]) => (
+                          <SelectItem key={key} value={key} className="text-white">
+                            <div className="flex items-center gap-2">
+                              <span>{config.emoji}</span>
+                              {config.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {newQuest.type === 'habito' && (
@@ -575,87 +628,66 @@ export function Quests({}: QuestsProps) {
                 </div>
               )}
 
-              {/* Energy Reward Selector */}
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Ganho de Energia
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="5"
-                          value={newQuest.energyReward}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            if (!isNaN(val)) {
-                              setEnergyReward(val);
-                            } else if (e.target.value === '') {
-                              setEnergyReward(0);
-                            }
-                          }}
-                          className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
-                        />
-                        <span className="text-sm font-black text-yellow-500">NRG</span>
+              {!autoRewardsEnabled && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                  <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      Ganho de Energia
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="10"
+                            value={newQuest.energyReward}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val)) {
+                                setEnergyReward(val);
+                              } else if (e.target.value === '') {
+                                setEnergyReward(0);
+                              }
+                            }}
+                            className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                          />
+                          <span className="text-sm font-black text-yellow-500">NRG</span>
+                        </div>
+                        <div className="text-[10px] text-purple-400 font-bold mt-1">
+                          ≈ {Math.floor(newQuest.energyReward * 5)} Fragmentos
+                        </div>
                       </div>
-                      <div className="text-[10px] text-purple-400 font-bold mt-1">
-                        ≈ {Math.round(newQuest.energyReward * 5)} Fragmentos
-                      </div>
                     </div>
-                  </div>
-                </label>
-                <div className="flex items-center gap-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
-                    onClick={() => addEnergyReward(-0.2)}
-                  >
-                    -
-                  </Button>
-                  <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
-                    <div 
-                      className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all" 
-                      style={{ width: `${Math.min(100, (newQuest.energyReward / 5) * 100)}%` }}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
-                    onClick={() => addEnergyReward(0.2)}
-                  >
-                    +
-                  </Button>
-                </div>
-                <p className="text-[10px] text-gray-500 mt-2 text-center">
-                  1.0 NRG = 5 Fragmentos de Cristal
-                </p>
-              </div>
-
-              {/* Difficulty Info */}
-              <div className="bg-[#16213e] rounded-lg p-3 text-sm">
-                <p className="text-gray-400 mb-2 font-medium">Resumo da Tarefa:</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="text-yellow-500 font-bold flex items-center gap-1">
-                      <Zap className="w-4 h-4 fill-yellow-500/50" />
-                      NRG: +{newQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')}
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
+                      onClick={() => addEnergyReward(-0.2)}
+                    >
+                      -
+                    </Button>
+                    <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
+                      <div 
+                        className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all" 
+                        style={{ width: `${Math.min(100, (newQuest.energyReward / 10) * 100)}%` }}
+                      />
                     </div>
-                    <div className="text-purple-400 font-bold flex items-center gap-1 ml-2">
-                      💎 +{Math.round(newQuest.energyReward * 5)}
-                    </div>
-                  </div>
-                  <div className="text-gray-400 font-medium bg-black/20 px-2 py-1 rounded">
-                    {difficultyConfig[newQuest.difficulty].label}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
+                      onClick={() => addEnergyReward(0.2)}
+                    >
+                      +
+                    </Button>
                   </div>
                 </div>
-              </div>
+              )}
               
               <div className="flex gap-2">
                 <Button
@@ -749,22 +781,59 @@ export function Quests({}: QuestsProps) {
               </motion.div>
             ) : (
               <div className="space-y-3">
-                {activeHabitos.map((habit) => {
-                  const dailyId = `daily-${habit.id}-${todayStr}`;
-                  const dailyQuest = gameState.quests.diaria.find(q => q.id === dailyId);
-                  const isCompletedToday = Boolean(dailyQuest?.completed);
-                  const displayQuest: Quest = { ...habit, completed: isCompletedToday };
-
-                  return (
+                {activeHabitos
+                  .filter((habit) => {
+                    const isScheduledToday = habit.habitDays?.includes(currentDayOfWeek);
+                    if (!isScheduledToday) return true;
+                    const dailyId = `daily-${habit.id}-${todayStr}`;
+                    const dailyQuest = gameState.quests.diaria.find(q => q.id === dailyId);
+                    return !dailyQuest?.completed;
+                  })
+                  .map((habit) => (
                     <QuestCard
                       key={habit.id}
-                      quest={displayQuest}
+                      quest={habit}
                       onComplete={() => completeQuest(habit.id, 'habito')}
                       onEdit={() => startEditQuest(habit)}
                       onRequestDelete={() => setPendingDelete(habit)}
+                      rewardFragments={getRewardFragmentsForQuest(habit)}
                     />
-                  );
-                })}
+                  ))}
+
+                {activeHabitos.some(h => h.habitDays?.includes(currentDayOfWeek) && gameState.quests.diaria.find(q => q.id === `daily-${h.id}-${todayStr}`)?.completed) && (
+                  <div className="mt-6 border-t border-[#2d2d44] pt-4">
+                    <button
+                      onClick={() => setShowCompletedHabitos(!showCompletedHabitos)}
+                      className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors w-full group"
+                    >
+                      {showCompletedHabitos ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      <span className="font-bold uppercase tracking-widest text-[10px]">
+                        Concluídos Hoje ({activeHabitos.filter(h => h.habitDays?.includes(currentDayOfWeek) && gameState.quests.diaria.find(q => q.id === `daily-${h.id}-${todayStr}`)?.completed).length})
+                      </span>
+                    </button>
+
+                    {showCompletedHabitos && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-3 mt-4"
+                      >
+                        {activeHabitos
+                          .filter(h => h.habitDays?.includes(currentDayOfWeek) && gameState.quests.diaria.find(q => q.id === `daily-${h.id}-${todayStr}`)?.completed)
+                          .map((habit) => (
+                            <QuestCard
+                              key={habit.id}
+                              quest={{ ...habit, completed: true }}
+                              onComplete={() => {}}
+                              onEdit={() => startEditQuest(habit)}
+                              onRequestDelete={() => setPendingDelete(habit)}
+                              rewardFragments={getRewardFragmentsForQuest(habit)}
+                            />
+                          ))}
+                      </motion.div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </AnimatePresence>
@@ -791,6 +860,7 @@ export function Quests({}: QuestsProps) {
                     onComplete={() => completeQuest(quest.id, 'diaria')}
                     onEdit={() => startEditQuest(quest)}
                     onRequestDelete={() => setPendingDelete(quest)}
+                    rewardFragments={getRewardFragmentsForQuest(quest)}
                   />
                 ))}
               </div>
@@ -818,6 +888,7 @@ export function Quests({}: QuestsProps) {
                         quest={quest}
                         onEdit={() => startEditQuest(quest)}
                         onRequestDelete={() => setPendingDelete(quest)}
+                        rewardFragments={getRewardFragmentsForQuest(quest)}
                       />
                     ))}
                   </motion.div>
@@ -848,6 +919,7 @@ export function Quests({}: QuestsProps) {
                     onComplete={() => completeQuest(quest.id, 'meta')}
                     onEdit={() => startEditQuest(quest)}
                     onRequestDelete={() => setPendingDelete(quest)}
+                    rewardFragments={getRewardFragmentsForQuest(quest)}
                   />
                 ))}
               </div>
@@ -875,6 +947,7 @@ export function Quests({}: QuestsProps) {
                         quest={quest}
                         onEdit={() => startEditQuest(quest)}
                         onRequestDelete={() => setPendingDelete(quest)}
+                        rewardFragments={getRewardFragmentsForQuest(quest)}
                       />
                     ))}
                   </motion.div>
@@ -920,9 +993,10 @@ export function Quests({}: QuestsProps) {
               <div className="bg-[#16213e] rounded-lg p-4 space-y-2">
                 <p className="text-gray-400 text-sm">{selectedQuest.description || 'Sem descrição'}</p>
                 <div className="flex items-center gap-4 text-sm">
-                  {selectedQuest.energyReward > 0 && (
-                    <span className="text-cyan-400">⚡ {selectedQuest.energyReward.toFixed(2).replace(/\.?0+$/, '')} energia</span>
+                  {getRewardFragmentsForQuest(selectedQuest) > 0 && (
+                    <span className="text-purple-300">💎 +{getRewardFragmentsForQuest(selectedQuest)} fragmentos</span>
                   )}
+                  <span className="text-cyan-400">⚡ Energia: {gameState.character.energy}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{difficultyConfig[selectedQuest.difficulty].emoji}</span>
@@ -1009,27 +1083,29 @@ export function Quests({}: QuestsProps) {
               />
             </div>
 
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
-              <Select
-                value={editQuestDraft.difficulty}
-                onValueChange={(v) => setEditQuestDraft(prev => ({ ...prev, difficulty: v as Difficulty }))}
-              >
-                <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                  {Object.entries(difficultyConfig).map(([key, config]) => (
-                    <SelectItem key={key} value={key} className="text-white">
-                      <div className="flex items-center gap-2">
-                        <span>{config.emoji}</span>
-                        {config.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!autoRewardsEnabled && (
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+                <Select
+                  value={editQuestDraft.difficulty}
+                  onValueChange={(v) => setEditQuestDraft(prev => ({ ...prev, difficulty: v as Difficulty }))}
+                >
+                  <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                    {Object.entries(difficultyConfig).map(([key, config]) => (
+                      <SelectItem key={key} value={key} className="text-white">
+                        <div className="flex items-center gap-2">
+                          <span>{config.emoji}</span>
+                          {config.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {editingQuest?.type === 'habito' ? (
               <div className="space-y-2">
@@ -1093,40 +1169,42 @@ export function Quests({}: QuestsProps) {
               </div>
             )}
 
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-              <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Ganho de Energia
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="5"
-                        value={editQuestDraft.energyReward}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) {
-                            setEditQuestDraft(prev => ({ ...prev, energyReward: Math.min(5, Math.max(0, val)) }));
-                          } else if (e.target.value === '') {
-                            setEditQuestDraft(prev => ({ ...prev, energyReward: 0 }));
-                          }
-                        }}
-                        className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
-                      />
-                      <span className="text-sm font-black text-yellow-500">NRG</span>
-                    </div>
-                    <div className="text-[10px] text-purple-400 font-bold mt-1">
-                      ≈ {Math.round(editQuestDraft.energyReward * 5)} Fragmentos
+            {!autoRewardsEnabled && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Ganho de Energia
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="10"
+                          value={editQuestDraft.energyReward}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val)) {
+                              setEditQuestDraft(prev => ({ ...prev, energyReward: Math.min(10, Math.max(0, val)) }));
+                            } else if (e.target.value === '') {
+                              setEditQuestDraft(prev => ({ ...prev, energyReward: 0 }));
+                            }
+                          }}
+                          className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                        />
+                        <span className="text-sm font-black text-yellow-500">NRG</span>
+                      </div>
+                      <div className="text-[10px] text-purple-400 font-bold mt-1">
+                        ≈ {Math.floor(editQuestDraft.energyReward * 5)} Fragmentos
+                      </div>
                     </div>
                   </div>
-                </div>
-              </label>
-            </div>
+                </label>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button

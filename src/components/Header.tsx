@@ -295,7 +295,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               setGameState(prev => ({
                 ...prev,
                 settings: {
-                  ...(prev.settings || { infiniteEnergy: false, doubleTaskEnergyCap: false }),
+                  ...(prev.settings || { infiniteEnergy: false, doubleTaskEnergyCap: false, autoQuestRewards: true }),
                   infiniteEnergy: checked,
                 },
               }));
@@ -313,7 +313,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               setGameState(prev => ({
                 ...prev,
                 settings: {
-                  ...(prev.settings || { infiniteEnergy: false, doubleTaskEnergyCap: false }),
+                  ...(prev.settings || { infiniteEnergy: false, doubleTaskEnergyCap: false, autoQuestRewards: true }),
                   doubleTaskEnergyCap: checked,
                 },
               }));

@@ -8,8 +8,8 @@ export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 // Item types - simplified: only equipment and special attacks
 export type ItemType = 'weapon' | 'armor' | 'helmet' | 'boots' | 'accessory' | 'specialAttack';
 
-// Quest difficulty levels - EXPANDED
-export type Difficulty = 'veryEasy' | 'easy' | 'normal' | 'hard' | 'veryHard' | 'meta';
+// Quest difficulty levels
+export type Difficulty = 'easy' | 'medium' | 'hard';
 
 // Quest types - Simplified to 3 categories
 export type QuestType = 'habito' | 'diaria' | 'meta';
@@ -1271,12 +1271,9 @@ export interface Quest {
 
 // Quest drop chances by difficulty (%)
 export const QUEST_DROP_CHANCES: Record<Difficulty, number> = {
-  veryEasy: 1,
   easy: 2,
-  normal: 3,
+  medium: 3,
   hard: 4,
-  veryHard: 5,
-  meta: 5,
 };
 
 // Difficulty configuration with rewards and emojis
@@ -1291,34 +1288,23 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, {
   borderColor: string;
   dropChance: number;
 }> = {
-  veryEasy: { 
-    label: 'Muito Fácil', 
-    emoji: '🟩',
-    xpMultiplier: 0.5, 
-    coinMultiplier: 0.5, 
-    hpMultiplier: 0.5,
-    color: 'text-green-400',
-    bgColor: 'bg-green-500/20',
-    borderColor: 'border-green-500',
-    dropChance: 1,
-  },
   easy: { 
     label: 'Fácil', 
     emoji: '🟢',
-    xpMultiplier: 0.75, 
-    coinMultiplier: 0.75, 
-    hpMultiplier: 0.75,
+    xpMultiplier: 1, 
+    coinMultiplier: 1, 
+    hpMultiplier: 1,
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/20',
     borderColor: 'border-emerald-500',
     dropChance: 2,
   },
-  normal: { 
-    label: 'Normal', 
+  medium: { 
+    label: 'Médio', 
     emoji: '🔵',
-    xpMultiplier: 1, 
-    coinMultiplier: 1, 
-    hpMultiplier: 1,
+    xpMultiplier: 1.3, 
+    coinMultiplier: 1.3, 
+    hpMultiplier: 1.3,
     color: 'text-blue-400',
     bgColor: 'bg-blue-500/20',
     borderColor: 'border-blue-500',
@@ -1327,35 +1313,13 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, {
   hard: { 
     label: 'Difícil', 
     emoji: '🟣',
-    xpMultiplier: 1.5, 
-    coinMultiplier: 1.5, 
-    hpMultiplier: 1.5,
+    xpMultiplier: 1.6, 
+    coinMultiplier: 1.6, 
+    hpMultiplier: 1.6,
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/20',
     borderColor: 'border-purple-500',
     dropChance: 4,
-  },
-  veryHard: { 
-    label: 'Muito Difícil', 
-    emoji: '🔴',
-    xpMultiplier: 2.5, 
-    coinMultiplier: 2, 
-    hpMultiplier: 2,
-    color: 'text-red-400',
-    bgColor: 'bg-red-500/20',
-    borderColor: 'border-red-500',
-    dropChance: 5,
-  },
-  meta: { 
-    label: 'Meta', 
-    emoji: '🟡',
-    xpMultiplier: 5, 
-    coinMultiplier: 3, 
-    hpMultiplier: 3,
-    color: 'text-yellow-400',
-    bgColor: 'bg-yellow-500/20',
-    borderColor: 'border-yellow-500',
-    dropChance: 5,
   },
 };
 
@@ -2069,6 +2033,7 @@ export interface GameState {
   settings: {
     infiniteEnergy: boolean;
     doubleTaskEnergyCap: boolean;
+    autoQuestRewards: boolean;
   };
   // Debug logs
   debugLogs: string[];

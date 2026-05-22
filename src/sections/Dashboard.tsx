@@ -468,7 +468,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       <motion.div variants={itemVariants} className="card-dungeon p-1 flex flex-col justify-center min-h-[22px]">
         <div className="flex items-center justify-between mb-0.5 px-2">
           <h3 className="text-[8px] font-bold text-white font-cinzel tracking-widest uppercase">BAÚS</h3>
-          <span className="text-[5px] text-gray-500 font-bold uppercase tracking-widest font-cinzel">3/4</span>
+          <span className="text-[5px] text-gray-500 font-bold uppercase tracking-widest font-cinzel"></span>
         </div>
 
         <div className="grid grid-cols-4 gap-1.5 px-2">
@@ -515,7 +515,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 >
                   {chest.status === 'unlocking' ? (
                     <div className="flex items-center justify-center gap-0.5">
-                      <Clock className="w-[3px] h-[3px] text-white/90" />
+                      <Clock className="w-[2px] h-[2px] text-white/90" />
                       <span className="text-white">
                         {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
                       </span>

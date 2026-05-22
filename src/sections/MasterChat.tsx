@@ -318,15 +318,12 @@ export function MasterChat({ isOpen, onClose }: MasterChatProps) {
                   <label className="text-sm text-gray-400">Dificuldade</label>
                   <select
                     value={editingQuest.difficulty}
-                    onChange={(e) => setEditingQuest({ ...editingQuest, difficulty: e.target.value as 'veryEasy' | 'easy' | 'normal' | 'hard' | 'veryHard' | 'meta' })}
+                    onChange={(e) => setEditingQuest({ ...editingQuest, difficulty: e.target.value as 'easy' | 'medium' | 'hard' })}
                     className="w-full bg-[#16213e] border border-[#2d2d44] rounded-md p-2 text-white"
                   >
-                    <option value="veryEasy">🟢 Muito Fácil</option>
-                    <option value="easy">🟩 Fácil</option>
-                    <option value="normal">🔵 Normal</option>
+                    <option value="easy">🟢 Fácil</option>
+                    <option value="medium">🔵 Médio</option>
                     <option value="hard">🟣 Difícil</option>
-                    <option value="veryHard">🔴 Muito Difícil</option>
-                    <option value="meta">🟡 Meta</option>
                   </select>
                 </div>
                 <Button
