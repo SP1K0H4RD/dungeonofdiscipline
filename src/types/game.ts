@@ -522,7 +522,7 @@ export interface GameMap {
 
 // Stage 1 Monsters
 const RATO: MonsterSpawn = { 
-  name: 'Rato', image: '🐀', hp: 55, damageMin: 9, damageMax: 12, defense: 2, dodge: 5, critChance: 3, xp: 12, goldMin: 6, goldMax: 10, chance: 40,
+  name: 'Rato', image: '🐀', hp: 55, damageMin: 8, damageMax: 11, defense: 2, dodge: 5, critChance: 3, xp: 14, goldMin: 10, goldMax: 15, chance: 40,
   drops: {
     common: [
       { id: 'sword-rato', name: 'Espada Rústica do Rato', description: 'Uma espada feita de restos metálicos.', type: 'weapon', rarity: 'common', icon: '🗡️', stats: { attack: 2 }, durability: 50, maxDurability: 50, levelRequirement: 1, upgradeLevel: 0 },
@@ -532,7 +532,7 @@ const RATO: MonsterSpawn = {
 };
 
 const RATO_PEQUENO: MonsterSpawn = { 
-  name: 'Rato Pequeno', image: '🐁', hp: 40, damageMin: 6, damageMax: 9, defense: 1, dodge: 4, critChance: 2, xp: 8, goldMin: 4, goldMax: 7, chance: 60,
+  name: 'Rato Pequeno', image: '🐁', hp: 35, damageMin: 6, damageMax: 9, defense: 1, dodge: 4, critChance: 2, xp: 9, goldMin: 6, goldMax: 10, chance: 60,
   drops: {
     common: [
       { id: 'dagger-rato-p', name: 'Adaga Improvisada', description: 'Uma adaga pequena mas afiada.', type: 'weapon', rarity: 'common', icon: '🔪', stats: { attack: 1 }, durability: 40, maxDurability: 40, levelRequirement: 1, upgradeLevel: 0 },
@@ -541,76 +541,102 @@ const RATO_PEQUENO: MonsterSpawn = {
   }
 };
 
-const COELHO: MonsterSpawn = { 
-  name: 'Coelho', image: '🐇', hp: 115, damageMin: 16, damageMax: 20, defense: 4, dodge: 12, critChance: 5, xp: 22, goldMin: 10, goldMax: 16, chance: 70,
+const OURICO: MonsterSpawn = {
+  name: 'Ouriço', image: '🦔', hp: 75, damageMin: 9, damageMax: 12, defense: 3, dodge: 4, critChance: 3, xp: 20, goldMin: 8, goldMax: 13, chance: 40,
   drops: {
     common: [
-      { id: 'sword-coelho', name: 'Lâmina Ágil do Coelho', description: 'Uma lâmina leve e veloz.', type: 'weapon', rarity: 'common', icon: '⚔️', stats: { attack: 3 }, durability: 60, maxDurability: 60, levelRequirement: 2, upgradeLevel: 0 },
-      { id: 'armor-coelho', name: 'Peitoral Leve do Coelho', description: 'Um peitoral que não limita os movimentos.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 3 }, durability: 60, maxDurability: 60, levelRequirement: 2, upgradeLevel: 0 }
+      { id: 'spear-ourico', name: 'Lança de Espinhos', description: 'Uma lança coberta de espinhos afiados.', type: 'weapon', rarity: 'common', icon: '🗡️', stats: { attack: 3 }, durability: 70, maxDurability: 70, levelRequirement: 3, upgradeLevel: 0 },
+      { id: 'armor-ourico', name: 'Armadura Espinhosa', description: 'Uma armadura que protege e fere quem se aproxima.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 3 }, durability: 70, maxDurability: 70, levelRequirement: 3, upgradeLevel: 0 }
     ],
     rare: [
-      { id: 'sword-coelho-rare', name: 'Lâmina Ágil Reforçada', description: 'Uma versão superior da lâmina do coelho.', type: 'weapon', rarity: 'rare', icon: '⚔️', stats: { attack: 6 }, durability: 80, maxDurability: 80, levelRequirement: 4, upgradeLevel: 0 },
-      { id: 'armor-coelho-rare', name: 'Peitoral Leve Reforçado', description: 'Proteção aprimorada para exploradores.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 6 }, durability: 80, maxDurability: 80, levelRequirement: 4, upgradeLevel: 0 }
+      { id: 'spear-ourico-rare', name: 'Lança de Espinhos Reforçada', description: 'Espinhos mais longos e resistentes.', type: 'weapon', rarity: 'rare', icon: '🗡️', stats: { attack: 5 }, durability: 110, maxDurability: 110, levelRequirement: 4, upgradeLevel: 0 },
+      { id: 'armor-ourico-rare', name: 'Couraça de Espinhos', description: 'Uma couraça reforçada com placas espinhosas.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 5 }, durability: 110, maxDurability: 110, levelRequirement: 4, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const COELHO: MonsterSpawn = { 
+  name: 'Coelho', image: '🐇', hp: 90, damageMin: 11, damageMax: 15, defense: 3, dodge: 10, critChance: 5, xp: 24, goldMin: 14, goldMax: 20, chance: 70,
+  drops: {
+    common: [
+      { id: 'sword-coelho', name: 'Lâmina Ágil do Coelho', description: 'Uma lâmina leve e veloz.', type: 'weapon', rarity: 'common', icon: '⚔️', stats: { attack: 4 }, durability: 80, maxDurability: 80, levelRequirement: 5, upgradeLevel: 0 },
+      { id: 'armor-coelho', name: 'Peitoral Leve do Coelho', description: 'Um peitoral que não limita os movimentos.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 4 }, durability: 80, maxDurability: 80, levelRequirement: 5, upgradeLevel: 0 }
+    ],
+    rare: [
+      { id: 'sword-coelho-rare', name: 'Lâmina Ágil Reforçada', description: 'Uma versão superior da lâmina do coelho.', type: 'weapon', rarity: 'rare', icon: '⚔️', stats: { attack: 7 }, durability: 120, maxDurability: 120, levelRequirement: 6, upgradeLevel: 0 },
+      { id: 'armor-coelho-rare', name: 'Peitoral Leve Reforçado', description: 'Proteção aprimorada para exploradores.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 7 }, durability: 120, maxDurability: 120, levelRequirement: 6, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const GAMBA: MonsterSpawn = {
+  name: 'Gambá', image: '🦨', hp: 105, damageMin: 13, damageMax: 17, defense: 4, dodge: 6, critChance: 6, xp: 31, goldMin: 16, goldMax: 23, chance: 40,
+  drops: {
+    common: [
+      { id: 'dagger-gamba', name: 'Adaga Tóxica', description: 'Uma adaga com resíduos tóxicos.', type: 'weapon', rarity: 'common', icon: '🗡️', stats: { attack: 5 }, durability: 110, maxDurability: 110, levelRequirement: 6, upgradeLevel: 0 },
+      { id: 'cloak-gamba', name: 'Manto Resistente', description: 'Um manto que resiste a danos e sujeira.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 5 }, durability: 110, maxDurability: 110, levelRequirement: 6, upgradeLevel: 0 }
+    ],
+    rare: [
+      { id: 'blade-gamba-rare', name: 'Lâmina Venenosa', description: 'Uma lâmina refinada com essência de veneno.', type: 'weapon', rarity: 'rare', icon: '⚔️', stats: { attack: 8 }, durability: 160, maxDurability: 160, levelRequirement: 7, upgradeLevel: 0 },
+      { id: 'armor-gamba-rare', name: 'Armadura Antitóxica', description: 'Proteção projetada contra toxinas.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 8 }, durability: 160, maxDurability: 160, levelRequirement: 7, upgradeLevel: 0 }
     ]
   }
 };
 
 const ESQUILO: MonsterSpawn = { 
-  name: 'Esquilo', image: '🐿️', hp: 130, damageMin: 18, damageMax: 22, defense: 6, dodge: 15, critChance: 8, xp: 38, goldMin: 16, goldMax: 24, chance: 70,
+  name: 'Esquilo', image: '🐿️', hp: 120, damageMin: 15, damageMax: 19, defense: 5, dodge: 12, critChance: 8, xp: 38, goldMin: 20, goldMax: 28, chance: 70,
   drops: {
     common: [
-      { id: 'sword-esquilo', name: 'Espada Afiada do Esquilo', description: 'Uma espada balanceada.', type: 'weapon', rarity: 'common', icon: '🗡️', stats: { attack: 4 }, durability: 70, maxDurability: 70, levelRequirement: 3, upgradeLevel: 0 },
-      { id: 'armor-esquilo', name: 'Armadura de Couro Flexível', description: 'Proteção de couro de alta qualidade.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 4 }, durability: 70, maxDurability: 70, levelRequirement: 3, upgradeLevel: 0 }
+      { id: 'sword-esquilo', name: 'Espada Afiada do Esquilo', description: 'Uma espada balanceada.', type: 'weapon', rarity: 'common', icon: '🗡️', stats: { attack: 6 }, durability: 140, maxDurability: 140, levelRequirement: 8, upgradeLevel: 0 },
+      { id: 'armor-esquilo', name: 'Armadura de Couro Flexível', description: 'Proteção de couro de alta qualidade.', type: 'armor', rarity: 'common', icon: '🛡️', stats: { defense: 6 }, durability: 140, maxDurability: 140, levelRequirement: 8, upgradeLevel: 0 }
     ],
     rare: [
-      { id: 'sword-esquilo-rare', name: 'Espada Afiada Reforjada', description: 'Reforjada em chamas sagradas.', type: 'weapon', rarity: 'rare', icon: '🗡️', stats: { attack: 7 }, durability: 100, maxDurability: 100, levelRequirement: 5, upgradeLevel: 0 },
-      { id: 'armor-esquilo-rare', name: 'Armadura de Couro Tratado', description: 'Couro tratado para maior durabilidade.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 7 }, durability: 100, maxDurability: 100, levelRequirement: 5, upgradeLevel: 0 }
+      { id: 'sword-esquilo-rare', name: 'Espada Afiada Reforjada', description: 'Reforjada em chamas sagradas.', type: 'weapon', rarity: 'rare', icon: '🗡️', stats: { attack: 9 }, durability: 180, maxDurability: 180, levelRequirement: 9, upgradeLevel: 0 },
+      { id: 'armor-esquilo-rare', name: 'Armadura Flexível Reforçada', description: 'Proteção reforçada com couro flexível.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 9 }, durability: 180, maxDurability: 180, levelRequirement: 9, upgradeLevel: 0 }
+    ]
+  }
+};
+
+const RAPOSA: MonsterSpawn = {
+  name: 'Raposa', image: '🦊', hp: 145, damageMin: 18, damageMax: 23, defense: 7, dodge: 15, critChance: 10, xp: 46, goldMin: 25, goldMax: 34, chance: 30,
+  drops: {
+    rare: [
+      { id: 'blade-raposa-rare', name: 'Lâmina da Raposa', description: 'Uma lâmina ágil e mortal.', type: 'weapon', rarity: 'rare', icon: '⚔️', stats: { attack: 10 }, durability: 220, maxDurability: 220, levelRequirement: 10, upgradeLevel: 0 },
+      { id: 'armor-raposa-rare', name: 'Armadura da Raposa', description: 'Proteção leve e resistente.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 10 }, durability: 220, maxDurability: 220, levelRequirement: 10, upgradeLevel: 0 }
     ],
     epic: [
-      { id: 'sword-esquilo-epic', name: 'Lâmina Reluzente da Floresta', description: 'Uma lâmina lendária da floresta.', type: 'weapon', rarity: 'epic', icon: '✨', stats: { attack: 10 }, durability: 150, maxDurability: 150, levelRequirement: 7, upgradeLevel: 0 },
-      { id: 'armor-esquilo-epic', name: 'Armadura Selvagem Ancestral', description: 'Uma armadura usada por heróis antigos.', type: 'armor', rarity: 'epic', icon: '🌿', stats: { defense: 10 }, durability: 150, maxDurability: 150, levelRequirement: 7, upgradeLevel: 0 }
+      { id: 'blade-raposa-epic', name: 'Lâmina da Raposa Sombria', description: 'Uma lâmina envolta em sombras.', type: 'weapon', rarity: 'epic', icon: '🗡️', stats: { attack: 12 }, durability: 280, maxDurability: 280, levelRequirement: 11, upgradeLevel: 0 },
+      { id: 'armor-raposa-epic', name: 'Manto da Raposa Sombria', description: 'Um manto que confunde os olhos inimigos.', type: 'armor', rarity: 'epic', icon: '🛡️', stats: { defense: 12 }, durability: 280, maxDurability: 280, levelRequirement: 11, upgradeLevel: 0 }
     ]
   }
 };
 
 const ESQUILO_ELITE: MonsterSpawn = { 
-  name: 'Esquilo Elite', image: '🐿️', hp: 160, damageMin: 20, damageMax: 26, defense: 8, dodge: 18, critChance: 12, xp: 60, goldMin: 22, goldMax: 32, chance: 70,
+  name: 'Esquilo Elite', image: '🐿️', hp: 155, damageMin: 21, damageMax: 26, defense: 8, dodge: 16, critChance: 12, xp: 60, goldMin: 28, goldMax: 38, chance: 70,
   drops: {
-    rare: [
-      { id: 'sword-elite-rare', name: 'Espada do Guardião da Floresta', description: 'Arma cerimonial dos guardiões.', type: 'weapon', rarity: 'rare', icon: '⚔️', stats: { attack: 8 }, durability: 120, maxDurability: 120, levelRequirement: 6, upgradeLevel: 0 },
-      { id: 'armor-elite-rare', name: 'Armadura do Guardião', description: 'Usada pela elite da floresta.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 8 }, durability: 120, maxDurability: 120, levelRequirement: 6, upgradeLevel: 0 }
-    ],
     epic: [
-      { id: 'sword-elite-epic', name: 'Espada Épica da Floresta Antiga', description: 'Uma espada imbuída de magia ancestral.', type: 'weapon', rarity: 'epic', icon: '💎', stats: { attack: 10 }, durability: 180, maxDurability: 180, levelRequirement: 8, upgradeLevel: 0 },
-      { id: 'armor-elite-epic', name: 'Armadura Épica da Floresta', description: 'Forjada no coração da floresta.', type: 'armor', rarity: 'epic', icon: '🌲', stats: { defense: 10 }, durability: 180, maxDurability: 180, levelRequirement: 8, upgradeLevel: 0 }
+      { id: 'sword-elite-epic', name: 'Lâmina Reluzente da Floresta', description: 'Uma lâmina rara que brilha em combate.', type: 'weapon', rarity: 'epic', icon: '✨', stats: { attack: 13 }, durability: 260, maxDurability: 260, levelRequirement: 12, upgradeLevel: 0 },
+      { id: 'armor-elite-epic', name: 'Armadura Selvagem Ancestral', description: 'Armadura ancestral usada por guerreiros da floresta.', type: 'armor', rarity: 'epic', icon: '🌿', stats: { defense: 13 }, durability: 260, maxDurability: 260, levelRequirement: 12, upgradeLevel: 0 }
     ]
   }
 };
 
 const RATO_GIGANTE: MonsterSpawn = { 
-  name: 'Rato Gigante', image: '🐀', hp: 190, damageMin: 22, damageMax: 28, defense: 9, dodge: 8, critChance: 10, xp: 75, goldMin: 30, goldMax: 40, chance: 5,
+  name: 'Rato Gigante', image: '🐀', hp: 180, damageMin: 25, damageMax: 30, defense: 7, dodge: 8, critChance: 10, xp: 75, goldMin: 35, goldMax: 48, chance: 7.5,
   drops: {
-    rare: [
-      { id: 'axe-gigante-rare', name: 'Machado Pesado do Rato Gigante', description: 'Um machado enorme e desbalanceado.', type: 'weapon', rarity: 'rare', icon: '🪓', stats: { attack: 8 }, durability: 110, maxDurability: 110, levelRequirement: 6, upgradeLevel: 0 },
-      { id: 'armor-gigante-rare', name: 'Couraça Espessa', description: 'Feita da pele de um rato gigante.', type: 'armor', rarity: 'rare', icon: '🛡️', stats: { defense: 8 }, durability: 110, maxDurability: 110, levelRequirement: 6, upgradeLevel: 0 }
-    ],
     epic: [
-      { id: 'axe-gigante-epic', name: 'Machado Brutal Colossal', description: 'Apenas os mais fortes conseguem empunhar.', type: 'weapon', rarity: 'epic', icon: '🪓', stats: { attack: 10 }, durability: 160, maxDurability: 160, levelRequirement: 8, upgradeLevel: 0 },
-      { id: 'armor-gigante-epic', name: 'Couraça de Guerra', description: 'Uma couraça reforçada para combate intenso.', type: 'armor', rarity: 'epic', icon: '🧥', stats: { defense: 10 }, durability: 160, maxDurability: 160, levelRequirement: 8, upgradeLevel: 0 }
+      { id: 'axe-gigante-epic', name: 'Machado do Rato Gigante', description: 'Um machado brutal feito para esmagar.', type: 'weapon', rarity: 'epic', icon: '🪓', stats: { attack: 14 }, durability: 300, maxDurability: 300, levelRequirement: 13, upgradeLevel: 0 },
+      { id: 'armor-gigante-epic', name: 'Couraça do Rato Gigante', description: 'Uma couraça pesada e resistente.', type: 'armor', rarity: 'epic', icon: '🛡️', stats: { defense: 14 }, durability: 300, maxDurability: 300, levelRequirement: 13, upgradeLevel: 0 }
     ]
   }
 };
 
 const URSO_ANCESTRAL: MonsterSpawn = { 
-  name: 'Urso Ancestral', image: '🐻', hp: 230, damageMin: 26, damageMax: 32, defense: 10, dodge: 5, critChance: 18, xp: 120, goldMin: 80, goldMax: 120, chance: 100,
+  name: 'Urso Ancestral', image: '🐻', hp: 230, damageMin: 30, damageMax: 36, defense: 10, dodge: 5, critChance: 18, xp: 110, goldMin: 80, goldMax: 120, chance: 100,
   drops: {
     epic: [
-      { id: 'sword-urso-epic', name: 'Espada do Urso Ancestral', description: 'Uma lâmina pesada e brutal.', type: 'weapon', rarity: 'epic', icon: '🗡️', stats: { attack: 11 }, durability: 200, maxDurability: 200, levelRequirement: 9, upgradeLevel: 0 },
-      { id: 'armor-urso-epic', name: 'Armadura do Urso Ancestral', description: 'Uma armadura feita de ossos e couro.', type: 'armor', rarity: 'epic', icon: '🛡️', stats: { defense: 11 }, durability: 200, maxDurability: 200, levelRequirement: 9, upgradeLevel: 0 }
-    ],
-    legendary: [
-      { id: 'sword-urso-legend', name: 'Lâmina Primordial', description: 'Uma arma de tempos esquecidos.', type: 'weapon', rarity: 'legendary', icon: '🔥', stats: { attack: 14 }, durability: 300, maxDurability: 300, levelRequirement: 12, upgradeLevel: 0 },
-      { id: 'armor-urso-legend', name: 'Armadura do Titã da Floresta', description: 'O ápice da defesa física.', type: 'armor', rarity: 'legendary', icon: '🏰', stats: { defense: 14 }, durability: 300, maxDurability: 300, levelRequirement: 12, upgradeLevel: 0 }
+      { id: 'sword-urso-epic', name: 'Espada do Urso Ancestral', description: 'Uma lâmina pesada e brutal.', type: 'weapon', rarity: 'epic', icon: '🗡️', stats: { attack: 16 }, durability: 360, maxDurability: 360, levelRequirement: 15, upgradeLevel: 0 },
+      { id: 'armor-urso-epic', name: 'Armadura do Urso Ancestral', description: 'Uma armadura feita de ossos e couro.', type: 'armor', rarity: 'epic', icon: '🛡️', stats: { defense: 16 }, durability: 360, maxDurability: 360, levelRequirement: 15, upgradeLevel: 0 }
     ]
   }
 };
@@ -620,30 +646,33 @@ const MAP1_STAGES: StageData[] = [
   {
     stage: 1,
     spawns: [
-      { ...RATO_PEQUENO, chance: 60 },
-      { ...RATO, chance: 40 },
+      { ...RATO_PEQUENO, chance: 70 },
+      { ...RATO, chance: 30 },
     ],
   },
   {
     stage: 2,
     spawns: [
-      { ...COELHO, chance: 70 },
-      { ...RATO, chance: 30, drops: { common: RATO.drops?.common } }, // Stage 2 Rato: only common drops
+      { ...RATO, chance: 30, drops: { common: RATO.drops?.common } },
+      { ...OURICO, chance: 40 },
+      { ...COELHO, chance: 30 },
     ],
   },
   {
     stage: 3,
     spawns: [
-      { ...ESQUILO, chance: 70 },
       { ...COELHO, chance: 30 },
+      { ...GAMBA, chance: 40 },
+      { ...ESQUILO, chance: 30 },
     ],
   },
   {
     stage: 4,
     spawns: [
-      { ...ESQUILO_ELITE, chance: 70 },
-      { ...RATO_GIGANTE, chance: 5 },
-      { ...ESQUILO, chance: 25 },
+      { ...ESQUILO, chance: 42.5 },
+      { ...RAPOSA, chance: 30 },
+      { ...ESQUILO_ELITE, chance: 20 },
+      { ...RATO_GIGANTE, chance: 7.5 },
     ],
   },
   {
@@ -1793,6 +1822,8 @@ export interface CombatState {
   specialCooldown: number;
   maxSpecialCooldown: number;
   logs: string[];
+  playerBleedTurns?: number;
+  playerPoisonTurns?: number;
   equippedSpecialAttack?: SpecialAttack;
   specialAttackCooldown: number;
   lastDamageDealt?: number; // For animation

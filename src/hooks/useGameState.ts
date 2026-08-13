@@ -2999,6 +2999,8 @@ export function useGameState() {
           specialCooldown: 0,
           maxSpecialCooldown: equippedSpecial ? equippedSpecial.maxCooldown : 10,
           logs: [`⚔️ Combate iniciado!`, `👹 ${enemyName} apareceu!`],
+          playerBleedTurns: 0,
+          playerPoisonTurns: 0,
           equippedSpecialAttack: equippedSpecial,
           specialAttackCooldown: 0,
           showFloorComplete: false,
@@ -3025,6 +3027,50 @@ export function useGameState() {
       const enemyName = spawnedEnemy?.name || 'Inimigo';
       const enemyDodgeChance = (spawnedEnemy?.dodge || 2) / 100; // Convert percentage to decimal
 
+      const bleedTurns = prev.combat.playerBleedTurns || 0;
+      const poisonTurns = prev.combat.playerPoisonTurns || 0;
+      let dotDamage = 0;
+      let nextBleedTurns = bleedTurns;
+      let nextPoisonTurns = poisonTurns;
+      const dotLogs: string[] = [];
+
+      if (bleedTurns > 0) {
+        dotDamage += 3;
+        nextBleedTurns = bleedTurns - 1;
+        dotLogs.push('🩸 O sangramento causou 3 de dano!');
+      }
+      if (poisonTurns > 0) {
+        dotDamage += 3;
+        nextPoisonTurns = poisonTurns - 1;
+        dotLogs.push('☠️ O veneno causou 3 de dano!');
+      }
+
+      const playerHpAfterDot = Math.max(0, prev.combat.playerHp - dotDamage);
+      const damageTakenAfterDot = prev.combat.damageTakenInCurrentBattle + dotDamage;
+
+      if (playerHpAfterDot <= 0) {
+        return {
+          ...prev,
+          character: {
+            ...prev.character,
+            hp: 0,
+            stats: {
+              ...prev.character.stats,
+              totalDamageTaken: prev.character.stats.totalDamageTaken + dotDamage,
+            },
+          },
+          combat: {
+            ...prev.combat,
+            playerHp: 0,
+            isActive: false,
+            logs: [...prev.combat.logs, ...dotLogs, `💀 DERROTA!`].filter(Boolean),
+            damageTakenInCurrentBattle: damageTakenAfterDot,
+            playerBleedTurns: nextBleedTurns,
+            playerPoisonTurns: nextPoisonTurns,
+          },
+        };
+      }
+
       // Check if enemy dodges
       const bossDodged = attemptDodge(enemyDodgeChance);
       let playerDodged = attemptDodge(prev.character.stats.totalDodgeChance);
@@ -3045,7 +3091,7 @@ export function useGameState() {
       let newPlayerAttackRemainder = prev.combat.playerAttackRemainder || 0;
 
       if (bossDodged) {
-        log = `💨 ${enemyName} esquivou!`;
+        log = enemyName === 'Raposa' ? `💨 A Raposa desviou do seu ataque!` : `💨 ${enemyName} esquivou!`;
       } else {
         // Accumulate fractional attack
         const effectiveAttack = (prev.character.totalStats.attack * attackMult) + newPlayerAttackRemainder;
@@ -3113,7 +3159,19 @@ export function useGameState() {
         }
       }
 
-      const newPlayerHp = Math.min(prev.combat.maxPlayerHp, Math.max(0, prev.combat.playerHp - bossDamage + petHeal));
+      let statusApplyLog = '';
+      if (newBossHp > 0 && bossDamage > 0 && !playerDodged) {
+        if (enemyName === 'Ouriço' && Math.random() < 0.2) {
+          nextBleedTurns = 2;
+          statusApplyLog = '🩸 Você foi furado pelo Ouriço e está sangrando!';
+        }
+        if (enemyName === 'Gambá' && Math.random() < 0.2) {
+          nextPoisonTurns = 3;
+          statusApplyLog = '☠️ O Gambá liberou sua toxina! Você foi envenenado!';
+        }
+      }
+
+      const newPlayerHp = Math.min(prev.combat.maxPlayerHp, Math.max(0, playerHpAfterDot - bossDamage + petHeal));
       
       // PET ACTION: Check for new pet trigger
       let nextPetAction: any = undefined;
@@ -3138,7 +3196,7 @@ export function useGameState() {
       }
 
       // Track damage taken in this battle for post-fight lobby penalty
-      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage - petHeal;
+      const newDamageTakenInBattle = damageTakenAfterDot + bossDamage - petHeal;
       
       // Reduce special attack cooldown
       const newSpecialCooldown = Math.max(0, prev.combat.specialAttackCooldown - 1);
@@ -3216,13 +3274,15 @@ export function useGameState() {
             playerHp: finalLobbyHp,
             bossHp: 0,
             isActive: false,
-            logs: [...prev.combat.logs, log, `🎉 Vitória! +${xpReward} XP, +${goldReward} 🪙`, dropLog].filter(Boolean),
+            logs: [...prev.combat.logs, ...dotLogs, log, statusApplyLog, `🎉 Vitória! +${xpReward} XP, +${goldReward} 🪙`, dropLog].filter(Boolean),
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
             damageTakenInCurrentBattle: newDamageTakenInBattle,
             droppedItem: droppedItem,
             xpReward,
             goldReward,
+            playerBleedTurns: nextBleedTurns,
+            playerPoisonTurns: nextPoisonTurns,
           },
         };
       }
@@ -3247,7 +3307,7 @@ export function useGameState() {
             stats: {
               ...prev.character.stats,
               totalDamageDealt: prev.character.stats.totalDamageDealt + damage,
-              totalDamageTaken: prev.character.stats.totalDamageTaken + bossDamage,
+              totalDamageTaken: prev.character.stats.totalDamageTaken + dotDamage + bossDamage,
               criticalHits: prev.character.stats.criticalHits + (playerCrit ? 1 : 0),
               dodges: prev.character.stats.dodges + (playerDodged ? 1 : 0),
             },
@@ -3256,10 +3316,12 @@ export function useGameState() {
             ...prev.combat,
             playerHp: 0,
             isActive: false,
-            logs: [...prev.combat.logs, log, bossLog, `💀 DERROTA!`],
+            logs: [...prev.combat.logs, ...dotLogs, log, bossLog, statusApplyLog, `💀 DERROTA!`].filter(Boolean),
             specialAttackCooldown: newSpecialCooldown,
             lastDamageDealt: damage,
             damageTakenInCurrentBattle: newDamageTakenInBattle,
+            playerBleedTurns: nextBleedTurns,
+            playerPoisonTurns: nextPoisonTurns,
           },
         };
       }
@@ -3278,7 +3340,7 @@ export function useGameState() {
           stats: {
             ...prev.character.stats,
             totalDamageDealt: prev.character.stats.totalDamageDealt + damage,
-            totalDamageTaken: prev.character.stats.totalDamageTaken + bossDamage,
+            totalDamageTaken: prev.character.stats.totalDamageTaken + dotDamage + bossDamage,
             criticalHits: prev.character.stats.criticalHits + (playerCrit ? 1 : 0),
             dodges: prev.character.stats.dodges + (playerDodged ? 1 : 0),
           },
@@ -3288,7 +3350,7 @@ export function useGameState() {
           playerHp: newPlayerHp,
           bossHp: newBossHp,
           turn: prev.combat.turn + 1,
-          logs: [...prev.combat.logs, log, bossLog],
+          logs: [...prev.combat.logs, ...dotLogs, log, bossLog, statusApplyLog].filter(Boolean),
           specialAttackCooldown: newSpecialCooldown,
           lastDamageDealt: damage,
           damageTakenInCurrentBattle: newDamageTakenInBattle,
@@ -3298,6 +3360,8 @@ export function useGameState() {
           nextPlayerAttackCrit: nextCrit,
           nextPlayerHealMultiplier: nextHeal,
           nextPlayerDodge: nextDodge,
+          playerBleedTurns: nextBleedTurns,
+          playerPoisonTurns: nextPoisonTurns,
         },
       };
     });
@@ -3319,6 +3383,50 @@ export function useGameState() {
       const spawnedEnemy = currentNode?.currentEnemy;
       const enemyName = spawnedEnemy?.name || 'Inimigo';
       const enemyDodgeChance = (spawnedEnemy?.dodge || 2) / 100;
+
+      const bleedTurns = prev.combat.playerBleedTurns || 0;
+      const poisonTurns = prev.combat.playerPoisonTurns || 0;
+      let dotDamage = 0;
+      let nextBleedTurns = bleedTurns;
+      let nextPoisonTurns = poisonTurns;
+      const dotLogs: string[] = [];
+
+      if (bleedTurns > 0) {
+        dotDamage += 3;
+        nextBleedTurns = bleedTurns - 1;
+        dotLogs.push('🩸 O sangramento causou 3 de dano!');
+      }
+      if (poisonTurns > 0) {
+        dotDamage += 3;
+        nextPoisonTurns = poisonTurns - 1;
+        dotLogs.push('☠️ O veneno causou 3 de dano!');
+      }
+
+      const playerHpAfterDot = Math.max(0, prev.combat.playerHp - dotDamage);
+      const damageTakenAfterDot = prev.combat.damageTakenInCurrentBattle + dotDamage;
+
+      if (playerHpAfterDot <= 0) {
+        return {
+          ...prev,
+          character: {
+            ...prev.character,
+            hp: 0,
+            stats: {
+              ...prev.character.stats,
+              totalDamageTaken: prev.character.stats.totalDamageTaken + dotDamage,
+            },
+          },
+          combat: {
+            ...prev.combat,
+            playerHp: 0,
+            isActive: false,
+            logs: [...prev.combat.logs, ...dotLogs, `💀 DERROTA!`].filter(Boolean),
+            damageTakenInCurrentBattle: damageTakenAfterDot,
+            playerBleedTurns: nextBleedTurns,
+            playerPoisonTurns: nextPoisonTurns,
+          },
+        };
+      }
 
       const bossDodged = attemptDodge(enemyDodgeChance * 0.5); // Harder to dodge special
       const buffType = prev.sanctuaryBuff?.type;
@@ -3395,7 +3503,19 @@ export function useGameState() {
         }
       }
 
-      const newPlayerHp = Math.min(prev.combat.maxPlayerHp, Math.max(0, prev.combat.playerHp - bossDamage + petHeal));
+      let statusApplyLog = '';
+      if (newBossHp > 0 && bossDamage > 0 && !playerDodged) {
+        if (enemyName === 'Ouriço' && Math.random() < 0.2) {
+          nextBleedTurns = 2;
+          statusApplyLog = '🩸 Você foi furado pelo Ouriço e está sangrando!';
+        }
+        if (enemyName === 'Gambá' && Math.random() < 0.2) {
+          nextPoisonTurns = 3;
+          statusApplyLog = '☠️ O Gambá liberou sua toxina! Você foi envenenado!';
+        }
+      }
+
+      const newPlayerHp = Math.min(prev.combat.maxPlayerHp, Math.max(0, playerHpAfterDot - bossDamage + petHeal));
 
       // PET ACTION: Check for new pet trigger
       let nextPetAction: any = undefined;
@@ -3420,7 +3540,7 @@ export function useGameState() {
       }
 
       // Track damage taken in this battle for post-fight lobby penalty
-      const newDamageTakenInBattle = prev.combat.damageTakenInCurrentBattle + bossDamage - petHeal;
+      const newDamageTakenInBattle = damageTakenAfterDot + bossDamage - petHeal;
 
       // Set special attack cooldown
       const newSpecialCooldown = equippedSpecial.maxCooldown;
