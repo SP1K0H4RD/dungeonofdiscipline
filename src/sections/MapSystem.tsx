@@ -4,6 +4,7 @@ import {
   Lock, 
   Crown, 
   ChevronLeft, 
+  ChevronRight,
   Skull, 
   Swords, 
   AlertTriangle, 
@@ -12,9 +13,7 @@ import {
   ScrollText, 
   Check, 
   ChevronUp, 
-  Eye, 
-  Package,
-  Map as MapIcon
+  Package
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -37,12 +36,7 @@ const mapThemes: Record<MapId, {
   line1: string;
   line2: string;
   color: string;
-  bgGradient: string;
   borderColor: string;
-  mapBg: string;
-  glowColor: string;
-  pathColor: string;
-  nodeGlow: string;
   bgImage: string;
 }> = {
   map1: {
@@ -50,12 +44,7 @@ const mapThemes: Record<MapId, {
     line1: 'FLORESTA',
     line2: 'SOMBRIA',
     color: '#22c55e',
-    bgGradient: 'from-green-950/80 via-emerald-950/60 to-black',
-    borderColor: 'border-green-500/30',
-    mapBg: 'radial-gradient(ellipse at 30% 70%, rgba(34,197,94,0.15) 0%, transparent 60%)',
-    glowColor: 'rgba(34,197,94,0.25)',
-    pathColor: 'rgba(34,197,94,0.6)',
-    nodeGlow: 'rgba(34,197,94,0.4)',
+    borderColor: 'border-green-500/40',
     bgImage: '/dark_forest_bg.jpg',
   },
   map2: {
@@ -63,12 +52,7 @@ const mapThemes: Record<MapId, {
     line1: 'CRIPTA',
     line2: 'ANTIGA',
     color: '#94a3b8',
-    bgGradient: 'from-slate-950/80 via-gray-950/60 to-black',
-    borderColor: 'border-slate-500/30',
-    mapBg: 'radial-gradient(ellipse at 40% 60%, rgba(148,163,184,0.15) 0%, transparent 60%)',
-    glowColor: 'rgba(148,163,184,0.25)',
-    pathColor: 'rgba(148,163,184,0.6)',
-    nodeGlow: 'rgba(148,163,184,0.4)',
+    borderColor: 'border-slate-500/40',
     bgImage: '/ancient_crypt_bg.jpg',
   },
   map3: {
@@ -76,12 +60,7 @@ const mapThemes: Record<MapId, {
     line1: 'VULCÃO',
     line2: 'ARDENTE',
     color: '#ef4444',
-    bgGradient: 'from-red-950/80 via-orange-950/60 to-black',
-    borderColor: 'border-red-500/30',
-    mapBg: 'radial-gradient(ellipse at 50% 80%, rgba(239,68,68,0.15) 0%, transparent 60%)',
-    glowColor: 'rgba(239,68,68,0.25)',
-    pathColor: 'rgba(249,115,22,0.6)',
-    nodeGlow: 'rgba(239,68,68,0.4)',
+    borderColor: 'border-red-500/40',
     bgImage: '/lava_volcano_bg.jpg',
   },
   map4: {
@@ -89,12 +68,7 @@ const mapThemes: Record<MapId, {
     line1: 'ABISMO',
     line2: 'INFERNAL',
     color: '#a855f7',
-    bgGradient: 'from-purple-950/80 via-violet-950/60 to-black',
-    borderColor: 'border-purple-500/30',
-    mapBg: 'radial-gradient(ellipse at 60% 50%, rgba(168,85,247,0.15) 0%, transparent 60%)',
-    glowColor: 'rgba(168,85,247,0.25)',
-    pathColor: 'rgba(168,85,247,0.6)',
-    nodeGlow: 'rgba(168,85,247,0.4)',
+    borderColor: 'border-purple-500/40',
     bgImage: '/void_abyss_bg.jpg',
   },
   map5: {
@@ -102,12 +76,7 @@ const mapThemes: Record<MapId, {
     line1: 'NINHO DO',
     line2: 'DRAGÃO',
     color: '#f59e0b',
-    bgGradient: 'from-amber-950/80 via-yellow-950/60 to-black',
-    borderColor: 'border-amber-500/30',
-    mapBg: 'radial-gradient(ellipse at 40% 40%, rgba(245,158,11,0.15) 0%, transparent 60%)',
-    glowColor: 'rgba(245,158,11,0.25)',
-    pathColor: 'rgba(245,158,11,0.6)',
-    nodeGlow: 'rgba(245,158,11,0.4)',
+    borderColor: 'border-amber-500/40',
     bgImage: '/dragon_nest_bg.jpg',
   },
 };
@@ -132,6 +101,8 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
 
   const currentMap = maps[selectedMapId];
   const theme = mapThemes[selectedMapId];
+  const mapIds: MapId[] = ['map1', 'map2', 'map3', 'map4', 'map5'];
+  const currentMapIndex = mapIds.indexOf(selectedMapId);
 
   useEffect(() => {
     const firstAvailable = currentMap.nodes.find(n => n.isUnlocked && !n.isCompleted);
@@ -143,8 +114,6 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
     if (!selectedNodeId) return currentMap.nodes.find(n => n.isUnlocked) || currentMap.nodes[0] || null;
     return currentMap.nodes.find(n => n.id === selectedNodeId) || currentMap.nodes[0] || null;
   }, [currentMap.nodes, selectedNodeId]);
-
-  const mapIds: MapId[] = ['map1', 'map2', 'map3', 'map4', 'map5'];
 
   const handleSelectStage = (node: MapNode) => {
     if (!node.isUnlocked) return;
@@ -163,18 +132,14 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
     onEnterCombat(selectedMapId, selectedNode.id);
   };
 
-  const completedStages = currentMap.nodes.filter(n => n.isCompleted).length;
-  const totalStages = Math.max(1, currentMap.nodes.length);
-  const progressPct = Math.round((completedStages / totalStages) * 100);
-
-  // Exact fixed coordinates matching the winding path in the mockup image
+  // Node positions along a smooth organic curved trail
   const nodePositions = useMemo(() => {
     return [
-      { nodeId: currentMap.nodes[0]?.id || 'node1', x: 20, y: 54 },
-      { nodeId: currentMap.nodes[1]?.id || 'node2', x: 38, y: 52 },
-      { nodeId: currentMap.nodes[2]?.id || 'node3', x: 54, y: 48 },
-      { nodeId: currentMap.nodes[3]?.id || 'node4', x: 68, y: 41 },
-      { nodeId: currentMap.nodes[4]?.id || 'node5', x: 84, y: 30 }, // Boss Final node
+      { nodeId: currentMap.nodes[0]?.id || 'node1', x: 18, y: 64 },
+      { nodeId: currentMap.nodes[1]?.id || 'node2', x: 36, y: 54 },
+      { nodeId: currentMap.nodes[2]?.id || 'node3', x: 53, y: 46 },
+      { nodeId: currentMap.nodes[3]?.id || 'node4', x: 69, y: 38 },
+      { nodeId: currentMap.nodes[4]?.id || 'node5', x: 85, y: 28 }, // Boss Final node
     ];
   }, [currentMap.nodes]);
 
@@ -197,10 +162,11 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-[#0a0a0f] overflow-y-auto"
     >
-      <div className="max-w-md mx-auto min-h-screen px-3 py-3 flex flex-col space-y-3 pb-12">
+      <div className="max-w-md mx-auto min-h-screen px-3 py-3 flex flex-col space-y-3 pb-8">
         
         {/* ═══════ HEADER ═══════ */}
         <div className="flex items-center justify-between pt-1 pb-1">
+          {/* Voltar */}
           <button
             onClick={onExit}
             className="flex items-center gap-0.5 text-gray-300 hover:text-white transition-colors text-sm font-medium"
@@ -209,21 +175,47 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
             <span>Voltar</span>
           </button>
 
-          {/* Title Stacked (2 Lines) */}
-          <div className="text-center">
-            <h1
-              className="text-xl sm:text-2xl font-black font-cinzel tracking-wider uppercase leading-tight drop-shadow-[0_0_12px_rgba(34,197,94,0.4)]"
-              style={{ color: theme.color }}
+          {/* Title Stacked with Map Switcher Arrows (< Title >) */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                if (currentMapIndex > 0) setSelectedMapId(mapIds[currentMapIndex - 1]);
+              }}
+              disabled={currentMapIndex === 0}
+              className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Mapa Anterior"
             >
-              {theme.line1}<br />{theme.line2}
-            </h1>
-            <div className="flex items-center justify-center gap-1.5 mt-0.5">
-              <div className="w-5 h-[1px] bg-[#2d2d44]" />
-              <span className="text-[10px] text-gray-400 font-mono tracking-widest uppercase">
-                Mapa {selectedMapId.replace('map', '')} de 5
-              </span>
-              <div className="w-5 h-[1px] bg-[#2d2d44]" />
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <div className="text-center">
+              <h1
+                className="text-xl sm:text-2xl font-black font-cinzel tracking-wider uppercase leading-tight drop-shadow-[0_0_12px_rgba(34,197,94,0.4)]"
+                style={{ color: theme.color }}
+              >
+                {theme.line1}<br />{theme.line2}
+              </h1>
+              <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                <div className="w-4 h-[1px] bg-[#2d2d44]" />
+                <span className="text-[10px] text-gray-400 font-mono tracking-widest uppercase">
+                  Mapa {selectedMapId.replace('map', '')} de 5
+                </span>
+                <div className="w-4 h-[1px] bg-[#2d2d44]" />
+              </div>
             </div>
+
+            <button
+              onClick={() => {
+                if (currentMapIndex < mapIds.length - 1 && maps[mapIds[currentMapIndex + 1]]?.isUnlocked) {
+                  setSelectedMapId(mapIds[currentMapIndex + 1]);
+                }
+              }}
+              disabled={currentMapIndex === mapIds.length - 1 || !maps[mapIds[currentMapIndex + 1]]?.isUnlocked}
+              className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Próximo Mapa"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Missões Button */}
@@ -297,186 +289,164 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
 
         {/* ═══════ MAP CANVAS CARD ═══════ */}
         <div className={cn('rounded-2xl border overflow-hidden relative shadow-2xl bg-[#0e0e16]', theme.borderColor)}>
-          <div className="p-3">
-            {/* Progress Header (Without chest counter) */}
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[10px] font-black text-green-400 uppercase tracking-widest font-cinzel">
-                PROGRESSO DO MAPA
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs font-bold text-green-400 font-mono">{progressPct}%</span>
-              <div className="flex-1 h-2 bg-black/70 rounded-full overflow-hidden border border-white/10">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]" 
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-            </div>
+          {/* Map Canvas Background (NO PROGRESS BAR) */}
+          <div className="relative h-[290px] sm:h-[320px] rounded-xl overflow-hidden bg-cover bg-center" style={{ backgroundImage: `url(${theme.bgImage})` }}>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/50 pointer-events-none" />
 
-            {/* Map Canvas Background */}
-            <div className="relative h-[270px] sm:h-[300px] rounded-xl border border-white/10 overflow-hidden bg-cover bg-center" style={{ backgroundImage: `url(${theme.bgImage})` }}>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60 pointer-events-none" />
+            {/* Smooth Winding Dashed Trail SVG */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path
+                d="M 18 64 Q 28 60, 36 54 T 53 46 T 69 38 T 85 28"
+                fill="none"
+                stroke="rgba(234, 179, 8, 0.75)"
+                strokeWidth="2.5"
+                strokeDasharray="5 3"
+                strokeLinecap="round"
+              />
+            </svg>
 
-              {/* Dashed Road Pathway SVG */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path
-                  d="M 20 54 C 28 53, 30 52, 38 52 C 46 51, 48 49, 54 48 C 60 46, 62 43, 68 41 C 74 39, 78 33, 84 30"
-                  fill="none"
-                  stroke="rgba(217, 180, 110, 0.7)"
-                  strokeWidth="3"
-                  strokeDasharray="6 4"
-                  strokeLinecap="round"
-                />
-              </svg>
+            {/* STAGE NODES ON MAP */}
+            {currentMap.nodes.map((node, idx) => {
+              const pos = nodePositions[idx] || { x: 20 + idx * 15, y: 50 };
+              const isSelected = selectedNode?.id === node.id;
+              const isLocked = !node.isUnlocked;
+              const isCompleted = node.isCompleted && node.isUnlocked;
+              const isBoss = node.isBoss;
 
-              {/* STAGE NODES ON MAP */}
-              {currentMap.nodes.map((node, idx) => {
-                const pos = nodePositions[idx] || { x: 20 + idx * 15, y: 50 };
-                const isSelected = selectedNode?.id === node.id;
-                const isLocked = !node.isUnlocked;
-                const isCompleted = node.isCompleted && node.isUnlocked;
-                const isBoss = node.isBoss;
+              return (
+                <div
+                  key={node.id}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 select-none z-10"
+                  style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                >
+                  {isBoss ? (
+                    /* BOSS FINAL PORTAL NODE */
+                    <button
+                      onClick={() => handleSelectStage(node)}
+                      disabled={isLocked}
+                      className={cn(
+                        "flex flex-col items-center group transition-transform duration-200 relative",
+                        isLocked ? "cursor-not-allowed opacity-75" : "cursor-pointer hover:scale-105",
+                        isSelected && "scale-110 z-30"
+                      )}
+                    >
+                      {/* Selection Arrow for Boss */}
+                      {isSelected && (
+                        <motion.div
+                          animate={{ y: [0, -4, 0] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="absolute -top-6 text-cyan-400 flex flex-col items-center"
+                        >
+                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+                        </motion.div>
+                      )}
 
-                return (
-                  <div
-                    key={node.id}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 select-none"
-                    style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-                  >
-                    {isBoss ? (
-                      /* BOSS FINAL PORTAL NODE */
+                      <div
+                        className={cn(
+                          "w-14 h-18 rounded-xl border-2 flex flex-col items-center justify-center p-1 relative overflow-hidden backdrop-blur-md transition-all shadow-xl",
+                          isSelected && "border-cyan-300 bg-cyan-950/90 ring-4 ring-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.9)] text-cyan-100",
+                          !isSelected && isCompleted && "border-emerald-400 bg-emerald-950/80 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.5)]",
+                          !isSelected && !isCompleted && !isLocked && "border-purple-400 bg-purple-950/80 text-purple-200 ring-2 ring-purple-400/40",
+                          isLocked && "border-purple-900/60 bg-[#120a1c]/90 text-purple-400/60"
+                        )}
+                      >
+                        <Crown className={cn("w-4 h-4 mb-0.5", isSelected ? "text-cyan-200" : isLocked ? "text-purple-500/50" : "text-purple-300")} />
+                        <span className="text-[7.5px] font-black uppercase font-cinzel text-center leading-tight">
+                          BOSS<br />FINAL
+                        </span>
+                        {isLocked ? (
+                          <div className="mt-0.5 bg-black/60 rounded-full p-0.5 border border-purple-500/30">
+                            <Lock className="w-2.5 h-2.5 text-purple-400/80" />
+                          </div>
+                        ) : isCompleted ? (
+                          <Check className="w-3 h-3 text-emerald-400 mt-0.5" />
+                        ) : null}
+                      </div>
+                    </button>
+                  ) : (
+                    /* REGULAR COMPACT STAGE NODE (1, 2, 3, 4) */
+                    <div className="flex flex-col items-center relative">
+                      {/* Selection Arrow directly pointing to active node */}
+                      {isSelected && (
+                        <motion.div
+                          animate={{ y: [0, -4, 0] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="absolute -top-6 text-cyan-400 flex flex-col items-center"
+                        >
+                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+                        </motion.div>
+                      )}
+
                       <button
                         onClick={() => handleSelectStage(node)}
                         disabled={isLocked}
                         className={cn(
-                          "flex flex-col items-center group transition-transform duration-200",
-                          isLocked ? "cursor-not-allowed" : "cursor-pointer hover:scale-105"
+                          "w-10 h-10 rounded-full border-2 flex items-center justify-center font-black text-base transition-all duration-200 shadow-lg",
+                          
+                          /* Selected State (Highlighted in Electric Cyan) */
+                          isSelected && "border-cyan-300 bg-cyan-500 text-black font-black ring-4 ring-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.9)] scale-110 z-30",
+
+                          /* Completed State (Green) */
+                          !isSelected && isCompleted && "border-emerald-400 bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]",
+
+                          /* Unlocked & Uncompleted State */
+                          !isSelected && !isCompleted && !isLocked && "border-cyan-500/70 bg-gray-900/90 text-cyan-200 hover:scale-105",
+
+                          /* Locked State */
+                          isLocked && "border-gray-700 bg-gray-900/90 text-gray-500 cursor-not-allowed opacity-75"
                         )}
                       >
-                        <div
-                          className={cn(
-                            "w-16 h-20 rounded-xl border-2 flex flex-col items-center justify-center p-1.5 relative overflow-hidden backdrop-blur-md transition-all shadow-xl",
-                            isCompleted && "border-green-400 bg-green-950/70 text-green-300",
-                            !isCompleted && !isLocked && "border-purple-400 bg-purple-950/80 text-purple-200 ring-2 ring-purple-400/50 animate-pulse",
-                            isLocked && "border-purple-900/60 bg-[#120a1c]/90 text-purple-400/60"
-                          )}
-                        >
-                          <Crown className={cn("w-5 h-5 mb-0.5", isLocked ? "text-purple-500/50" : "text-purple-300")} />
-                          <span className="text-[8px] font-black uppercase font-cinzel text-center leading-tight text-white">
-                            BOSS<br />FINAL
-                          </span>
-                          {isLocked ? (
-                            <div className="mt-1 bg-black/60 rounded-full p-0.5 border border-purple-500/30">
-                              <Lock className="w-3 h-3 text-purple-400/80" />
-                            </div>
-                          ) : isCompleted ? (
-                            <Check className="w-3.5 h-3.5 text-green-400 mt-0.5" />
-                          ) : null}
-                        </div>
-                      </button>
-                    ) : (
-                      /* REGULAR STAGE NODE (1, 2, 3, 4) */
-                      <div className="flex flex-col items-center">
-                        <button
-                          onClick={() => handleSelectStage(node)}
-                          disabled={isLocked}
-                          className={cn(
-                            "w-12 h-12 rounded-full border-2 flex items-center justify-center font-bold text-lg transition-all duration-200 shadow-lg",
-                            isCompleted && "border-green-500 bg-green-950/90 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]",
-                            !isCompleted && !isLocked && isSelected && "border-blue-500 bg-blue-950/90 text-white ring-4 ring-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105",
-                            !isCompleted && !isLocked && !isSelected && "border-cyan-500/60 bg-gray-900/90 text-cyan-200 hover:scale-105",
-                            isLocked && "border-gray-700 bg-gray-900/90 text-gray-400 cursor-not-allowed opacity-75"
-                          )}
-                        >
+                        {isCompleted && !isSelected ? (
+                          <div className="flex items-center justify-center gap-0.5">
+                            <span>{node.stage}</span>
+                          </div>
+                        ) : (
                           <span>{node.stage}</span>
-                        </button>
+                        )}
+                      </button>
 
-                        {/* Node Status Badges */}
-                        {isCompleted ? (
-                          <div className="mt-1 flex flex-col items-center">
-                            <div className="w-4 h-4 rounded-full bg-green-500 text-black flex items-center justify-center font-black text-[10px] shadow-md">
-                              ✓
-                            </div>
-                            <span className="mt-0.5 text-[8px] font-bold text-green-400 bg-[#0c2415] px-1.5 py-0.5 rounded border border-green-500/40">
-                              Concluída
-                            </span>
-                          </div>
-                        ) : isSelected && !isLocked ? (
-                          <div className="mt-1 flex flex-col items-center">
-                            <div className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center font-black text-[10px] shadow-md animate-bounce">
-                              <ChevronUp className="w-3 h-3" />
-                            </div>
-                          </div>
-                        ) : isLocked ? (
-                          <div className="mt-1">
-                            <Lock className="w-3.5 h-3.5 text-gray-500" />
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      {/* Locked Badge Icon Below */}
+                      {isLocked && (
+                        <div className="mt-1">
+                          <Lock className="w-3 h-3 text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
-              {/* Bottom Right Overlay: "Ver inimigos" */}
-              <button
-                onClick={() => setShowEnemies(true)}
-                className="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur-sm border border-white/15 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 flex items-center gap-1 hover:bg-black transition-all"
-              >
-                <Skull className="w-3.5 h-3.5 text-red-400" />
-                Ver inimigos
-              </button>
-            </div>
+            {/* Bottom Right Overlay: "Ver inimigos" */}
+            <button
+              onClick={() => setShowEnemies(true)}
+              className="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur-sm border border-white/15 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 flex items-center gap-1 hover:bg-black transition-all shadow-md z-20"
+            >
+              <Skull className="w-3.5 h-3.5 text-red-400" />
+              Ver inimigos
+            </button>
           </div>
         </div>
 
-        {/* ═══════ STAGE DETAILS CARD (MOBILE 2-COLUMN LAYOUT) ═══════ */}
+        {/* ═══════ STAGE DETAILS CARD (NO INIMIGOS ROW) ═══════ */}
         <div className="bg-[#101018] border border-[#202030] rounded-2xl p-3.5 shadow-xl">
           <div className="grid grid-cols-2 gap-3">
             
-            {/* LEFT COLUMN: Title, Difficulty, Description, Enemies */}
-            <div className="space-y-2.5">
-              <div>
-                <h3 className="text-base font-black font-cinzel text-white uppercase tracking-wide">
-                  {selectedNode?.isBoss ? 'BOSS FINAL' : `ETAPA ${selectedNode?.stage ?? 1}`}
-                </h3>
-                <p className="text-[11px] font-bold text-yellow-400 mt-0.5">
-                  Dificuldade: {difficultyLabels[selectedNode?.difficulty || 'medium']}
-                </p>
-                <p className="text-[10px] text-gray-400 mt-1 leading-snug">
-                  A floresta escurece e criaturas mais fortes começam a se aproximar.
-                </p>
-              </div>
-
-              {/* INIMIGOS Section */}
-              <div>
-                <div className="text-[9px] font-black text-green-400 uppercase tracking-widest font-cinzel mb-1">
-                  INIMIGOS
-                </div>
-                <div className="flex items-center gap-1">
-                  {(selectedNode?.possibleSpawns || []).slice(0, 3).map((s) => (
-                    <div 
-                      key={s.name} 
-                      className="w-8 h-8 rounded-lg bg-black/60 border border-white/10 flex items-center justify-center text-base"
-                      title={s.name}
-                    >
-                      {s.image}
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setShowEnemies(true)}
-                    className="h-8 px-1.5 rounded-lg bg-[#181824] border border-white/10 text-[9px] text-gray-300 hover:text-white flex items-center gap-0.5 font-medium ml-auto"
-                  >
-                    <Eye className="w-2.5 h-2.5 text-cyan-400" />
-                    Ver todas
-                  </button>
-                </div>
-              </div>
+            {/* LEFT COLUMN: Title, Difficulty, Description */}
+            <div className="space-y-1.5">
+              <h3 className="text-base font-black font-cinzel text-white uppercase tracking-wide">
+                {selectedNode?.isBoss ? 'BOSS FINAL' : `ETAPA ${selectedNode?.stage ?? 1}`}
+              </h3>
+              <p className="text-[11px] font-bold text-yellow-400">
+                Dificuldade: {difficultyLabels[selectedNode?.difficulty || 'medium']}
+              </p>
+              <p className="text-[10px] text-gray-400 leading-snug pt-0.5">
+                A floresta escurece e criaturas mais fortes começam a se aproximar.
+              </p>
             </div>
 
             {/* RIGHT COLUMN: Rewards, Energy Cost & Start Button */}
-            <div className="space-y-2.5 flex flex-col justify-between">
+            <div className="space-y-2 flex flex-col justify-between">
               
               {/* RECOMPENSAS POSSÍVEIS */}
               <div>
@@ -508,7 +478,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                 </div>
               </div>
 
-              {/* CUSTO DE ENERGIA & INICIAR ETAPA */}
+              {/* CUSTO DE ENERGIA & INICIAR ETAPA (Completed stages CAN be repeated!) */}
               <div>
                 <div className="text-[8px] font-bold text-blue-400 uppercase tracking-wider font-cinzel mb-0.5">
                   CUSTO DE ENERGIA
@@ -521,10 +491,10 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
 
                   <Button
                     onClick={handleStartStage}
-                    disabled={!selectedNode?.isUnlocked || selectedNode?.isCompleted || (!gameState.settings?.infiniteEnergy && character.energy < energyCost)}
+                    disabled={!selectedNode?.isUnlocked || (!gameState.settings?.infiniteEnergy && character.energy < energyCost)}
                     className={cn(
                       "h-9 px-2.5 text-[11px] font-black font-cinzel tracking-wider rounded-xl transition-all shadow-lg flex items-center gap-1",
-                      selectedNode?.isUnlocked && !selectedNode?.isCompleted
+                      selectedNode?.isUnlocked
                         ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 active:scale-95"
                         : "bg-gray-800 text-gray-500 cursor-not-allowed opacity-60"
                     )}
@@ -538,45 +508,6 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
             </div>
 
           </div>
-        </div>
-
-        {/* ═══════ MAP SELECTOR FOOTER ═══════ */}
-        <div className="grid grid-cols-5 gap-1.5 pt-1">
-          {mapIds.map((mapId) => {
-            const map = maps[mapId];
-            const done = map.nodes.filter(n => n.isCompleted).length;
-            const total = map.nodes.length;
-            const isCurrentMap = mapId === selectedMapId;
-            const mapTheme = mapThemes[mapId];
-            return (
-              <button
-                key={mapId}
-                onClick={() => map.isUnlocked && setSelectedMapId(mapId)}
-                disabled={!map.isUnlocked}
-                className={cn(
-                  "p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center",
-                  isCurrentMap && "border-opacity-100 bg-opacity-20 shadow-lg",
-                  !isCurrentMap && map.isUnlocked && "border-[#202030] hover:border-gray-500 bg-[#101018]",
-                  !map.isUnlocked && "border-gray-800/40 opacity-40 cursor-not-allowed bg-[#0a0a0f]"
-                )}
-                style={{
-                  borderColor: isCurrentMap ? mapTheme.color : undefined,
-                  backgroundColor: isCurrentMap ? `${mapTheme.color}20` : undefined,
-                }}
-              >
-                <MapIcon
-                  className="w-4 h-4 mb-0.5"
-                  style={{ color: map.isUnlocked ? mapTheme.color : '#4b5563' }}
-                />
-                <p className="text-[9px] text-gray-300 font-bold truncate max-w-full">
-                  {mapTheme.name.split(' ')[0]}
-                </p>
-                <p className="text-[8px] text-gray-400 font-mono">
-                  {done}/{total}
-                </p>
-              </button>
-            );
-          })}
         </div>
 
       </div>
