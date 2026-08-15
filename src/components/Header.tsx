@@ -37,16 +37,26 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
 
   const handleSync = async () => {
     setIsSyncing(true);
-    await syncLocalToCloud();
-    setIsSyncing(false);
+    try {
+      await syncLocalToCloud();
+    } catch (err) {
+      console.warn('Erro ao sincronizar:', err);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleSignOut = async () => {
     setIsSyncing(true);
-    await syncLocalToCloud(); // Auto-sync before sign out
-    await signOut();
-    setShowProfileMenu(false);
-    setIsSyncing(false);
+    try {
+      await syncLocalToCloud(); // Auto-sync before sign out
+    } catch (err) {
+      console.warn('Erro ao sincronizar antes de sair:', err);
+    } finally {
+      await signOut();
+      setShowProfileMenu(false);
+      setIsSyncing(false);
+    }
   };
 
   const hpPercent = (character.hp / character.maxHp) * 100;

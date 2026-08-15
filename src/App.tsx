@@ -129,7 +129,7 @@ function LoadingFallback() {
 }
 
 // ============================================
-// START SCREEN - Login Only
+// START SCREEN - Login or Continue
 // ============================================
 
 function StartScreen({ 
@@ -139,6 +139,8 @@ function StartScreen({
   onLogin: () => void;
   user: any;
 }) {
+  const { signOut } = useAuth();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -163,13 +165,22 @@ function StartScreen({
         <div className="grid grid-cols-1 gap-4">
           <Button 
             onClick={onLogin}
-            className="w-full py-8 text-lg bg-blue-600 hover:bg-blue-700 border-blue-500/50 flex flex-col items-center gap-1"
+            className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 border-blue-500/50 flex items-center justify-center gap-2"
           >
-            <div className="flex items-center gap-2">
-              <LogIn className="w-6 h-6" />
-              <span>{user ? 'Entrar no Jogo' : 'Fazer Login'}</span>
-            </div>
+            <LogIn className="w-6 h-6" />
+            <span>{user ? 'Entrar no Jogo' : 'Fazer Login com Google'}</span>
           </Button>
+
+          {user && (
+            <Button
+              variant="outline"
+              onClick={() => signOut()}
+              className="w-full py-4 text-sm border-red-500/30 text-red-400 hover:bg-red-500/10 flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sair / Trocar de Conta</span>
+            </Button>
+          )}
         </div>
 
         <p className="mt-8 text-[10px] text-gray-500 uppercase tracking-widest leading-relaxed">
