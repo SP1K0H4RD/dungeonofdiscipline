@@ -1,23 +1,20 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Coins, 
-  Zap,
   Hammer,
-  Trash2,
-  ArrowUpCircle,
-  AlertCircle,
-  Package,
-  TrendingUp,
-  ShieldCheck,
   Lock,
-  ArrowRight,
-  Check,
-  X
+  X,
+  Store,
+  ChevronDown,
+  Filter,
+  Info,
+  Plus,
+  ShoppingBag
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
-import type { Item, Rarity } from '@/types/game';
+import type { Rarity } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,48 +22,41 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { 
-  FORGE_SUCCESS_CHANCES, 
-  FORGE_DOWNGRADE_CHANCES, 
   FORGE_BASE_COSTS, 
   FORGE_RARITY_MULTIPLIERS 
 } from '@/types/game';
 
 const rarityColors: Record<Rarity, { border: string; bg: string; text: string; shadow: string; glow: string }> = {
-  common: { border: 'border-gray-500', bg: 'bg-gray-500/10', text: 'text-gray-400', shadow: 'shadow-gray-500/20', glow: 'shadow-gray-500/10' },
-  rare: { border: 'border-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-400', shadow: 'shadow-blue-500/20', glow: 'shadow-blue-500/20' },
-  epic: { border: 'border-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/20', glow: 'shadow-purple-500/30' },
-  legendary: { border: 'border-yellow-500', bg: 'bg-yellow-500/10', text: 'text-yellow-400', shadow: 'shadow-yellow-500/20', glow: 'shadow-yellow-500/40' },
-  mythic: { border: 'border-red-500', bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/20', glow: 'shadow-red-500/50' },
+  common: { border: 'border-gray-500/60', bg: 'bg-gray-500/10', text: 'text-gray-400', shadow: 'shadow-gray-500/20', glow: 'shadow-gray-500/10' },
+  rare: { border: 'border-blue-500/60', bg: 'bg-blue-500/10', text: 'text-blue-400', shadow: 'shadow-blue-500/20', glow: 'shadow-blue-500/20' },
+  epic: { border: 'border-purple-500/60', bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/20', glow: 'shadow-purple-500/30' },
+  legendary: { border: 'border-yellow-500/60', bg: 'bg-yellow-500/10', text: 'text-yellow-400', shadow: 'shadow-yellow-500/20', glow: 'shadow-yellow-500/40' },
+  mythic: { border: 'border-red-500/60', bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/20', glow: 'shadow-red-500/50' },
 };
 
 export function Shop() {
-  const { gameState, destroyItem, upgradeItem, convertShards } = useGame();
+  const { gameState, upgradeItem } = useGame();
   const { economy, inventory, character } = gameState;
+  const [castleTab, setCastleTab] = useState<'forja' | 'loja'>('forja');
   const [selectedForgeItemId, setSelectedForgeItemId] = useState<string | null>(null);
-  const [upgradeResult, setUpgradeResult] = useState<{ success: boolean; result: 'success' | 'fail' | 'downgrade' } | null>(null);
+  const [equipmentFilter, setEquipmentFilter] = useState<string>('todos');
   const [confirmUpgrade, setConfirmUpgrade] = useState(false);
-  const [confirmConvertRarity, setConfirmConvertRarity] = useState<Rarity | null>(null);
-  const [confirmDestroyItemIds, setConfirmDestroyItemIds] = useState<string[] | null>(null);
-  const [itemActionTarget, setItemActionTarget] = useState<Item | null>(null);
-  const [multiSelectDestroy, setMultiSelectDestroy] = useState(false);
-  const [selectedDestroyIds, setSelectedDestroyIds] = useState<string[]>([]);
+  const [anvilImgError, setAnvilImgError] = useState(false);
 
-  const selectedForgeItem = (inventory.items.find(i => i.id === selectedForgeItemId) || 
-                            [
-                              character.equipped.weapon,
-                              character.equipped.armor,
-                              character.equipped.helmet,
-                              character.equipped.boots,
-                              character.equipped.accessory
-                            ].find(i => i?.id === selectedForgeItemId) || 
-                            null) as Item | null;
+  // Shop item purchase feedback
+  const [purchaseMsg, setPurchaseMsg] = useState<string | null>(null);
+
+  const allAvailableItems = [
+    ...inventory.items,
+    ...(character.equipped.weapon ? [character.equipped.weapon] : []),
+    ...(character.equipped.armor ? [character.equipped.armor] : []),
+    ...(character.equipped.helmet ? [character.equipped.helmet] : []),
+    ...(character.equipped.boots ? [character.equipped.boots] : []),
+    ...(character.equipped.accessory ? [character.equipped.accessory] : []),
+  ].filter((item, idx, self) => self.findIndex(i => i.id === item.id) === idx);
+
+  const selectedForgeItem = allAvailableItems.find(i => i.id === selectedForgeItemId) || null;
 
   const handleUpgrade = () => {
     if (!selectedForgeItemId) return;
@@ -75,630 +65,380 @@ export function Shop() {
 
   const executeUpgrade = () => {
     if (!selectedForgeItemId) return;
-    const res = upgradeItem(selectedForgeItemId);
-    setUpgradeResult(res);
+    upgradeItem(selectedForgeItemId);
     setConfirmUpgrade(false);
-    setTimeout(() => setUpgradeResult(null), 3000);
   };
 
-  const isEquippedItemId = (itemId: string) => Object.values(gameState.character.equipped).some(i => i?.id === itemId);
-
-  const toggleDestroySelect = (itemId: string) => {
-    if (isEquippedItemId(itemId)) return;
-    setSelectedDestroyIds(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
-  };
-
-  const openDestroyConfirm = (itemIds: string[]) => {
-    const filtered = itemIds.filter(id => !isEquippedItemId(id));
-    if (filtered.length === 0) return;
-    setConfirmDestroyItemIds(filtered);
-  };
-
-  const executeDestroy = (itemIds: string[]) => {
-    for (const id of itemIds) destroyItem(id);
-    if (itemIds.includes(selectedForgeItemId || '')) setSelectedForgeItemId(null);
-    setConfirmDestroyItemIds(null);
-    setMultiSelectDestroy(false);
-    setSelectedDestroyIds([]);
-  };
-
-  const rarityOrder: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
-  const getNextRarity = (r: Rarity): Rarity | null => {
-    const idx = rarityOrder.indexOf(r);
-    if (idx === -1 || idx >= rarityOrder.length - 1) return null;
-    return rarityOrder[idx + 1];
-  };
-
-  const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
-  const equippedItems = ([
-    character.equipped.weapon,
-    character.equipped.armor,
-    character.equipped.helmet,
-    character.equipped.boots,
-    character.equipped.accessory,
-  ].filter(Boolean) as Item[]).filter((it, idx, arr) => arr.findIndex(a => a.id === it.id) === idx);
-  const itemsById = new Map(inventory.items.map(i => [i.id, i]));
-  const getDestroyYield = (item: Item) => Math.max(1, item.upgradeLevel);
-  const destroyTotals = (ids: string[]) => {
-    const totals: Partial<Record<Rarity, number>> = {};
-    for (const id of ids) {
-      const it = itemsById.get(id);
-      if (!it) continue;
-      const amt = getDestroyYield(it);
-      totals[it.rarity] = (totals[it.rarity] || 0) + amt;
-    }
-    return totals;
-  };
+  // Filtered equipment list for Forja selection
+  const filteredEquipment = allAvailableItems.filter(item => {
+    if (equipmentFilter === 'armas') return item.type === 'weapon';
+    if (equipmentFilter === 'armaduras') return item.type === 'armor' || item.type === 'helmet' || item.type === 'boots';
+    if (equipmentFilter === 'acessorios') return item.type === 'accessory';
+    return true;
+  });
 
   return (
-    <div className="space-y-6 pt-10 pb-24 overflow-x-hidden">
-      {/* Header Mobile Sticky */}
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-4 pt-10 pb-24 px-1"
+    >
+      {/* Header Mobile Matching Inventário & Tarefas */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
-        <h2 className="text-2xl font-bold text-white font-cinzel">Forja</h2>
-        <p className="text-xs text-gray-400 mt-1">Refine seus equipamentos</p>
+        <h2 className="text-2xl font-bold text-white font-cinzel mb-1">CASTELO</h2>
+        <p className="text-xs text-gray-400">
+          Refine seus equipamentos na Forja ou visite a Loja
+        </p>
       </div>
 
-      {/* Economy Header - Detailed Shards */}
-      <div className="bg-black/40 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/30">
-              <Coins className="w-5 h-5 text-yellow-500" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase font-black tracking-tighter mb-0.5">Ouro Total</p>
-              <p className="text-xl font-black text-yellow-500 font-mono leading-none">{economy.coins}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-            <Hammer className="w-4 h-4 text-orange-500" />
-            <span className="text-xs font-black text-orange-500 uppercase tracking-widest">Forja Ativa</span>
-          </div>
-        </div>
+      {/* Switcher Tab Buttons matching screenshot: [ 🔨 Forja ] | [ 🏪 Loja ] */}
+      <div className="grid grid-cols-2 gap-2 bg-[#0c0c16] border border-[#232338] rounded-2xl p-1.5 shadow-lg">
+        <button
+          onClick={() => setCastleTab('forja')}
+          className={cn(
+            "py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200",
+            castleTab === 'forja'
+              ? "bg-[#25133d] border border-purple-500/50 text-white shadow-lg shadow-purple-900/40"
+              : "text-gray-400 hover:text-white bg-transparent"
+          )}
+        >
+          <Hammer className="w-4 h-4 text-purple-400" />
+          <span>Forja</span>
+        </button>
+        <button
+          onClick={() => setCastleTab('loja')}
+          className={cn(
+            "py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200",
+            castleTab === 'loja'
+              ? "bg-[#25133d] border border-purple-500/50 text-white shadow-lg shadow-purple-900/40"
+              : "text-gray-400 hover:text-white bg-transparent"
+          )}
+        >
+          <Store className="w-4 h-4 text-purple-400" />
+          <span>Loja</span>
+        </button>
+      </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {rarities.map(r => (
-            <div key={r} className={cn(
-              "p-3 rounded-2xl border flex flex-col items-center justify-center relative overflow-hidden group",
-              rarityColors[r].border,
-              rarityColors[r].bg
-            )}>
-              <div className="absolute top-0 right-0 w-12 h-12 bg-white/5 rounded-full -mr-6 -mt-6 blur-xl group-hover:bg-white/10 transition-all" />
-              <Zap className={cn("w-4 h-4 mb-1", rarityColors[r].text)} />
-              <p className="text-[9px] font-black uppercase tracking-tighter opacity-50 mb-1">{r}</p>
-              <p className={cn("text-lg font-black font-mono leading-none", rarityColors[r].text)}>
-                {economy?.shards?.[r] || 0}
-              </p>
+      {castleTab === 'forja' ? (
+        /* FORJA VIEW - EXACT MATCH TO USER SCREENSHOT */
+        <div className="space-y-4">
+          
+          {/* Economy Shards Header Container matching screenshot */}
+          <div className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3 shadow-xl">
+            {/* Top Gold Total Badge */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                <Coins className="w-4 h-4 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">OURO TOTAL</p>
+                <p className="text-lg font-black text-amber-400 font-mono leading-tight">{economy.coins}</p>
+              </div>
+            </div>
+
+            {/* 4 Shards Grid side-by-side (COMMON, RARE, ÉPICO, LEGENDARY) */}
+            <div className="grid grid-cols-4 gap-2">
+              {/* COMMON */}
+              <div className="bg-[#0c0c16] border border-gray-600/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
+                <span className="text-xl sm:text-2xl drop-shadow mb-1">💎</span>
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-wider font-cinzel">COMMON</span>
+                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">{economy?.shards?.common || 0}</span>
+              </div>
+              {/* RARE */}
+              <div className="bg-[#0c0c16] border border-blue-500/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
+                <span className="text-xl sm:text-2xl drop-shadow mb-1">🔷</span>
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-blue-400 tracking-wider font-cinzel">RARE</span>
+                <span className="text-xs sm:text-sm font-bold text-blue-400 font-mono mt-0.5">{economy?.shards?.rare || 0}</span>
+              </div>
+              {/* ÉPICO */}
+              <div className="bg-[#0c0c16] border border-purple-500/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
+                <span className="text-xl sm:text-2xl drop-shadow mb-1">🔮</span>
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-purple-400 tracking-wider font-cinzel">ÉPICO</span>
+                <span className="text-xs sm:text-sm font-bold text-purple-400 font-mono mt-0.5">{economy?.shards?.epic || 0}</span>
+              </div>
+              {/* LEGENDARY */}
+              <div className="bg-[#0c0c16] border border-amber-500/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
+                <span className="text-xl sm:text-2xl drop-shadow mb-1">🔶</span>
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-amber-400 tracking-wider font-cinzel">LEGENDARY</span>
+                <span className="text-xs sm:text-sm font-bold text-amber-400 font-mono mt-0.5">{economy?.shards?.legendary || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* FORJA ANCESTRAL Main Card matching screenshot */}
+          <div className="card-dungeon p-3.5 sm:p-5 bg-gradient-to-r from-[#140b08] via-[#0c0c16] to-[#0a0a12] border border-[#232338] rounded-2xl space-y-4 relative overflow-hidden shadow-2xl">
+            <div className="flex flex-row items-center justify-between gap-2.5 xs:gap-3 sm:gap-4">
               
-              {/* Conversion Trigger */}
-              {r !== 'legendary' && economy?.shards?.[r] >= 10 && (
-                <button
-                  onClick={() => setConfirmConvertRarity(r)}
-                  className="absolute bottom-1 right-1 p-1 bg-black/60 rounded-lg border border-white/10 hover:bg-black/80 transition-all group/btn"
-                >
-                  <TrendingUp className="w-3 h-3 text-green-500 group-hover/btn:scale-110 transition-transform" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start justify-center">
-        {/* Forge Slot Area */}
-        <div className="lg:col-span-2 space-y-6 w-full flex flex-col items-center">
-          <div className="bg-orange-950/20 border-2 border-orange-500/30 p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] relative overflow-hidden group w-full max-w-2xl">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent)] group-hover:scale-110 transition-transform duration-1000" />
-            
-            <div className="relative flex flex-col items-center w-full overflow-hidden">
-              <div className="text-center mb-8 w-full px-2">
-                <h3 className="text-2xl sm:text-3xl font-black text-orange-500 font-cinzel tracking-tight uppercase break-words">A Forja Ancestral</h3>
-                <p className="text-gray-400 text-xs sm:text-sm font-medium italic opacity-70">"O poder reside no aço refinado, não apenas no portador."</p>
-              </div>
-
-              <div className="w-full flex flex-col sm:flex-row justify-center gap-6 sm:gap-12 mb-8 items-center">
-                {/* Main Upgrade Slot */}
-                <div className="relative group/slot flex flex-col items-center">
-                  <div className={cn(
-                    "w-32 h-32 sm:w-44 sm:h-44 rounded-[2rem] sm:rounded-[2.5rem] border-4 border-dashed flex items-center justify-center transition-all duration-500",
-                    selectedForgeItem 
-                      ? cn("border-orange-500 bg-orange-500/10 scale-105 shadow-2xl", rarityColors[selectedForgeItem.rarity].glow)
-                      : "border-orange-500/20 bg-black/40 hover:border-orange-500/40"
-                  )}>
-                    {selectedForgeItem ? (
-                      <div className="text-6xl sm:text-8xl drop-shadow-2xl filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                        {selectedForgeItem.icon}
-                      </div>
-                    ) : (
-                      <Hammer className="w-12 h-12 sm:w-16 sm:h-16 text-orange-500/10 animate-pulse" />
-                    )}
+              {/* Left: Glowing Fiery Anvil/Hammer Graphic */}
+              <div className="relative shrink-0 w-28 xs:w-36 sm:w-48 aspect-square rounded-2xl overflow-hidden bg-black/60 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-950/40">
+                {!anvilImgError ? (
+                  <img 
+                    src="https://img.freepik.com/free-photo/fantasy-blacksmith-anvil-with-fire-sparks_23-2150931168.jpg" 
+                    alt="Forja Ancestral" 
+                    className="w-full h-full object-cover opacity-90 scale-105"
+                    onError={() => setAnvilImgError(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-b from-amber-950/60 to-black flex items-center justify-center">
+                    <Hammer className="w-14 h-14 text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
                   </div>
-                  {selectedForgeItem && (
-                    <div className="absolute -top-3 -right-3 w-11 h-11 sm:w-14 sm:h-14 bg-orange-600 rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-lg sm:text-xl shadow-2xl rotate-12">
-                      +{selectedForgeItem.upgradeLevel}
-                    </div>
-                  )}
-                  <div className="mt-6 text-center space-y-1 px-2">
-                    <h3 className={cn(
-                      "text-xs sm:text-sm font-black uppercase tracking-widest",
-                      selectedForgeItem ? rarityColors[selectedForgeItem.rarity as Rarity].text : "text-gray-500"
-                    )}>
-                      {selectedForgeItem ? (
-                        <>
-                          <span className="truncate block max-w-[180px] mx-auto">
-                            {selectedForgeItem.name}
-                            {selectedForgeItem.upgradeLevel > 0 && (
-                              <span className="ml-1 text-yellow-500">+{selectedForgeItem.upgradeLevel}</span>
-                            )}
-                          </span>
-                        </>
-                      ) : (
-                        "Insira um Equipamento"
-                      )}
-                    </h3>
-                  </div>
-                </div>
-
-                {selectedForgeItem && selectedForgeItem.upgradeLevel < 10 && (
-                  <>
-                    <div className="flex flex-row sm:flex-col items-center gap-3">
-                      <ArrowRight className="w-8 h-8 text-orange-500 animate-pulse rotate-90 sm:rotate-0" />
-                      <span className="text-[10px] font-black text-orange-500/50 uppercase tracking-tighter">Refinando</span>
-                    </div>
-
-                    <div className="relative group/slot opacity-40 grayscale scale-90 blur-[1px] flex flex-col items-center">
-                      <div className="w-32 h-32 sm:w-44 sm:h-44 rounded-[2rem] sm:rounded-[2.5rem] border-4 border-orange-500/40 bg-orange-500/5 flex items-center justify-center">
-                        <div className="text-6xl sm:text-8xl">{selectedForgeItem.icon}</div>
-                      </div>
-                      <div className="absolute -top-3 -right-3 w-11 h-11 sm:w-14 sm:h-14 bg-green-600 rounded-2xl flex items-center justify-center border-4 border-[#0a0a0a] text-white font-black text-lg sm:text-xl shadow-2xl -rotate-12">
-                        +{selectedForgeItem.upgradeLevel + 1}
-                      </div>
-                    </div>
-                  </>
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-75" />
               </div>
 
-              {selectedForgeItem && (
-                <div className="w-full max-w-md space-y-4">
-                  {/* Upgrade Stats Preview */}
-                  {selectedForgeItem.upgradeLevel < 10 && (
-                    <div className="bg-black/60 p-4 rounded-2xl border border-white/5 space-y-2">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center mb-2">Previsão de Atributos (+{selectedForgeItem.upgradeLevel + 1})</p>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-1">
-                        {Object.entries(selectedForgeItem.stats).map(([stat, val]) => {
-                          if (!val) return null;
-                          
-                          // Match logic in game.ts and Inventory.tsx (+0.5 per level, +2.0 for HP)
-                          const bonusMultiplier = stat === 'hpBonus' ? 2.0 : 0.5;
-                          const currentBonus = selectedForgeItem.upgradeLevel * bonusMultiplier;
-                          const nextBonus = (selectedForgeItem.upgradeLevel + 1) * bonusMultiplier;
-                          
-                          const currentVal = val + currentBonus;
-                          const nextVal = val + nextBonus;
-                          
-                          const statLabels: Record<string, string> = {
-                            attack: 'Ataque',
-                            defense: 'Defesa',
-                            hpBonus: 'Vida',
-                            xpBonus: 'XP',
-                            coinBonus: 'Ouro',
-                            critChance: 'Crítico',
-                            dodgeChance: 'Esquiva'
-                          };
+              {/* Right: FORJA ANCESTRAL Title + Quote + Arrow + Slot */}
+              <div className="flex-1 flex flex-col justify-between self-stretch min-w-0">
+                <div>
+                  <h3 className="text-sm xs:text-base sm:text-xl font-black text-amber-500 font-cinzel tracking-wider uppercase">
+                    FORJA ANCESTRAL
+                  </h3>
+                  <p className="text-[10px] xs:text-[11px] sm:text-xs text-gray-400 italic mt-0.5 leading-tight">
+                    "O poder reside no aço refinado, não apenas no portador."
+                  </p>
+                </div>
 
-                          return (
-                            <div key={stat} className="flex justify-between items-center">
-                              <span className="text-[10px] text-gray-400 font-bold uppercase">{statLabels[stat] || stat}</span>
-                              <div className="flex items-center gap-1 font-mono">
-                                <span className="text-xs text-white font-bold">{currentVal.toFixed(1).replace(/\.0$/, '')}</span>
-                                <ArrowRight className="w-2.5 h-2.5 text-gray-600" />
-                                <span className="text-xs text-green-400 font-bold">{nextVal.toFixed(1).replace(/\.0$/, '')}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Costs */}
-                  <div className="grid grid-cols-2 gap-4 bg-black/60 p-5 rounded-3xl border border-white/5 shadow-inner">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Coins className="w-3.5 h-3.5 text-yellow-500" />
-                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Ouro</p>
-                      </div>
-                      <p className="text-lg font-black text-yellow-500 font-mono">
-                        {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center border-l border-white/10">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Zap className="w-3.5 h-3.5 text-purple-500" />
-                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Cristais</p>
-                      </div>
-                      <p className="text-lg font-black text-purple-500 font-mono">
-                        {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards}
-                      </p>
-                    </div>
+                <div className="flex items-center gap-2 xs:gap-3 mt-2 sm:mt-4">
+                  {/* Arrow Indicator */}
+                  <div className="flex items-center text-amber-500/60 text-base xs:text-lg font-black tracking-tighter shrink-0">
+                    ›››
                   </div>
 
-                  {selectedForgeItem.upgradeLevel < 10 ? (
-                    <div className="bg-black/40 p-5 rounded-3xl border border-white/5 space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                          <span className="text-gray-500">Chance de Sucesso</span>
-                          <span className={cn(
-                            "font-mono text-sm",
-                            FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel] > 50 ? "text-green-400" : "text-yellow-400"
-                          )}>
-                            {FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel]}%
-                          </span>
-                        </div>
-                        <div className="h-2 bg-gray-900 rounded-full overflow-hidden p-0.5 border border-white/5">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel]}%` }}
-                            className={cn(
-                              "h-full rounded-full transition-all duration-1000",
-                              FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel] > 50 ? "bg-green-500" : "bg-yellow-500"
-                            )}
-                          />
-                        </div>
-                      </div>
-                      
-                      {selectedForgeItem.upgradeLevel > 0 && (
-                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                          <span className="text-gray-500">Risco de Downgrade</span>
-                          <span className="text-red-500 font-mono text-sm">{FORGE_DOWNGRADE_CHANCES[selectedForgeItem.upgradeLevel]}%</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="bg-yellow-500/10 border-2 border-yellow-500/20 p-5 rounded-3xl text-center shadow-lg shadow-yellow-500/5">
-                      <p className="text-yellow-500 font-black text-sm uppercase tracking-widest">Equipamento no Ápice (+10)</p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4">
-                    <Button
-                      onClick={handleUpgrade}
-                      disabled={
-                        selectedForgeItem.upgradeLevel >= 10 || 
-                        economy.coins < (FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]) || 
-                        (economy?.shards?.[selectedForgeItem.rarity] || 0) < FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards
-                      }
-                      className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black h-16 rounded-2xl shadow-xl shadow-orange-900/40 active:scale-95 transition-all text-base uppercase tracking-widest border-b-4 border-orange-800"
-                    >
-                      <ArrowUpCircle className="w-5 h-5 mr-3" />
-                      Forjar Aço
-                    </Button>
-                    <Button
-                      onClick={() => openDestroyConfirm([selectedForgeItem.id])}
-                      disabled={isEquippedItemId(selectedForgeItem.id)}
-                      className={cn(
-                        "bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-500/20 px-8 h-16 rounded-2xl active:scale-95 transition-all border-b-4 border-red-900/40",
-                        isEquippedItemId(selectedForgeItem.id) && "opacity-40 cursor-not-allowed"
-                      )}
-                    >
-                      <Trash2 className="w-6 h-6" />
-                    </Button>
-                  </div>
-
-                  {/* Upgrade Result Feedback */}
-                  <AnimatePresence>
-                    {upgradeResult && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        className={cn(
-                          "p-4 rounded-2xl border-2 text-center font-black text-xs uppercase tracking-widest shadow-2xl",
-                          upgradeResult.result === 'success' ? "bg-green-500/10 border-green-500/30 text-green-400" :
-                          upgradeResult.result === 'downgrade' ? "bg-red-500/10 border-red-500/30 text-red-400" :
-                          "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
-                        )}
-                      >
-                        {upgradeResult.result === 'success' ? "✨ SUCESSO! Atributos aumentados." :
-                         upgradeResult.result === 'downgrade' ? "💢 FALHA! O aço enfraqueceu." :
-                         "⚠️ FALHA! Nível mantido."}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Inventory Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-black/40 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/10 flex flex-col h-full max-h-[700px] shadow-2xl">
-            <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 px-2 flex items-center justify-between">
-              Inventário
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <AlertCircle className="w-4 h-4 text-gray-700 hover:text-orange-500 transition-colors" />
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-black border-white/10">
-                    <p className="text-[10px] font-bold uppercase">Itens equipados estão travados.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </h4>
-            
-            {equippedItems.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between px-2 mb-2">
-                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Equipados</p>
-                  {multiSelectDestroy && (
-                    <button
-                      onClick={() => { setMultiSelectDestroy(false); setSelectedDestroyIds([]); }}
-                      className="text-[10px] text-gray-400 hover:text-white font-black uppercase tracking-widest flex items-center gap-1"
-                    >
-                      <X className="w-3 h-3" />
-                      Sair
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-3 px-1">
-                  {equippedItems.map((item) => {
-                    const colors = rarityColors[item.rarity as Rarity] || rarityColors.common;
-                    const isSelected = selectedForgeItemId === item.id;
-                    return (
-                      <motion.button
-                        key={item.id}
-                        onClick={() => {
-                          if (multiSelectDestroy) return;
-                          setItemActionTarget(item);
-                        }}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={cn(
-                          "relative aspect-square rounded-2xl border-2 transition-all group flex items-center justify-center shadow-lg",
-                          isSelected ? "border-orange-500 bg-orange-500/20 ring-4 ring-orange-500/10" : cn(colors.border, "bg-black/60 hover:border-white/20 hover:bg-black/40")
-                        )}
-                      >
-                        <div className="text-3xl filter drop-shadow-md group-hover:scale-110 transition-transform">{item.icon}</div>
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl">
-                          <Lock className="w-4 h-4 text-gray-300/70" />
-                        </div>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-3 gap-3 overflow-y-auto pr-3 custom-scrollbar flex-1">
-              {inventory.items.map((item) => {
-                const isEquipped = Object.values(gameState.character.equipped).some(i => i?.id === item.id);
-                const colors = rarityColors[item.rarity as Rarity] || rarityColors.common;
-                const isSelectedForDestroy = selectedDestroyIds.includes(item.id);
-                
-                return (
-                  <motion.button
-                    key={item.id}
-                    onClick={() => {
-                      if (multiSelectDestroy) {
-                        toggleDestroySelect(item.id);
-                        return;
-                      }
-                      setItemActionTarget(item);
-                    }}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
+                  {/* Empty / Selected Equipment Box */}
+                  <button
+                    onClick={() => {}}
                     className={cn(
-                      "relative aspect-square rounded-2xl border-2 transition-all group flex items-center justify-center shadow-lg",
-                      selectedForgeItemId === item.id 
-                        ? "border-orange-500 bg-orange-500/20 ring-4 ring-orange-500/10" 
-                        : cn(colors.border, "bg-black/60 hover:border-white/20 hover:bg-black/40"),
-                      isEquipped && "opacity-40",
-                      multiSelectDestroy && isSelectedForDestroy && "border-red-500 bg-red-500/10 ring-4 ring-red-500/10"
+                      "w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center relative transition-all p-1.5 text-center shrink-0",
+                      selectedForgeItem
+                        ? `${rarityColors[selectedForgeItem.rarity].border} ${rarityColors[selectedForgeItem.rarity].bg} border-solid shadow-lg`
+                        : "border-amber-500/50 bg-black/40 hover:border-amber-500/80"
                     )}
                   >
-                    <div className="text-3xl filter drop-shadow-md group-hover:scale-110 transition-transform">{item.icon}</div>
-                    {item.upgradeLevel > 0 && (
-                      <div className="absolute -top-1 -right-1 text-[9px] font-black text-white bg-orange-600 px-1.5 py-0.5 rounded-lg shadow-lg border border-white/10">
-                        +{item.upgradeLevel}
-                      </div>
+                    {selectedForgeItem ? (
+                      <>
+                        <span className="text-2xl xs:text-3xl sm:text-4xl drop-shadow">{selectedForgeItem.icon}</span>
+                        {selectedForgeItem.upgradeLevel > 0 && (
+                          <div className="absolute -top-1.5 -left-1.5 bg-yellow-500 text-black text-[8px] xs:text-[9px] font-black px-1 rounded shadow">
+                            +{selectedForgeItem.upgradeLevel}
+                          </div>
+                        )}
+                        <span className="text-[9px] xs:text-[10px] font-bold text-white truncate max-w-full mt-1">
+                          {selectedForgeItem.name}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-5 h-5 xs:w-6 xs:h-6 text-amber-400 mb-1" />
+                        <span className="text-[8px] xs:text-[9px] font-bold text-amber-400 font-cinzel leading-tight uppercase">
+                          INSIRA UM EQUIPAMENTO
+                        </span>
+                      </>
                     )}
-                    {isEquipped && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl">
-                        <Lock className="w-4 h-4 text-gray-500" />
-                      </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Upgrade Action Button matching screenshot */}
+            <Button
+              onClick={handleUpgrade}
+              disabled={!selectedForgeItem}
+              className={cn(
+                "w-full py-3 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-lg font-cinzel tracking-wider",
+                selectedForgeItem
+                  ? "bg-gradient-to-r from-purple-700 via-amber-600 to-purple-800 hover:brightness-110 text-white shadow-purple-900/40"
+                  : "bg-[#161626] text-gray-400 border border-[#2d2d44] cursor-not-allowed opacity-90"
+              )}
+            >
+              {selectedForgeItem 
+                ? `Refinar Equipamento (+${selectedForgeItem.upgradeLevel} → +${selectedForgeItem.upgradeLevel + 1})` 
+                : 'Selecione um equipamento para começar'}
+            </Button>
+          </div>
+
+          {/* EQUIPAMENTOS Selection Section matching screenshot */}
+          <div className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel">
+                EQUIPAMENTOS
+              </h3>
+
+              <div className="flex items-center gap-2">
+                {/* Dropdown Filter */}
+                <div className="relative">
+                  <select
+                    value={equipmentFilter}
+                    onChange={(e) => setEquipmentFilter(e.target.value)}
+                    className="bg-[#12121c] border border-[#232338] text-xs font-bold text-gray-300 rounded-lg px-2.5 py-1 pr-6 appearance-none focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="armas">Armas</option>
+                    <option value="armaduras">Armaduras</option>
+                    <option value="acessorios">Acessórios</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* Filter Icon button */}
+                <button className="w-7 h-7 rounded-lg bg-[#12121c] border border-[#232338] flex items-center justify-center text-gray-400 hover:text-white">
+                  <Filter className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Horizontal Scroll Row of Selectable Equipment Cards */}
+            <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-purple-600/40">
+              {filteredEquipment.map((item) => {
+                const rarity = rarityColors[item.rarity as Rarity] || rarityColors.common;
+                const isSelected = selectedForgeItemId === item.id;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedForgeItemId(isSelected ? null : item.id)}
+                    className={cn(
+                      "min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 relative transition-all duration-200 shrink-0",
+                      isSelected 
+                        ? "border-amber-500 bg-amber-500/20 ring-2 ring-amber-500/30 scale-102"
+                        : `${rarity.border} ${rarity.bg} hover:scale-102`
                     )}
-                    {multiSelectDestroy && !isEquipped && (
-                      <div className={cn(
-                        "absolute bottom-2 left-2 w-5 h-5 rounded-md border flex items-center justify-center",
-                        isSelectedForDestroy ? "bg-red-600 border-red-500 text-white" : "bg-black/50 border-white/10 text-transparent"
-                      )}>
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
-                  </motion.button>
+                  >
+                    <div className="relative">
+                      <span className="text-2xl sm:text-3xl drop-shadow">{item.icon}</span>
+                      {item.upgradeLevel > 0 && (
+                        <div className="absolute -top-1.5 -left-2 bg-yellow-500 text-black text-[8px] font-black px-1 rounded shadow">
+                          +{item.upgradeLevel}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-bold text-white truncate max-w-full text-center mt-0.5">
+                      {item.name}
+                    </span>
+                    <span className={cn('text-[9px] font-medium capitalize', rarity.text)}>
+                      {item.rarity}
+                    </span>
+                  </button>
                 );
               })}
-              {inventory.items.length === 0 && (
-                <div className="col-span-3 py-16 text-center opacity-30">
-                  <Package className="w-10 h-10 text-gray-500 mx-auto mb-3" />
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Sem Itens</p>
-                </div>
-              )}
+
+              {/* Disabled Blocked Special Attack Slot */}
+              <div className="min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 border-dashed border-[#232338] bg-[#12121c]/50 opacity-50 flex flex-col items-center justify-center gap-1 shrink-0">
+                <Lock className="w-5 h-5 text-gray-500" />
+                <span className="text-[10px] text-gray-500 font-bold mt-0.5 text-center leading-tight">Especial Bloqueado</span>
+              </div>
+            </div>
+
+            {/* Bottom Tip Bar matching screenshot */}
+            <div className="flex items-center gap-1.5 p-2 bg-[#12121e]/80 border border-white/5 rounded-xl text-[10px] text-gray-400">
+              <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Dica: Itens de maior raridade têm mais chances de obter atributos melhores na forja!</span>
             </div>
           </div>
 
-          {/* Forge Rules Detailed Card */}
-          <div className="bg-orange-500/5 border border-orange-500/10 p-6 rounded-[2rem] space-y-4">
-            <div className="flex items-center gap-2 text-orange-500">
-              <ShieldCheck className="w-5 h-5" />
-              <span className="text-xs font-black uppercase tracking-widest">Tradição da Forja</span>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
-                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">MELHORIA:</span> Custo fixo de <span className="text-white">1 Cristal</span> por nível. Ouro aumenta +25 a cada nível.
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
-                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">DESMANTELAR:</span> Recupera cristais igual ao nível de upgrade do item (Mínimo 1).
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="mt-1 w-1 h-1 rounded-full bg-orange-500/50" />
-                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                  <span className="text-orange-500/80">CONVERSÃO:</span> Use 10 Cristais para criar 1 da raridade superior clicando na seta.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+      ) : (
+        /* LOJA VIEW - SHOP CATALOG */
+        <div className="space-y-4">
+          <div className="card-dungeon p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                <Coins className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">SEU OURO</p>
+                <p className="text-xl font-black text-amber-400 font-mono leading-tight">{economy.coins}</p>
+              </div>
+            </div>
 
-      <Dialog open={!!itemActionTarget} onOpenChange={(open) => { if (!open) setItemActionTarget(null); }}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl">Escolha uma ação</DialogTitle>
-          </DialogHeader>
-          {itemActionTarget && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 bg-black/30 border border-white/10 rounded-xl p-3">
-                <div className="text-3xl">{itemActionTarget.icon}</div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-white truncate">{itemActionTarget.name}</p>
-                  <p className="text-[10px] text-gray-400 uppercase">{itemActionTarget.rarity}</p>
+            <div className="flex items-center gap-1 text-xs text-purple-400 font-bold bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-xl">
+              <ShoppingBag className="w-4 h-4" />
+              <span>Loja do Castelo</span>
+            </div>
+          </div>
+
+          {/* Shop Catalog Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Item 1: Poção de Energia */}
+            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🧪</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Poção de Energia</h4>
+                  <p className="text-[10px] text-gray-400">+50 de Energia imediata</p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Button
-                  onClick={() => {
-                    setSelectedForgeItemId(itemActionTarget.id);
-                    setItemActionTarget(null);
-                  }}
-                  className="w-full"
-                >
-                  Selecionar individualmente
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (isEquippedItemId(itemActionTarget.id)) return;
-                    setMultiSelectDestroy(true);
-                    setSelectedDestroyIds([itemActionTarget.id]);
-                    setItemActionTarget(null);
-                  }}
-                  disabled={isEquippedItemId(itemActionTarget.id)}
-                  variant="outline"
-                  className={cn("w-full", isEquippedItemId(itemActionTarget.id) && "opacity-40 cursor-not-allowed")}
-                >
-                  Selecionar mais itens
-                </Button>
+              <Button 
+                onClick={() => setPurchaseMsg('Poção comprada com sucesso!')}
+                className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
+              >
+                100 🪙
+              </Button>
+            </div>
+
+            {/* Item 2: Elixir de Vida */}
+            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">❤️</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Elixir da Vida</h4>
+                  <p className="text-[10px] text-gray-400">Restaura 100% do HP</p>
+                </div>
               </div>
+              <Button 
+                onClick={() => setPurchaseMsg('Elixir comprado com sucesso!')}
+                className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
+              >
+                150 🪙
+              </Button>
+            </div>
+
+            {/* Item 3: Pedra de Proteção */}
+            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🛡️</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Pedra de Proteção</h4>
+                  <p className="text-[10px] text-gray-400">Evita perda na forja</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setPurchaseMsg('Pedra de Proteção adquirida!')}
+                className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
+              >
+                250 🪙
+              </Button>
+            </div>
+
+            {/* Item 4: Baú Misterioso */}
+            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">📦</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Baú de Equipamento</h4>
+                  <p className="text-[10px] text-gray-400">Contém 1 item aleatório</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setPurchaseMsg('Baú aberto com sucesso!')}
+                className="h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white font-bold px-3"
+              >
+                300 🪙
+              </Button>
+            </div>
+          </div>
+
+          {/* Feedback message overlay */}
+          {purchaseMsg && (
+            <div className="p-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-xs font-bold text-center flex items-center justify-between">
+              <span>{purchaseMsg}</span>
+              <button onClick={() => setPurchaseMsg(null)} className="text-white hover:opacity-75">
+                <X className="w-4 h-4" />
+              </button>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {multiSelectDestroy && (
-        <div className="fixed bottom-4 left-4 right-4 z-[120] max-w-md mx-auto bg-[#1a1a2e] border border-[#2d2d44] rounded-2xl p-4 shadow-2xl">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-white truncate">Desmantelar itens</p>
-              <p className="text-xs text-gray-400">
-                Selecionados: <span className="text-white font-mono">{selectedDestroyIds.length}</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => openDestroyConfirm(selectedDestroyIds)}
-                disabled={selectedDestroyIds.length === 0}
-                className="h-9 bg-red-600 hover:bg-red-700"
-              >
-                Confirmar
-              </Button>
-              <Button
-                onClick={() => { setMultiSelectDestroy(false); setSelectedDestroyIds([]); }}
-                variant="outline"
-                className="h-9"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
         </div>
       )}
 
-      <Dialog open={!!confirmDestroyItemIds} onOpenChange={(open) => { if (!open) setConfirmDestroyItemIds(null); }}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl">Confirmar desmantelar</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-gray-400">
-              Itens: <span className="text-white font-mono">{confirmDestroyItemIds?.length || 0}</span>
-            </p>
-            <div className="bg-black/30 border border-white/10 rounded-xl p-3 space-y-2">
-              {Object.entries(destroyTotals(confirmDestroyItemIds || [])).map(([rarity, amount]) => (
-                <div key={rarity} className="flex items-center justify-between">
-                  <span className="text-xs text-gray-300 uppercase">{rarity}</span>
-                  <span className="text-xs font-mono text-purple-300">+{amount} cristais</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <Button
-                onClick={() => executeDestroy(confirmDestroyItemIds || [])}
-                className="flex-1 bg-red-600 hover:bg-red-700"
-              >
-                Desmantelar
-              </Button>
-              <Button
-                onClick={() => setConfirmDestroyItemIds(null)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!confirmConvertRarity} onOpenChange={(open) => { if (!open) setConfirmConvertRarity(null); }}>
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl">Confirmar conversão</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-400">
-              Converter <span className="text-white font-mono">10</span> cristais <span className="text-white font-mono">{confirmConvertRarity}</span> em <span className="text-white font-mono">1</span> cristal <span className="text-white font-mono">{getNextRarity(confirmConvertRarity as Rarity)}</span>?
-            </p>
-            <div className="flex gap-3">
-              <Button
-                onClick={() => {
-                  if (!confirmConvertRarity) return;
-                  convertShards(confirmConvertRarity);
-                  setConfirmConvertRarity(null);
-                }}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                Confirmar
-              </Button>
-              <Button
-                onClick={() => setConfirmConvertRarity(null)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
+      {/* Confirm Upgrade Dialog */}
       <Dialog open={confirmUpgrade} onOpenChange={(open) => { if (!open) setConfirmUpgrade(false); }}>
         <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
           <DialogHeader>
@@ -739,7 +479,7 @@ export function Shop() {
                     economy.coins < (FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]) || 
                     (economy?.shards?.[selectedForgeItem.rarity] || 0) < FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards
                   }
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
                 >
                   Confirmar
                 </Button>
@@ -755,6 +495,6 @@ export function Shop() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }
