@@ -135,10 +135,10 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
   // Node positions along a smooth organic curved trail
   const nodePositions = useMemo(() => {
     return [
-      { nodeId: currentMap.nodes[0]?.id || 'node1', x: 18, y: 64 },
-      { nodeId: currentMap.nodes[1]?.id || 'node2', x: 36, y: 54 },
-      { nodeId: currentMap.nodes[2]?.id || 'node3', x: 53, y: 46 },
-      { nodeId: currentMap.nodes[3]?.id || 'node4', x: 69, y: 38 },
+      { nodeId: currentMap.nodes[0]?.id || 'node1', x: 18, y: 55 },
+      { nodeId: currentMap.nodes[1]?.id || 'node2', x: 36, y: 48 },
+      { nodeId: currentMap.nodes[2]?.id || 'node3', x: 53, y: 42 },
+      { nodeId: currentMap.nodes[3]?.id || 'node4', x: 69, y: 35 },
       { nodeId: currentMap.nodes[4]?.id || 'node5', x: 85, y: 28 }, // Boss Final node
     ];
   }, [currentMap.nodes]);
@@ -293,23 +293,23 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
           <div className="relative h-[290px] sm:h-[320px] rounded-xl overflow-hidden bg-cover bg-center" style={{ backgroundImage: `url(${theme.bgImage})` }}>
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/50 pointer-events-none" />
 
-            {/* Organic Irregular Thin Dashed Trail SVG */}
+            {/* Fine & Regular Dashed Trail SVG */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
               {/* Background dark stroke for contrast */}
               <path
-                d="M 18 64 C 23 68, 30 48, 36 54 C 41 58, 47 41, 53 46 C 58 41, 64 42, 69 38 C 74 42, 80 23, 85 28"
+                d="M 18 55 C 24 53, 30 50, 36 48 C 42 46, 47 44, 53 42 C 59 39, 64 37, 69 35 C 75 32, 80 30, 85 28"
                 fill="none"
-                stroke="rgba(0, 0, 0, 0.6)"
-                strokeWidth="2.2"
+                stroke="rgba(0, 0, 0, 0.5)"
+                strokeWidth="1.5"
                 strokeLinecap="round"
               />
-              {/* Thin irregular dashed line */}
+              {/* Very fine & regular dashed line */}
               <path
-                d="M 18 64 C 23 68, 30 48, 36 54 C 41 58, 47 41, 53 46 C 58 41, 64 42, 69 38 C 74 42, 80 23, 85 28"
+                d="M 18 55 C 24 53, 30 50, 36 48 C 42 46, 47 44, 53 42 C 59 39, 64 37, 69 35 C 75 32, 80 30, 85 28"
                 fill="none"
                 stroke="rgba(245, 158, 11, 0.85)"
-                strokeWidth="1.2"
-                strokeDasharray="4 2.5 1.5 2.5"
+                strokeWidth="0.7"
+                strokeDasharray="1.8 1.8"
                 strokeLinecap="round"
               />
             </svg>
@@ -365,12 +365,12 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                         ) : null}
                       </div>
 
-                      {/* Selection Arrow Below Boss Node */}
+                      {/* Selection Arrow Below Boss Node - Perfectly Centered */}
                       {isSelected && (
                         <motion.div
-                          animate={{ y: [0, 4, 0] }}
+                          animate={{ y: [0, 3, 0] }}
                           transition={{ duration: 1, repeat: Infinity }}
-                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-blue-400 flex flex-col items-center z-30 pointer-events-none"
+                          className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 text-blue-400 flex items-center justify-center z-30 pointer-events-none w-5 h-5"
                         >
                           <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
                         </motion.div>
@@ -383,7 +383,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                         onClick={() => handleSelectStage(node)}
                         disabled={isLocked}
                         className={cn(
-                          "w-10 h-10 rounded-full border-2 flex items-center justify-center font-black text-base transition-all duration-200 shadow-lg",
+                          "w-10 h-10 rounded-full border-2 flex items-center justify-center font-black text-base transition-all duration-200 shadow-lg relative",
 
                           /* Selected State (Darker Blue) */
                           isSelected && "border-blue-300 bg-blue-700 text-white font-black ring-4 ring-blue-600/60 shadow-[0_0_22px_rgba(29,78,216,0.95)] scale-110 z-30",
@@ -405,6 +405,17 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                         ) : (
                           <span>{node.stage}</span>
                         )}
+
+                        {/* Selection Arrow Below Circle Node - Exactly Centered to Circle */}
+                        {isSelected && (
+                          <motion.div
+                            animate={{ y: [0, 3, 0] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 text-blue-400 flex items-center justify-center z-30 pointer-events-none w-5 h-5"
+                          >
+                            <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
+                          </motion.div>
+                        )}
                       </button>
 
                       {/* Locked Badge Icon Below */}
@@ -412,17 +423,6 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                         <div className="mt-1">
                           <Lock className="w-3 h-3 text-gray-500" />
                         </div>
-                      )}
-
-                      {/* Selection Arrow Below Regular Node */}
-                      {isSelected && (
-                        <motion.div
-                          animate={{ y: [0, 4, 0] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-blue-400 flex flex-col items-center z-30 pointer-events-none"
-                        >
-                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
-                        </motion.div>
                       )}
                     </div>
                   )}
