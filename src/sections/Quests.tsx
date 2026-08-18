@@ -12,12 +12,66 @@ import {
   Flame,
   Sparkles,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  BarChart2,
+  Info,
+  Gift
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import type { Quest, Difficulty, QuestType, DayOfWeek } from '@/types/game';
 import { getBrazilDate, getBrazilDateStringFromDate } from '@/types/game';
+
+function rollStreakChestRarity(days: number): 'common' | 'rare' | 'epic' | 'legendary' {
+  if (days === 7) return 'common';
+  if (days === 14) return 'rare';
+  if (days === 28) return 'epic';
+  if (days === 365) return 'legendary';
+  
+  if (days >= 42 && days <= 150) {
+    return Math.random() < 0.70 ? 'rare' : 'epic';
+  }
+  
+  if (days >= 175 && days <= 300) {
+    return Math.random() < 0.60 ? 'epic' : 'rare';
+  }
+  
+  if (days === 325) {
+    return Math.random() < 0.80 ? 'epic' : 'legendary';
+  }
+  
+  return 'rare';
+}
+
+function getChestImagePath(rarity: 'common' | 'rare' | 'epic' | 'legendary'): string {
+  switch (rarity) {
+    case 'common': return '/chests/common.png';
+    case 'rare': return '/chests/rare.png';
+    case 'epic': return '/chests/epic.png';
+    case 'legendary': return '/chests/legendary.png';
+    default: return '/chests/common.png';
+  }
+}
+
+const STREAK_REWARDS = [
+  { days: 7, title: 'Baú Comum', titleUnlocked: 'Portador da Chama', defaultRarity: 'common' as const, gold: 150, crystals: 25, energy: 2 },
+  { days: 14, title: 'Baú Raro', titleUnlocked: 'Discipulo da Forja', defaultRarity: 'rare' as const, gold: 350, crystals: 50, energy: 4 },
+  { days: 28, title: 'Baú Épico', titleUnlocked: 'Guerreiro Incansável', defaultRarity: 'epic' as const, gold: 750, crystals: 100, energy: 7 },
+  { days: 42, title: 'Baú Misto (42d)', titleUnlocked: 'Cavaleiro da Persistência', defaultRarity: 'rare' as const, gold: 1100, crystals: 130, energy: 8, chanceInfo: '70% Raro / 30% Épico' },
+  { days: 56, title: 'Baú Misto (56d)', titleUnlocked: 'Forjado na Disciplina', defaultRarity: 'rare' as const, gold: 1400, crystals: 160, energy: 9, chanceInfo: '70% Raro / 30% Épico' },
+  { days: 70, title: 'Baú Misto (70d)', titleUnlocked: 'Mestre da Forja', defaultRarity: 'rare' as const, gold: 1800, crystals: 200, energy: 10, chanceInfo: '70% Raro / 30% Épico' },
+  { days: 100, title: 'Baú Misto (100d)', titleUnlocked: 'Senhor da Constância', defaultRarity: 'rare' as const, gold: 2500, crystals: 280, energy: 12, chanceInfo: '70% Raro / 30% Épico' },
+  { days: 125, title: 'Baú Misto (125d)', defaultRarity: 'rare' as const, gold: 3000, crystals: 330, energy: 14, chanceInfo: '70% Raro / 30% Épico' },
+  { days: 150, title: 'Baú Misto (150d)', titleUnlocked: 'Lenda', defaultRarity: 'rare' as const, gold: 3600, crystals: 400, energy: 16, chanceInfo: '70% Raro / 30% Épico' },
+  { days: 175, title: 'Baú Superior (175d)', defaultRarity: 'epic' as const, gold: 4200, crystals: 450, energy: 18, chanceInfo: '60% Épico / 40% Raro' },
+  { days: 200, title: 'Baú Superior (200d)', titleUnlocked: 'Eterno', defaultRarity: 'epic' as const, gold: 5000, crystals: 520, energy: 20, chanceInfo: '60% Épico / 40% Raro' },
+  { days: 225, title: 'Baú Superior (225d)', defaultRarity: 'epic' as const, gold: 5800, crystals: 600, energy: 22, chanceInfo: '60% Épico / 40% Raro' },
+  { days: 250, title: 'Baú Superior (250d)', defaultRarity: 'epic' as const, gold: 6800, crystals: 700, energy: 24, chanceInfo: '60% Épico / 40% Raro' },
+  { days: 275, title: 'Baú Superior (275d)', defaultRarity: 'epic' as const, gold: 7800, crystals: 800, energy: 26, chanceInfo: '60% Épico / 40% Raro' },
+  { days: 300, title: 'Baú Superior (300d)', defaultRarity: 'epic' as const, gold: 9000, crystals: 950, energy: 28, chanceInfo: '60% Épico / 40% Raro' },
+  { days: 325, title: 'Baú Mítico (325d)', defaultRarity: 'epic' as const, gold: 11000, crystals: 1200, energy: 30, chanceInfo: '80% Épico / 20% Lendário' },
+  { days: 365, title: 'Baú Lendário (365d)', titleUnlocked: 'Ascendido', defaultRarity: 'legendary' as const, gold: 15000, crystals: 2000, energy: 50, chanceInfo: '100% Lendário' },
+];
 import {
     Dialog,
   DialogContent,
@@ -255,42 +309,78 @@ interface QuestsProps {}
 export function Quests({}: QuestsProps) {
   const { gameState, createQuest, addQuest, completeQuest, deleteQuest, updateQuest, toggleQuestCheckpoint, setGameState } = useGame();
   const { playerProfile } = gameState;
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
-  const [showQuestModal, setShowQuestModal] = useState(false);
-  const [showCompletedHabitos, setShowCompletedHabitos] = useState(false);
-  const [showCompletedDiarias, setShowCompletedDiarias] = useState(false);
-  const [showCompletedMetas, setShowCompletedMetas] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<Quest | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
-  const [editQuestDraft, setEditQuestDraft] = useState({
-    title: '',
-    description: '',
-    difficulty: 'medium' as Difficulty,
-    scheduledDate: '',
-    habitDays: [] as DayOfWeek[],
-    metaTarget: 100,
-    energyReward: 0,
-    isMultitask: false,
-    checkpointTitles: [] as string[],
+  const [claimedStreakRewards, setClaimedStreakRewards] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('dod_claimed_streak_rewards');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
-  const [newQuest, setNewQuest] = useState({
-    title: '',
-    description: '',
-    type: 'diaria' as QuestType,
-    difficulty: 'medium' as Difficulty,
-    scheduledDate: '',
-    habitDays: [] as DayOfWeek[],
-    metaTarget: 100,
-    energyReward: 0,
-    isMultitask: false,
-    checkpointTitles: [] as string[],
-  });
-  const [checkpointText, setCheckpointText] = useState('');
-  const [editCheckpointText, setEditCheckpointText] = useState('');
+  const [selectedChestReward, setSelectedChestReward] = useState<typeof STREAK_REWARDS[0] | null>(null);
+  const [showChestModal, setShowChestModal] = useState(false);
+  const [showStreakInfoModal, setShowStreakInfoModal] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+
+  const saveClaimedStreakRewards = (newClaimed: number[]) => {
+    setClaimedStreakRewards(newClaimed);
+    try {
+      localStorage.setItem('dod_claimed_streak_rewards', JSON.stringify(newClaimed));
+    } catch (e) {
+      console.error('Failed to save claimed streak rewards', e);
+    }
+  };
+
+  const handleClaimChest = (reward: typeof STREAK_REWARDS[0]) => {
+    const currentStreak = gameState.character.stats.streak || 0;
+    if (claimedStreakRewards.includes(reward.days)) return;
+    if (currentStreak < reward.days) return;
+
+    const rolledRarity = rollStreakChestRarity(reward.days);
+    const imagePath = getChestImagePath(rolledRarity);
+
+    const nextClaimed = [...claimedStreakRewards, reward.days];
+    saveClaimedStreakRewards(nextClaimed);
+
+    setGameState(prev => {
+      const updatedChar = { ...prev.character };
+      updatedChar.gold = (updatedChar.gold || 0) + reward.gold;
+      updatedChar.crystals = (updatedChar.crystals || 0) + reward.crystals;
+      updatedChar.energy = Math.min(updatedChar.maxEnergy, updatedChar.energy + reward.energy);
+
+      const nextProfile = { ...prev.playerProfile };
+      if (reward.titleUnlocked) {
+        const existingTitles = nextProfile.unlockedTitles || [];
+        if (!existingTitles.includes(reward.titleUnlocked)) {
+          const nextTitles = [...existingTitles, reward.titleUnlocked];
+          nextProfile.unlockedTitles = nextTitles;
+          nextProfile.activeTitle = reward.titleUnlocked;
+          try {
+            localStorage.setItem('dod_unlocked_titles', JSON.stringify(nextTitles));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+
+      const chestItem = {
+        id: `streak_chest_${reward.days}_${Date.now()}`,
+        name: `${reward.title} (${rolledRarity.toUpperCase()})`,
+        type: 'chest' as const,
+        rarity: rolledRarity,
+        description: `Baú do milestone de ${reward.days} dias de streak!`,
+        icon: imagePath,
+        value: reward.gold,
+      };
+
+      return {
+        ...prev,
+        character: updatedChar,
+        playerProfile: nextProfile,
+        inventory: [...(prev.inventory || []), chestItem],
+      };
+    });
+  };
 
   const todayStr = getBrazilDateStringFromDate(new Date());
   const currentDayOfWeek = getBrazilDate().getDay() as DayOfWeek;
@@ -516,330 +606,344 @@ export function Quests({}: QuestsProps) {
           />
         </div>
         
-        <div className="flex gap-2">
+        {/* Top Action Buttons: Nova Tarefa (Left), Calendário (Middle), Estatísticas (Right) */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 1. Nova Tarefa (Left Primary Action) */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <motion.button
+                className="px-3.5 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 font-bold rounded-lg text-white flex items-center gap-1.5 transition-colors shadow-md shadow-purple-600/20"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Nova Tarefa</span>
+              </motion.button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
+              <DialogHeader>
+                <DialogTitle className="font-cinzel text-xl">
+                  Criar Nova Tarefa
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 mt-4">
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Título da Tarefa</label>
+                  <Input
+                    placeholder="Ex: Treino de perna, Estudar React..."
+                    value={newQuest.title}
+                    onChange={(e) => setNewQuest(prev => ({ ...prev, title: e.target.value }))}
+                    className="bg-black/40 border-gray-700"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Descrição (opcional)</label>
+                  <Textarea
+                    placeholder="Detalhes sobre a tarefa..."
+                    value={newQuest.description}
+                    onChange={(e) => setNewQuest(prev => ({ ...prev, description: e.target.value }))}
+                    className="bg-black/40 border-gray-700 resize-none h-20"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 bg-black/30 border border-white/10 rounded-lg p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white truncate">Multitarefa</p>
+                    <p className="text-[10px] text-gray-500 truncate">Complete todos os checkpoints para receber a recompensa.</p>
+                  </div>
+                  <Switch
+                    checked={newQuest.isMultitask}
+                    onCheckedChange={(checked) => {
+                      setNewQuest(prev => ({
+                        ...prev,
+                        isMultitask: checked,
+                        checkpointTitles: checked ? prev.checkpointTitles : [],
+                      }));
+                      setCheckpointText('');
+                    }}
+                  />
+                </div>
+
+                {newQuest.isMultitask && (
+                  <div className="bg-black/30 border border-white/10 rounded-lg p-3 space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Novo checkpoint..."
+                        value={checkpointText}
+                        onChange={(e) => setCheckpointText(e.target.value)}
+                        className="bg-black/40 border-gray-700"
+                      />
+                      <Button
+                        type="button"
+                        className="bg-purple-600 hover:bg-purple-700"
+                        onClick={() => {
+                          const title = checkpointText.trim();
+                          if (!title) return;
+                          setNewQuest(prev => ({ ...prev, checkpointTitles: [...prev.checkpointTitles, title] }));
+                          setCheckpointText('');
+                        }}
+                      >
+                        Adicionar
+                      </Button>
+                    </div>
+
+                    <div className="space-y-1">
+                      {newQuest.checkpointTitles.map((t, idx) => (
+                        <div key={`${t}-${idx}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded px-2 py-1">
+                          <span className="text-xs text-gray-300">{t}</span>
+                          <button
+                            type="button"
+                            className="text-red-400 hover:text-red-300 text-xs font-bold"
+                            onClick={() => setNewQuest(prev => ({ ...prev, checkpointTitles: prev.checkpointTitles.filter((_, i) => i !== idx) }))}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className={cn("grid gap-4", autoRewardsEnabled ? "grid-cols-1" : "grid-cols-2")}>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
+                    <Select
+                      value={newQuest.type}
+                      onValueChange={(v) => {
+                        const nextType = v as QuestType;
+                        setNewQuest(prev => ({
+                          ...prev,
+                          type: nextType,
+                          scheduledDate: nextType === 'habito' ? '' : prev.scheduledDate,
+                          habitDays: nextType === 'habito' ? prev.habitDays : [],
+                          difficulty: autoRewardsEnabled ? autoDifficultyForType(nextType) : prev.difficulty,
+                        }));
+                      }}
+                    >
+                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                        <SelectItem value="habito" className="text-white">
+                          <div className="flex items-center gap-2">
+                            <Flame className="w-4 h-4 text-orange-400" />
+                            Hábito
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="diaria" className="text-white">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-cyan-400" />
+                            Diária
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="meta" className="text-white">
+                          <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-purple-400" />
+                            Meta
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {!autoRewardsEnabled && (
+                    <div>
+                      <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+                      <Select
+                        value={newQuest.difficulty}
+                        onValueChange={(v) => setNewQuest({ ...newQuest, difficulty: v as Difficulty })}
+                      >
+                        <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                          {Object.entries(difficultyConfig).map(([key, config]) => (
+                            <SelectItem key={key} value={key} className="text-white">
+                              <div className="flex items-center gap-2">
+                                <span>{config.emoji}</span>
+                                {config.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {newQuest.type === 'habito' && (
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-400 block">Dias da Semana</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
+                        const dayVal = idx as DayOfWeek;
+                        const isSelected = newQuest.habitDays.includes(dayVal);
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => {
+                              setNewQuest(prev => ({
+                                ...prev,
+                                habitDays: isSelected 
+                                  ? prev.habitDays.filter(d => d !== dayVal)
+                                  : [...prev.habitDays, dayVal]
+                              }));
+                            }}
+                            className={cn(
+                              "px-3 py-1 rounded-full text-xs font-bold transition-all border",
+                              isSelected 
+                                ? "bg-orange-500 border-orange-400 text-white shadow-lg" 
+                                : "bg-black/40 border-gray-700 text-gray-400"
+                            )}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Meta Target - Only shows when type is 'meta' */}
+                {newQuest.type === 'meta' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4"
+                  >
+                    <label className="text-sm text-purple-400 mb-2 block flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Meta (quantidade)
+                    </label>
+                    <Input
+                      type="number"
+                      value={newQuest.metaTarget}
+                      onChange={(e) => setNewQuest({ ...newQuest, metaTarget: parseInt(e.target.value) || 100 })}
+                      className="bg-[#16213e] border-purple-500/50 text-white"
+                      min={1}
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Defina um valor para acompanhar o progresso da meta
+                    </p>
+                  </motion.div>
+                )}
+
+                {newQuest.type !== 'habito' && (
+                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                    <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Dia (opcional)
+                    </label>
+                    <Input
+                      type="date"
+                      value={newQuest.scheduledDate}
+                      onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
+                      className="bg-[#16213e] border-cyan-500/50 text-white"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Se definido, a tarefa aparece no calendário nesse dia
+                    </p>
+                  </div>
+                )}
+
+                {(!autoRewardsEnabled || newQuest.type === 'meta') && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                    <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4" />
+                        Ganho de Energia
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="10"
+                              value={newQuest.energyReward}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                if (!isNaN(val)) {
+                                  setEnergyReward(val);
+                                } else if (e.target.value === '') {
+                                  setEnergyReward(0);
+                                }
+                              }}
+                              className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                            />
+                            <span className="text-sm font-black text-yellow-500">NRG</span>
+                          </div>
+                          <div className="text-[10px] text-purple-400 font-bold mt-1">
+                            ≈ {Math.floor(newQuest.energyReward * 5)} Fragmentos
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
+                        onClick={() => addEnergyReward(-0.2)}
+                      >
+                        -
+                      </Button>
+                      <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
+                        <div 
+                          className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all" 
+                          style={{ width: `${Math.min(100, (newQuest.energyReward / 10) * 100)}%` }}
+                        />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
+                        onClick={() => addEnergyReward(0.2)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCreateQuest}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Tarefa
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* 2. Calendário (Middle) */}
           <motion.button
             onClick={() => setShowCalendar(true)}
             className="px-3 py-1.5 text-xs bg-[#1a1a2e] border border-[#2d2d44] rounded-md text-gray-300 hover:bg-[#252542] flex items-center gap-1.5 transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Calendar className="w-3.5 h-3.5" />
-            Calendário
+            <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Calendário</span>
           </motion.button>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <motion.button
-              className="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 rounded-md text-white flex items-center gap-1.5 transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Nova Tarefa
-            </motion.button>
-          </DialogTrigger>
-          <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
-            <DialogHeader>
-              <DialogTitle className="font-cinzel text-xl">
-                Criar Nova Tarefa
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4 mt-4">
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">Título da Tarefa</label>
-                <Input
-                  placeholder="Ex: Treino de perna, Estudar React..."
-                  value={newQuest.title}
-                  onChange={(e) => setNewQuest(prev => ({ ...prev, title: e.target.value }))}
-                  className="bg-black/40 border-gray-700"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">Descrição (opcional)</label>
-                <Textarea
-                  placeholder="Detalhes sobre a tarefa..."
-                  value={newQuest.description}
-                  onChange={(e) => setNewQuest(prev => ({ ...prev, description: e.target.value }))}
-                  className="bg-black/40 border-gray-700 resize-none h-20"
-                />
-              </div>
 
-              <div className="flex items-center justify-between gap-4 bg-black/30 border border-white/10 rounded-lg p-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-white truncate">Multitarefa</p>
-                  <p className="text-[10px] text-gray-500 truncate">Complete todos os checkpoints para receber a recompensa.</p>
-                </div>
-                <Switch
-                  checked={newQuest.isMultitask}
-                  onCheckedChange={(checked) => {
-                    setNewQuest(prev => ({
-                      ...prev,
-                      isMultitask: checked,
-                      checkpointTitles: checked ? prev.checkpointTitles : [],
-                    }));
-                    setCheckpointText('');
-                  }}
-                />
-              </div>
-
-              {newQuest.isMultitask && (
-                <div className="bg-black/30 border border-white/10 rounded-lg p-3 space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Novo checkpoint..."
-                      value={checkpointText}
-                      onChange={(e) => setCheckpointText(e.target.value)}
-                      className="bg-black/40 border-gray-700"
-                    />
-                    <Button
-                      type="button"
-                      className="bg-purple-600 hover:bg-purple-700"
-                      onClick={() => {
-                        const title = checkpointText.trim();
-                        if (!title) return;
-                        setNewQuest(prev => ({ ...prev, checkpointTitles: [...prev.checkpointTitles, title] }));
-                        setCheckpointText('');
-                      }}
-                    >
-                      Adicionar
-                    </Button>
-                  </div>
-
-                  <div className="space-y-1">
-                    {newQuest.checkpointTitles.map((t, idx) => (
-                      <div key={`${t}-${idx}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded px-2 py-1">
-                        <span className="text-xs text-gray-300">{t}</span>
-                        <button
-                          type="button"
-                          className="text-red-400 hover:text-red-300 text-xs font-bold"
-                          onClick={() => setNewQuest(prev => ({ ...prev, checkpointTitles: prev.checkpointTitles.filter((_, i) => i !== idx) }))}
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className={cn("grid gap-4", autoRewardsEnabled ? "grid-cols-1" : "grid-cols-2")}>
-                <div>
-                  <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
-                  <Select
-                    value={newQuest.type}
-                    onValueChange={(v) => {
-                      const nextType = v as QuestType;
-                      setNewQuest(prev => ({
-                        ...prev,
-                        type: nextType,
-                        scheduledDate: nextType === 'habito' ? '' : prev.scheduledDate,
-                        habitDays: nextType === 'habito' ? prev.habitDays : [],
-                        difficulty: autoRewardsEnabled ? autoDifficultyForType(nextType) : prev.difficulty,
-                      }));
-                    }}
-                  >
-                    <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                      <SelectItem value="habito" className="text-white">
-                        <div className="flex items-center gap-2">
-                          <Flame className="w-4 h-4 text-orange-400" />
-                          Hábito
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="diaria" className="text-white">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-cyan-400" />
-                          Diária
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="meta" className="text-white">
-                        <div className="flex items-center gap-2">
-                          <Target className="w-4 h-4 text-purple-400" />
-                          Meta
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {!autoRewardsEnabled && (
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
-                    <Select
-                      value={newQuest.difficulty}
-                      onValueChange={(v) => setNewQuest({ ...newQuest, difficulty: v as Difficulty })}
-                    >
-                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                        {Object.entries(difficultyConfig).map(([key, config]) => (
-                          <SelectItem key={key} value={key} className="text-white">
-                            <div className="flex items-center gap-2">
-                              <span>{config.emoji}</span>
-                              {config.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              {newQuest.type === 'habito' && (
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-400 block">Dias da Semana</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
-                      const dayVal = idx as DayOfWeek;
-                      const isSelected = newQuest.habitDays.includes(dayVal);
-                      return (
-                        <button
-                          key={day}
-                          onClick={() => {
-                            setNewQuest(prev => ({
-                              ...prev,
-                              habitDays: isSelected 
-                                ? prev.habitDays.filter(d => d !== dayVal)
-                                : [...prev.habitDays, dayVal]
-                            }));
-                          }}
-                          className={cn(
-                            "px-3 py-1 rounded-full text-xs font-bold transition-all border",
-                            isSelected 
-                              ? "bg-orange-500 border-orange-400 text-white shadow-lg" 
-                              : "bg-black/40 border-gray-700 text-gray-400"
-                          )}
-                        >
-                          {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-                  {/* Meta Target - Only shows when type is 'meta' */}
-                  {newQuest.type === 'meta' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4"
-                    >
-                      <label className="text-sm text-purple-400 mb-2 block flex items-center gap-2">
-                        <Target className="w-4 h-4" />
-                        Meta (quantidade)
-                      </label>
-                      <Input
-                        type="number"
-                        value={newQuest.metaTarget}
-                        onChange={(e) => setNewQuest({ ...newQuest, metaTarget: parseInt(e.target.value) || 100 })}
-                        className="bg-[#16213e] border-purple-500/50 text-white"
-                        min={1}
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Defina um valor para acompanhar o progresso da meta
-                      </p>
-                    </motion.div>
-                  )}
-
-              {newQuest.type !== 'habito' && (
-                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                  <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Dia (opcional)
-                  </label>
-                  <Input
-                    type="date"
-                    value={newQuest.scheduledDate}
-                    onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
-                    className="bg-[#16213e] border-cyan-500/50 text-white"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Se definido, a tarefa aparece no calendário nesse dia
-                  </p>
-                </div>
-              )}
-
-              {(!autoRewardsEnabled || newQuest.type === 'meta') && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                  <label className="text-sm text-yellow-500 mb-2 block flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4" />
-                      Ganho de Energia
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="10"
-                            value={newQuest.energyReward}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value);
-                              if (!isNaN(val)) {
-                                setEnergyReward(val);
-                              } else if (e.target.value === '') {
-                                setEnergyReward(0);
-                              }
-                            }}
-                            className="w-16 bg-black/40 border border-yellow-500/30 rounded-lg px-2 py-1 text-right font-black text-yellow-500 focus:outline-none focus:border-yellow-500 transition-colors"
-                          />
-                          <span className="text-sm font-black text-yellow-500">NRG</span>
-                        </div>
-                        <div className="text-[10px] text-purple-400 font-bold mt-1">
-                          ≈ {Math.floor(newQuest.energyReward * 5)} Fragmentos
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
-                      onClick={() => addEnergyReward(-0.2)}
-                    >
-                      -
-                    </Button>
-                    <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden relative">
-                      <div 
-                        className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all" 
-                        style={{ width: `${Math.min(100, (newQuest.energyReward / 10) * 100)}%` }}
-                      />
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="bg-yellow-500/10 border-yellow-500/30 text-yellow-500 h-8 w-8 p-0"
-                      onClick={() => addEnergyReward(0.2)}
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCreateQuest}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Tarefa
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-            </Dialog>
+          {/* 3. Estatísticas (Right) */}
+          <motion.button
+            onClick={() => setShowStatsModal(true)}
+            className="px-3 py-1.5 text-xs bg-[#1a1a2e] border border-[#2d2d44] rounded-md text-gray-300 hover:bg-[#252542] flex items-center gap-1.5 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <BarChart2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Estatísticas</span>
+          </motion.button>
         </div>
       </div>
 
@@ -866,26 +970,136 @@ export function Quests({}: QuestsProps) {
         </motion.div>
       )}
 
-      {/* Streak Indicator */}
+      {/* Streak & Chest Rewards Card matching user screenshot design */}
       <motion.div 
-        className="card-dungeon p-4 flex items-center gap-4"
+        className="card-dungeon p-4 relative overflow-hidden bg-[#0c0c14] border border-[#232338] rounded-2xl shadow-xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center">
-          <Flame className="w-6 h-6 text-orange-500" />
-        </div>
-        <div>
-          <p className="text-sm text-gray-400">Streak Atual</p>
-          <p className="text-2xl font-bold text-white">
-            {gameState.character.stats.streak} dias
-          </p>
-        </div>
-        <div className="ml-auto text-right">
-          <p className="text-sm text-gray-400">Recorde</p>
-          <p className="text-xl font-bold text-orange-400">
-            {gameState.character.stats.maxStreak} dias
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          
+          {/* Left Column: Streak Stats */}
+          <div className="md:col-span-5 flex items-center gap-3.5 pr-0 md:pr-4 md:border-r border-[#222234]">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(249,115,22,0.25)]">
+              <Flame className="w-7 h-7 text-orange-500 fill-orange-500/20" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Streak Atual</p>
+              <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                {gameState.character.stats.streak} <span className="text-sm font-normal text-gray-300">dias</span>
+              </p>
+              <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
+                Melhor streak: <span className="text-orange-400 font-bold">{gameState.character.stats.maxStreak} dias</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Right Column: Chest Rewards Track */}
+          <div className="md:col-span-7 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-black tracking-wider text-purple-400 uppercase font-cinzel">
+                  RECOMPENSAS DE STREAK
+                </span>
+                <button
+                  onClick={() => setShowStreakInfoModal(true)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                  title="Informações sobre recompensas"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <span className="text-[9px] text-gray-500 font-mono hidden sm:inline">
+                ← Deslize para ver todos os 17 marcos →
+              </span>
+            </div>
+
+            {/* Scrollable Chest Track Container */}
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-purple-600/40 scrollbar-track-black/40 pt-3 pb-2 px-1 rounded-xl bg-black/30 border border-white/5">
+              <div className="min-w-[1280px] relative px-4 pb-1">
+                {/* Progress Line */}
+                <div className="absolute left-6 right-6 top-[2.75rem] h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-600 via-purple-500 via-amber-400 to-yellow-300 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, ((gameState.character.stats.streak || 0) / 365) * 100)}%` }}
+                  />
+                </div>
+
+                {/* Chest Items (17 Milestones) */}
+                <div className="flex justify-between items-end relative z-10">
+                  {STREAK_REWARDS.map((reward) => {
+                    const isClaimed = claimedStreakRewards.includes(reward.days);
+                    const isUnlocked = (gameState.character.stats.streak || 0) >= reward.days;
+                    const imageSrc = getChestImagePath(reward.defaultRarity);
+
+                    return (
+                      <div key={reward.days} className="flex flex-col items-center group relative min-w-[55px]">
+                        <button
+                          onClick={() => {
+                            setSelectedChestReward(reward);
+                            setShowChestModal(true);
+                          }}
+                          className={cn(
+                            "relative transition-all duration-300 flex flex-col items-center",
+                            isUnlocked && !isClaimed && "hover:scale-110 cursor-pointer animate-bounce",
+                            isClaimed && "opacity-85 cursor-pointer",
+                            !isUnlocked && "opacity-60 grayscale-[30%] hover:scale-105 cursor-pointer"
+                          )}
+                        >
+                          {/* Glowing ring for available */}
+                          {isUnlocked && !isClaimed && (
+                            <div className="absolute inset-0 bg-amber-400/40 rounded-full blur-md animate-ping" />
+                          )}
+
+                          <img
+                            src={imageSrc}
+                            alt={reward.title}
+                            className="w-11 h-11 sm:w-13 sm:h-13 object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] relative z-10"
+                          />
+
+                          {/* Claimed Checkmark Badge */}
+                          {isClaimed && (
+                            <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border border-black shadow-md z-20">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                          )}
+
+                          {/* Title badge indicator */}
+                          {reward.titleUnlocked && (
+                            <div className="absolute -bottom-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-[8px] text-black font-black px-1 rounded-full z-20 uppercase tracking-tighter shadow-sm border border-black/40">
+                              Título
+                            </div>
+                          )}
+                        </button>
+
+                        {/* Node Dot */}
+                        <div 
+                          className={cn(
+                            "w-3 h-3 rounded-full border-2 mt-1.5 relative z-10 transition-colors",
+                            isClaimed ? "bg-green-500 border-green-300" : isUnlocked ? "bg-amber-400 border-amber-200 shadow-[0_0_8px_rgba(251,191,36,0.8)]" : "bg-[#141420] border-gray-600"
+                          )}
+                        />
+
+                        {/* Days Label */}
+                        <span className={cn(
+                          "text-[10px] font-mono font-bold mt-0.5",
+                          isClaimed ? "text-green-400" : isUnlocked ? "text-amber-300" : "text-gray-400"
+                        )}>
+                          {reward.days}d
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Subtitle */}
+            <p className="text-[10px] text-gray-400 text-center italic tracking-wide pt-1">
+              Mantenha seu streak para conquistar títulos lendários e baús épicos!
+            </p>
+          </div>
+
         </div>
       </motion.div>
 
@@ -1473,6 +1687,206 @@ export function Quests({}: QuestsProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Chest Reward Modal */}
+      <Dialog open={showChestModal} onOpenChange={setShowChestModal}>
+        <DialogContent className="bg-[#12121c] border-[#252538] text-white max-w-sm rounded-2xl p-5 text-center">
+          {selectedChestReward && (
+            <div className="space-y-4 py-2">
+              <div className="relative inline-block">
+                <img
+                  src={getChestImagePath(selectedChestReward.defaultRarity)}
+                  alt={selectedChestReward.title}
+                  className="w-24 h-24 mx-auto object-contain drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                />
+                {claimedStreakRewards.includes(selectedChestReward.days) && (
+                  <div className="absolute top-0 right-0 bg-green-500 text-white rounded-full p-1 border-2 border-black">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold font-cinzel text-purple-300">
+                  {selectedChestReward.title}
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Milestone de {selectedChestReward.days} dias de streak ininterrupto!
+                </p>
+
+                {selectedChestReward.chanceInfo && (
+                  <span className="inline-block bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-bold px-2 py-0.5 rounded-full mt-2">
+                    🎲 Sorteio: {selectedChestReward.chanceInfo}
+                  </span>
+                )}
+              </div>
+
+              {/* Unlocked Title Badge */}
+              {selectedChestReward.titleUnlocked && (
+                <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/40 rounded-xl p-2.5 text-amber-300 text-xs font-bold flex items-center justify-center gap-2 shadow-inner">
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Título: "{selectedChestReward.titleUnlocked}"</span>
+                </div>
+              )}
+
+              {/* Rewards List */}
+              <div className="bg-black/40 border border-white/10 rounded-xl p-3 grid grid-cols-2 gap-2 text-left text-xs font-semibold">
+                <div className="flex items-center gap-1.5 text-amber-400">
+                  <span>🪙</span> +{selectedChestReward.gold} Ouro
+                </div>
+                <div className="flex items-center gap-1.5 text-purple-400">
+                  <span>💎</span> +{selectedChestReward.crystals} Cristais
+                </div>
+                <div className="flex items-center gap-1.5 text-cyan-400">
+                  <span>⚡</span> +{selectedChestReward.energy} Energia
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-400">
+                  <span>📦</span> 1x Baú
+                </div>
+              </div>
+
+              {/* Action Button */}
+              {claimedStreakRewards.includes(selectedChestReward.days) ? (
+                <Button disabled className="w-full bg-green-950/60 border border-green-500/40 text-green-300 h-10 font-bold">
+                  ✓ Recompensa Já Resgatada
+                </Button>
+              ) : (gameState.character.stats.streak || 0) >= selectedChestReward.days ? (
+                <Button
+                  onClick={() => {
+                    handleClaimChest(selectedChestReward);
+                    setShowChestModal(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black h-10 shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                >
+                  <Gift className="w-4 h-4 mr-1.5" />
+                  Resgatar Recompensa!
+                </Button>
+              ) : (
+                <Button disabled className="w-full bg-gray-800/80 border border-gray-700 text-gray-400 h-10 text-xs">
+                  🔒 Requer {selectedChestReward.days} dias (Faltam {selectedChestReward.days - (gameState.character.stats.streak || 0)} dias)
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Streak Info Modal */}
+      <Dialog open={showStreakInfoModal} onOpenChange={setShowStreakInfoModal}>
+        <DialogContent className="bg-[#141420] border-[#2a2a3e] text-white max-w-md rounded-2xl p-5 max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-lg flex items-center gap-2 text-purple-400">
+              <Flame className="w-5 h-5 text-orange-500" />
+              Títulos & Recompensas de Streak
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-xs text-gray-300 space-y-3 py-2 leading-relaxed">
+            <p>
+              🔥 <strong>Mantenha a consistência:</strong> Conclua suas tarefas diariamente para manter e evoluir seu streak contínuo!
+            </p>
+
+            <div className="bg-black/40 border border-white/10 rounded-xl p-3 space-y-2">
+              <h4 className="text-[11px] font-bold text-amber-400 uppercase tracking-wider font-cinzel flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Títulos Conquistáveis:
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-gray-300">
+                <div>• <strong>7 dias:</strong> Portador da Chama</div>
+                <div>• <strong>14 dias:</strong> Discipulo da Forja</div>
+                <div>• <strong>28 dias:</strong> Guerreiro Incansável</div>
+                <div>• <strong>42 dias:</strong> Cavaleiro da Persistência</div>
+                <div>• <strong>56 dias:</strong> Forjado na Disciplina</div>
+                <div>• <strong>70 dias:</strong> Mestre da Forja</div>
+                <div>• <strong>100 dias:</strong> Senhor da Constância</div>
+                <div>• <strong>150 dias:</strong> Lenda</div>
+                <div>• <strong>200 dias:</strong> Eterno</div>
+                <div>• <strong>365 dias:</strong> Ascendido</div>
+              </div>
+            </div>
+
+            <div className="bg-black/40 border border-white/10 rounded-xl p-3 space-y-1 text-[11px] text-gray-300">
+              <h4 className="text-[11px] font-bold text-purple-400 uppercase tracking-wider font-cinzel">
+                🎲 Sorteio de Baús:
+              </h4>
+              <p>• <strong>42d a 150d:</strong> 70% Raro / 30% Épico</p>
+              <p>• <strong>175d a 300d:</strong> 60% Épico / 40% Raro</p>
+              <p>• <strong>325d:</strong> 80% Épico / 20% Lendário</p>
+              <p>• <strong>365d:</strong> 100% Lendário</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Statistics Modal */}
+      <Dialog open={showStatsModal} onOpenChange={setShowStatsModal}>
+        <DialogContent className="bg-[#12121c] border-[#252538] text-white max-w-md rounded-2xl p-5">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-lg flex items-center gap-2 text-emerald-400">
+              <BarChart2 className="w-5 h-5" />
+              Estatísticas de Produtividade
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Streak & Consistência */}
+            <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-2">
+              <h4 className="text-xs font-bold text-orange-400 font-cinzel flex items-center gap-1.5">
+                <Flame className="w-4 h-4" />
+                Consistência & Streak
+              </h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-[#181826] p-2.5 rounded-lg border border-white/5">
+                  <span className="text-gray-400 text-[10px] block">Streak Atual</span>
+                  <span className="text-lg font-black text-white">{gameState.character.stats.streak} dias</span>
+                </div>
+                <div className="bg-[#181826] p-2.5 rounded-lg border border-white/5">
+                  <span className="text-gray-400 text-[10px] block">Recorde Máximo</span>
+                  <span className="text-lg font-black text-orange-400">{gameState.character.stats.maxStreak} dias</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quadro de Tarefas */}
+            <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-2">
+              <h4 className="text-xs font-bold text-cyan-400 font-cinzel flex items-center gap-1.5">
+                <Target className="w-4 h-4" />
+                Resumo de Tarefas
+              </h4>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="bg-[#181826] p-2 rounded-lg border border-white/5">
+                  <span className="text-orange-400 text-[10px] font-bold block">Hábitos</span>
+                  <span className="text-base font-black text-white">{activeHabitos.length}</span>
+                </div>
+                <div className="bg-[#181826] p-2 rounded-lg border border-white/5">
+                  <span className="text-cyan-400 text-[10px] font-bold block">Diárias</span>
+                  <span className="text-base font-black text-white">{activeDiarias.length}</span>
+                </div>
+                <div className="bg-[#181826] p-2 rounded-lg border border-white/5">
+                  <span className="text-purple-400 text-[10px] font-bold block">Metas</span>
+                  <span className="text-base font-black text-white">{activeMetas.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recompensas de Streak Resgatadas */}
+            <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-purple-300 block">Baús de Streak Resgatados</span>
+                <span className="text-[10px] text-gray-400">Milestones atingidos</span>
+              </div>
+              <span className="text-lg font-black text-amber-400 font-mono">
+                {claimedStreakRewards.length} / {STREAK_REWARDS.length}
+              </span>
+            </div>
+
+            <Button
+              onClick={() => setShowStatsModal(false)}
+              className="w-full bg-[#1e1e2d] hover:bg-[#28283d] text-gray-200 border border-white/10 h-9 text-xs"
+            >
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
