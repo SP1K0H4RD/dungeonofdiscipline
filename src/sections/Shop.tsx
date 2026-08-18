@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import {
-  Coins,
+import { 
+  Coins, 
   Hammer,
   Lock,
   X,
@@ -9,7 +9,16 @@ import {
   Filter,
   Info,
   Plus,
-  ShoppingBag
+  ShoppingBag,
+  Grid,
+  Sword,
+  Shield,
+  Gem,
+  FlaskConical,
+  Scroll,
+  RotateCw,
+  Hourglass,
+  History
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -21,10 +30,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
+import { 
   FORGE_SUCCESS_CHANCES,
-  FORGE_BASE_COSTS,
-  FORGE_RARITY_MULTIPLIERS
+  FORGE_BASE_COSTS, 
+  FORGE_RARITY_MULTIPLIERS 
 } from '@/types/game';
 
 const rarityColors: Record<Rarity, { border: string; bg: string; text: string; shadow: string; glow: string }> = {
@@ -33,6 +42,14 @@ const rarityColors: Record<Rarity, { border: string; bg: string; text: string; s
   epic: { border: 'border-purple-500/60', bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/20', glow: 'shadow-purple-500/30' },
   legendary: { border: 'border-yellow-500/60', bg: 'bg-yellow-500/10', text: 'text-yellow-400', shadow: 'shadow-yellow-500/20', glow: 'shadow-yellow-500/40' },
   mythic: { border: 'border-red-500/60', bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/20', glow: 'shadow-red-500/50' },
+};
+
+const rarityPt: Record<Rarity, string> = {
+  common: 'Comum',
+  rare: 'Raro',
+  epic: 'Épico',
+  legendary: 'Lendário',
+  mythic: 'Mítico',
 };
 
 // Shard text color mapping matching rarity border colors
@@ -44,11 +61,114 @@ const shardTextColor: Record<Rarity, string> = {
   mythic: 'text-red-400',
 };
 
+interface ShopCatalogItem {
+  id: string;
+  name: string;
+  rarity: Rarity;
+  type: 'weapon' | 'armor' | 'accessory' | 'item';
+  statsLabel: string;
+  price: number;
+  icon: string;
+  typeIcon: any;
+  color: string;
+}
+
+const SHOP_CATALOG: ShopCatalogItem[] = [
+  {
+    id: 'espada-longa',
+    name: 'Espada Longa',
+    rarity: 'epic',
+    type: 'weapon',
+    statsLabel: 'ATK +18',
+    price: 120,
+    icon: '🗡️',
+    typeIcon: Sword,
+    color: 'text-purple-400'
+  },
+  {
+    id: 'escudo-guardiao',
+    name: 'Escudo do Guardião',
+    rarity: 'rare',
+    type: 'armor',
+    statsLabel: 'DEF +15',
+    price: 95,
+    icon: '🛡️',
+    typeIcon: Shield,
+    color: 'text-blue-400'
+  },
+  {
+    id: 'armadura-valente',
+    name: 'Armadura do Valente',
+    rarity: 'epic',
+    type: 'armor',
+    statsLabel: 'DEF +25  HP +40',
+    price: 180,
+    icon: '🥋',
+    typeIcon: Shield,
+    color: 'text-purple-400'
+  },
+  {
+    id: 'anel-precisao',
+    name: 'Anel da Precisão',
+    rarity: 'rare',
+    type: 'accessory',
+    statsLabel: 'CRIT +8%',
+    price: 90,
+    icon: '💍',
+    typeIcon: Gem,
+    color: 'text-blue-400'
+  },
+  {
+    id: 'adaga-sombria',
+    name: 'Adaga Sombria',
+    rarity: 'common',
+    type: 'weapon',
+    statsLabel: 'ATK +6',
+    price: 30,
+    icon: '🗡️',
+    typeIcon: Sword,
+    color: 'text-gray-400'
+  },
+  {
+    id: 'colete-couro',
+    name: 'Colete de Couro',
+    rarity: 'common',
+    type: 'armor',
+    statsLabel: 'DEF +5',
+    price: 25,
+    icon: '🦺',
+    typeIcon: Shield,
+    color: 'text-gray-400'
+  },
+  {
+    id: 'pocao-cura',
+    name: 'Poção de Cura',
+    rarity: 'common',
+    type: 'item',
+    statsLabel: 'Restaura 50 HP',
+    price: 20,
+    icon: '🧪',
+    typeIcon: FlaskConical,
+    color: 'text-emerald-400'
+  },
+  {
+    id: 'pergaminho-teleporte',
+    name: 'Pergaminho de Teleporte',
+    rarity: 'epic',
+    type: 'item',
+    statsLabel: 'Teleporta para a base',
+    price: 150,
+    icon: '📜',
+    typeIcon: Scroll,
+    color: 'text-purple-400'
+  },
+];
+
 // 3D Crystal Gem Vector Component matching exact screenshot design
 function CrystalIcon({ rarity }: { rarity: Rarity }) {
   if (rarity === 'common') {
     return (
-      <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] shrink-0" viewBox="0 0 100 120" fill="none">
+      <svg className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" viewBox="0 0 100 120" fill="none">
         <defs>
           <linearGradient id="c_common_main" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#ffffff" />
@@ -70,7 +190,7 @@ function CrystalIcon({ rarity }: { rarity: Rarity }) {
 
   if (rarity === 'rare') {
     return (
-      <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_10px_rgba(59,130,246,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
+      <svg className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" viewBox="0 0 100 120" fill="none">
         <defs>
           <linearGradient id="c_rare_main" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#60a5fa" />
@@ -92,7 +212,7 @@ function CrystalIcon({ rarity }: { rarity: Rarity }) {
 
   if (rarity === 'epic') {
     return (
-      <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
+      <svg className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" viewBox="0 0 100 120" fill="none">
         <defs>
           <linearGradient id="c_epic_main" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#c084fc" />
@@ -114,7 +234,7 @@ function CrystalIcon({ rarity }: { rarity: Rarity }) {
 
   // Legendary (Gold / Amber)
   return (
-    <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_12px_rgba(245,158,11,1)] shrink-0" viewBox="0 0 100 120" fill="none">
+    <svg className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" viewBox="0 0 100 120" fill="none">
       <defs>
         <linearGradient id="c_leg_main" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#fde047" />
@@ -135,9 +255,11 @@ function CrystalIcon({ rarity }: { rarity: Rarity }) {
 }
 
 export function Shop() {
-  const { gameState, upgradeItem } = useGame();
+  const { gameState, upgradeItem, setGameState } = useGame();
   const { economy, inventory, character } = gameState;
   const [castleTab, setCastleTab] = useState<'forja' | 'loja'>('forja');
+  const [lojaSubTab, setLojaSubTab] = useState<'comprar' | 'vender' | 'historico'>('comprar');
+  const [shopCategory, setShopCategory] = useState<'todos' | 'armas' | 'armaduras' | 'acessorios' | 'itens'>('todos');
   const [selectedForgeItemId, setSelectedForgeItemId] = useState<string | null>(null);
   const [equipmentFilter, setEquipmentFilter] = useState<string>('todos');
   const [confirmUpgrade, setConfirmUpgrade] = useState(false);
@@ -145,7 +267,11 @@ export function Shop() {
   const [showItemPickerModal, setShowItemPickerModal] = useState(false);
 
   // Shop item purchase feedback
-  const [purchaseMsg, setPurchaseMsg] = useState<string | null>(null);
+  const [purchaseMsg, setPurchaseMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [historyLog, setHistoryLog] = useState<{ id: string; text: string; date: string }[]>([
+    { id: '1', text: 'Comptou Espada Afiada por 30 Ouro', date: 'Hoje às 14:20' },
+    { id: '2', text: 'Vendeu Escudo Velho por 15 Ouro', date: 'Ontem às 18:10' }
+  ]);
 
   const allAvailableItems = [
     ...inventory.items,
@@ -160,13 +286,13 @@ export function Shop() {
 
   // Calculate costs and success chance
   const nextLevel = selectedForgeItem ? selectedForgeItem.upgradeLevel + 1 : 1;
-  const goldCost = selectedForgeItem
+  const goldCost = selectedForgeItem 
     ? (FORGE_BASE_COSTS[nextLevel]?.gold || 25) * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]
     : 0;
-  const shardCost = selectedForgeItem
+  const shardCost = selectedForgeItem 
     ? (FORGE_BASE_COSTS[nextLevel]?.shards || 1)
     : 0;
-  const successChance = selectedForgeItem
+  const successChance = selectedForgeItem 
     ? (FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel] ?? 100)
     : 0;
 
@@ -189,12 +315,43 @@ export function Shop() {
     return true;
   });
 
+  // Filtered catalog items for Loja view
+  const filteredShopItems = SHOP_CATALOG.filter(item => {
+    if (shopCategory === 'armas') return item.type === 'weapon';
+    if (shopCategory === 'armaduras') return item.type === 'armor';
+    if (shopCategory === 'acessorios') return item.type === 'accessory';
+    if (shopCategory === 'itens') return item.type === 'item';
+    return true;
+  });
+
   const handleSlotBoxClick = () => {
     const el = document.getElementById('equipamentos-grid');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
     setShowItemPickerModal(true);
+  };
+
+  const handleBuyShopItem = (item: ShopCatalogItem) => {
+    if (economy.coins < item.price) {
+      setPurchaseMsg({ text: `Ouro insuficiente! Você precisa de ${item.price} Ouro.`, type: 'error' });
+      return;
+    }
+
+    // Deduct gold
+    setGameState(prev => ({
+      ...prev,
+      economy: {
+        ...prev.economy,
+        coins: prev.economy.coins - item.price
+      }
+    }));
+
+    setPurchaseMsg({ text: `Item "${item.name}" adquirido por ${item.price} Ouro!`, type: 'success' });
+    setHistoryLog(prev => [
+      { id: Date.now().toString(), text: `Comprou ${item.name} por ${item.price} Ouro`, date: 'Agora' },
+      ...prev
+    ]);
   };
 
   return (
@@ -235,8 +392,8 @@ export function Shop() {
       {castleTab === 'forja' ? (
         /* FORJA VIEW */
         <div className="space-y-4">
-
-          {/* Economy Shards Header Container (SHRUNK COMPACT BOX WITH PORTUGUESE NAMES) */}
+          
+          {/* Economy Shards Header Container */}
           <div className="card-dungeon p-2.5 sm:p-3 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-2 shadow-xl">
             {/* Top Gold Total Badge */}
             <div className="flex items-center gap-2">
@@ -249,7 +406,7 @@ export function Shop() {
               </div>
             </div>
 
-            {/* 4 Shards Grid side-by-side (COMUM, RARO, ÉPICO, LENDÁRIO) with Portuguese labels */}
+            {/* 4 Shards Grid side-by-side (COMUM, RARO, ÉPICO, LENDÁRIO) */}
             <div className="grid grid-cols-4 gap-1.5 xs:gap-2">
               {/* COMUM */}
               <div className="bg-[#0c0c16] border border-gray-600/50 rounded-xl p-1.5 sm:p-2 flex flex-col items-center justify-center text-center">
@@ -278,16 +435,16 @@ export function Shop() {
             </div>
           </div>
 
-          {/* FORJA ANCESTRAL Main Card with uploaded high-res forge image */}
+          {/* FORJA ANCESTRAL Main Card */}
           <div className="card-dungeon p-3.5 sm:p-5 bg-gradient-to-r from-[#140b08] via-[#0c0c16] to-[#0a0a12] border border-[#232338] rounded-2xl space-y-4 relative overflow-hidden shadow-2xl">
             <div className="flex flex-row items-center justify-between gap-2.5 xs:gap-3 sm:gap-4">
-
-              {/* Left: Fiery Anvil Image uploaded by user */}
+              
+              {/* Left: Fiery Anvil Image */}
               <div className="relative shrink-0 w-28 xs:w-36 sm:w-48 aspect-square rounded-2xl overflow-hidden bg-black/60 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-950/40">
                 {!anvilImgError ? (
-                  <img
-                    src="/forja_anvil.png?v=2"
-                    alt="Forja Ancestral"
+                  <img 
+                    src="/forja_anvil.png?v=2" 
+                    alt="Forja Ancestral" 
                     className="w-full h-full object-cover opacity-95 scale-105"
                     onError={() => setAnvilImgError(true)}
                   />
@@ -339,7 +496,7 @@ export function Shop() {
                           {selectedForgeItem.name}
                         </span>
                         {/* Clear selection button */}
-                        <div
+                        <div 
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedForgeItemId(null);
@@ -362,13 +519,12 @@ export function Shop() {
               </div>
             </div>
 
-            {/* Display Chance de Melhoria & Gasto de Ouro with DYNAMIC CRYSTAL COLOR */}
+            {/* Display Chance de Melhoria & Gasto de Ouro */}
             {selectedForgeItem && (
               <div className="bg-[#0a0a14] border border-[#2d2d44] rounded-xl p-2.5 flex items-center justify-between text-xs font-bold">
                 <div className="flex items-center gap-1.5 font-mono">
                   <Coins className="w-4 h-4 text-amber-400" />
                   <span className="text-amber-400">Custo: {goldCost} Ouro</span>
-                  {/* Dynamic Shard Text Color matching crystal rarity border */}
                   <span className={cn("ml-1 font-bold", shardTextColor[selectedForgeItem.rarity])}>
                     • {shardCost} {shardCost === 1 ? 'Cristal' : 'Cristais'}
                   </span>
@@ -382,7 +538,7 @@ export function Shop() {
               </div>
             )}
 
-            {/* ORANGE Action Button matching requested styling */}
+            {/* ORANGE Action Button */}
             <Button
               onClick={handleUpgrade}
               disabled={!selectedForgeItem}
@@ -393,13 +549,13 @@ export function Shop() {
                   : "bg-[#181826] text-gray-500 border-gray-800 cursor-not-allowed opacity-80"
               )}
             >
-              {selectedForgeItem
-                ? `Refinar Equipamento (+${selectedForgeItem.upgradeLevel} → +${selectedForgeItem.upgradeLevel + 1})`
+              {selectedForgeItem 
+                ? `Refinar Equipamento (+${selectedForgeItem.upgradeLevel} → +${selectedForgeItem.upgradeLevel + 1})` 
                 : 'Selecione um equipamento para começar'}
             </Button>
           </div>
 
-          {/* EQUIPAMENTOS Selection Section matching screenshot */}
+          {/* EQUIPAMENTOS Selection Section */}
           <div id="equipamentos-grid" className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel">
@@ -441,7 +597,7 @@ export function Shop() {
                     onClick={() => setSelectedForgeItemId(isSelected ? null : item.id)}
                     className={cn(
                       "min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 relative transition-all duration-200 shrink-0",
-                      isSelected
+                      isSelected 
                         ? "border-amber-500 bg-amber-500/20 ring-2 ring-amber-500/30 scale-102"
                         : `${rarity.border} ${rarity.bg} hover:scale-102`
                     )}
@@ -471,7 +627,7 @@ export function Shop() {
               </div>
             </div>
 
-            {/* Bottom Tip Bar matching screenshot */}
+            {/* Bottom Tip Bar */}
             <div className="flex items-center gap-1.5 p-2 bg-[#12121e]/80 border border-white/5 rounded-xl text-[10px] text-gray-400">
               <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Dica: Itens de maior raridade têm mais chances de obter atributos melhores na forja!</span>
@@ -480,100 +636,235 @@ export function Shop() {
 
         </div>
       ) : (
-        /* LOJA VIEW - SHOP CATALOG */
+        /* LOJA VIEW - EXACT MATCH TO USER SCREENSHOT */
         <div className="space-y-4">
-          <div className="card-dungeon p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+          
+          {/* Top Gold & Banner Header matching screenshot */}
+          <div className="card-dungeon p-3.5 sm:p-4 bg-gradient-to-r from-[#0d0d18] via-[#120a20] to-[#0a0a12] border border-[#232338] rounded-2xl flex items-center justify-between gap-3 shadow-xl overflow-hidden relative">
+            {/* Left: Ouro Badge */}
+            <div className="flex items-center gap-2.5 z-10 shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-900/30">
                 <Coins className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">SEU OURO</p>
-                <p className="text-xl font-black text-amber-400 font-mono leading-tight">{economy.coins}</p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">OURO TOTAL</p>
+                <p className="text-xl font-black text-amber-400 font-mono leading-none">{economy.coins}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-xs text-purple-400 font-bold bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-xl">
-              <ShoppingBag className="w-4 h-4" />
-              <span>Loja do Castelo</span>
+            {/* Center: Italic Subtitle */}
+            <div className="hidden xs:block flex-1 text-center z-10 px-2">
+              <p className="text-[11px] sm:text-xs text-gray-400 italic leading-snug">
+                Compre equipamentos e itens para se tornar mais forte!
+              </p>
+            </div>
+
+            {/* Right: Merchant Shop Illustration */}
+            <div className="relative shrink-0 w-24 h-16 rounded-xl overflow-hidden border border-purple-500/30 bg-black/60 shadow-md">
+              <img 
+                src="https://img.freepik.com/free-photo/fantasy-night-market-stall-glowing-lanterns_23-215093170.jpg" 
+                alt="Loja do Castelo" 
+                className="w-full h-full object-cover opacity-90"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
             </div>
           </div>
 
-          {/* Shop Catalog Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Item 1: Poção de Energia */}
-            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🧪</span>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Poção de Energia</h4>
-                  <p className="text-[10px] text-gray-400">+50 de Energia imediata</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setPurchaseMsg('Poção comprada com sucesso!')}
-                className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
-              >
-                100 🪙
-              </Button>
-            </div>
+          {/* Category Filter Tabs Bar matching screenshot */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {[
+              { id: 'todos', label: 'Todos', icon: Grid },
+              { id: 'armas', label: 'Armas', icon: Sword },
+              { id: 'armaduras', label: 'Armaduras', icon: Shield },
+              { id: 'acessorios', label: 'Acessórios', icon: Gem },
+              { id: 'itens', label: 'Itens', icon: FlaskConical },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = shopCategory === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setShopCategory(tab.id as any)}
+                  className={cn(
+                    "px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border",
+                    isActive
+                      ? "bg-[#25133d] border-purple-500/60 text-white shadow-md shadow-purple-900/30"
+                      : "bg-[#0c0c16] border-[#232338] text-gray-400 hover:text-white"
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-            {/* Item 2: Elixir de Vida */}
-            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">❤️</span>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Elixir da Vida</h4>
-                  <p className="text-[10px] text-gray-400">Restaura 100% do HP</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setPurchaseMsg('Elixir comprado com sucesso!')}
-                className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
-              >
-                150 🪙
-              </Button>
-            </div>
+          {/* LOJA Sub-Tab Content: [Comprar] / [Vender] / [Histórico] */}
+          {lojaSubTab === 'comprar' && (
+            /* Catalog Grid (2-Column Grid on Mobile matching screenshot) */
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {filteredShopItems.map((item) => {
+                const rarity = rarityColors[item.rarity];
+                const TypeIcon = item.typeIcon;
 
-            {/* Item 3: Pedra de Proteção */}
-            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🛡️</span>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Pedra de Proteção</h4>
-                  <p className="text-[10px] text-gray-400">Evita perda na forja</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setPurchaseMsg('Pedra de Proteção adquirida!')}
-                className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
-              >
-                250 🪙
-              </Button>
-            </div>
+                return (
+                  <div 
+                    key={item.id}
+                    className={cn(
+                      "card-dungeon p-3 bg-[#0a0a14] border-2 rounded-2xl flex flex-col justify-between relative overflow-hidden transition-all hover:scale-102 shadow-xl group",
+                      rarity.border
+                    )}
+                  >
+                    {/* Top Left Circular Type Badge */}
+                    <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 border border-white/20 flex items-center justify-center z-10">
+                      <TypeIcon className={cn("w-3 h-3", item.color)} />
+                    </div>
 
-            {/* Item 4: Baú Misterioso */}
-            <div className="card-dungeon p-3.5 bg-[#0c0c16] border border-[#232338] rounded-2xl flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">📦</span>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Baú de Equipamento</h4>
-                  <p className="text-[10px] text-gray-400">Contém 1 item aleatório</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setPurchaseMsg('Baú aberto com sucesso!')}
-                className="h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white font-bold px-3"
-              >
-                300 🪙
-              </Button>
+                    {/* Center Artwork / Icon */}
+                    <div className="w-full aspect-square flex items-center justify-center my-2 relative">
+                      <div className="text-5xl sm:text-6xl drop-shadow-xl group-hover:scale-110 transition-transform">
+                        {item.icon}
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                    </div>
+
+                    {/* Info Section */}
+                    <div className="text-center space-y-0.5 mb-2">
+                      <h4 className="text-xs font-bold text-white truncate max-w-full font-cinzel">
+                        {item.name}
+                      </h4>
+                      <p className={cn("text-[9px] font-semibold capitalize", rarity.text)}>
+                        {rarityPt[item.rarity]}
+                      </p>
+                      <p className="text-[10px] font-mono font-bold text-gray-300">
+                        {item.statsLabel}
+                      </p>
+                    </div>
+
+                    {/* Buy Button Badge matching screenshot */}
+                    <button
+                      onClick={() => handleBuyShopItem(item)}
+                      className="w-full py-1.5 bg-[#141424] hover:bg-[#1f1f36] border border-amber-500/40 rounded-xl flex items-center justify-center gap-1.5 text-amber-400 font-mono font-bold text-xs transition-colors shadow-inner"
+                    >
+                      <Coins className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{item.price}</span>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
+          )}
+
+          {lojaSubTab === 'vender' && (
+            /* VENDER TAB CONTENT */
+            <div className="card-dungeon p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3">
+              <h3 className="text-xs font-black text-white uppercase font-cinzel">Vender Itens do Inventário</h3>
+              {inventory.items.length === 0 ? (
+                <p className="text-xs text-gray-400 py-6 text-center">Nenhum item desequipado para vender.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {inventory.items.map((item) => (
+                    <div key={item.id} className="p-2.5 rounded-xl border border-[#232338] bg-[#0c0c16] flex flex-col items-center justify-between text-center gap-1">
+                      <span className="text-3xl">{item.icon}</span>
+                      <span className="text-xs font-bold text-white truncate max-w-full">{item.name}</span>
+                      <Button
+                        onClick={() => {
+                          const sellPrice = 15;
+                          setGameState(prev => ({
+                            ...prev,
+                            economy: { ...prev.economy, coins: prev.economy.coins + sellPrice },
+                            inventory: { ...prev.inventory, items: prev.inventory.items.filter(i => i.id !== item.id) }
+                          }));
+                          setPurchaseMsg({ text: `Vendeu ${item.name} por ${sellPrice} Ouro!`, type: 'success' });
+                        }}
+                        className="w-full h-7 text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                      >
+                        Vender (+15 🪙)
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {lojaSubTab === 'historico' && (
+            /* HISTÓRICO TAB CONTENT */
+            <div className="card-dungeon p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3">
+              <h3 className="text-xs font-black text-white uppercase font-cinzel">Histórico de Transações</h3>
+              <div className="space-y-2">
+                {historyLog.map((log) => (
+                  <div key={log.id} className="p-2.5 rounded-xl border border-white/5 bg-[#0c0c16] flex items-center justify-between text-xs">
+                    <span className="text-gray-200">{log.text}</span>
+                    <span className="text-[10px] text-gray-500 font-mono">{log.date}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Shop Auto-Refresh Countdown Timer Bar matching screenshot */}
+          <div className="flex items-center justify-between p-2.5 bg-[#0a0a14] border border-[#232338] rounded-xl text-[10px] text-gray-400">
+            <div className="flex items-center gap-1.5">
+              <RotateCw className="w-3.5 h-3.5 text-gray-400" />
+              <span>A loja atualiza automaticamente a cada 6 horas!</span>
+            </div>
+            <div className="flex items-center gap-1 font-mono font-bold text-white bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
+              <span>05:27:14</span>
+              <Hourglass className="w-3 h-3 text-amber-400" />
+            </div>
+          </div>
+
+          {/* Bottom Sub-Navigation Bar for Loja matching screenshot: [ 🛒 Comprar ] | [ 💰 Vender ] | [ 🕒 Histórico ] */}
+          <div className="grid grid-cols-3 gap-1.5 bg-[#0c0c16] border border-[#232338] rounded-2xl p-1 shadow-lg">
+            <button
+              onClick={() => setLojaSubTab('comprar')}
+              className={cn(
+                "py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all",
+                lojaSubTab === 'comprar'
+                  ? "bg-[#25133d] border border-purple-500/50 text-white shadow-md shadow-purple-900/30"
+                  : "text-gray-400 hover:text-white bg-transparent"
+              )}
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-purple-400" />
+              <span>Comprar</span>
+            </button>
+            <button
+              onClick={() => setLojaSubTab('vender')}
+              className={cn(
+                "py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all",
+                lojaSubTab === 'vender'
+                  ? "bg-[#25133d] border border-purple-500/50 text-white shadow-md shadow-purple-900/30"
+                  : "text-gray-400 hover:text-white bg-transparent"
+              )}
+            >
+              <Coins className="w-3.5 h-3.5 text-amber-400" />
+              <span>Vender</span>
+            </button>
+            <button
+              onClick={() => setLojaSubTab('historico')}
+              className={cn(
+                "py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all",
+                lojaSubTab === 'historico'
+                  ? "bg-[#25133d] border border-purple-500/50 text-white shadow-md shadow-purple-900/30"
+                  : "text-gray-400 hover:text-white bg-transparent"
+              )}
+            >
+              <History className="w-3.5 h-3.5 text-blue-400" />
+              <span>Histórico</span>
+            </button>
           </div>
 
           {/* Feedback message overlay */}
           {purchaseMsg && (
-            <div className="p-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-xs font-bold text-center flex items-center justify-between">
-              <span>{purchaseMsg}</span>
+            <div className={cn(
+              "p-3 border rounded-xl text-xs font-bold text-center flex items-center justify-between",
+              purchaseMsg.type === 'success' ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-red-500/10 border-red-500/30 text-red-400"
+            )}>
+              <span>{purchaseMsg.text}</span>
               <button onClick={() => setPurchaseMsg(null)} className="text-white hover:opacity-75">
                 <X className="w-4 h-4" />
               </button>
@@ -659,8 +950,8 @@ export function Shop() {
                 <Button
                   onClick={executeUpgrade}
                   disabled={
-                    selectedForgeItem.upgradeLevel >= 10 ||
-                    economy.coins < goldCost ||
+                    selectedForgeItem.upgradeLevel >= 10 || 
+                    economy.coins < goldCost || 
                     (economy?.shards?.[selectedForgeItem.rarity] || 0) < shardCost
                   }
                   className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold"
