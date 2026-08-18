@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Clock,
   Heart,
   Lock,
   RotateCcw,
@@ -178,7 +177,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-2 pt-10 pb-12"
+      className="space-y-2 pt-6 pb-4"
     >
       {/* Top Section: Profile (Left 50%) + Resources (Right 50%) */}
       <div className="grid grid-cols-2 gap-2 h-[350px]">
@@ -507,16 +506,19 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                     else if (chest.status === 'unlocked') collectChestRewards(index);
                   }}
                   className={cn(
-                    "w-full h-3 text-[6px] font-black uppercase rounded-[1px] transition-all p-0 font-cinzel",
-                    chest.status === 'locked' && "bg-purple-900/40 border border-purple-500/30 text-white",
-                    chest.status === 'unlocking' && "bg-gray-800 text-white",
-                    chest.status === 'unlocked' && "bg-green-600 hover:bg-green-700 text-white"
+                    "w-full h-4 text-[7px] font-black uppercase rounded-sm transition-all p-0 font-cinzel overflow-hidden flex items-center justify-center leading-none",
+                    chest.status === 'locked' && "bg-purple-900/50 border border-purple-500/40 text-white hover:bg-purple-800/60",
+                    chest.status === 'unlocking' && "bg-gray-800 border border-gray-600 text-white",
+                    chest.status === 'unlocked' && "bg-green-600 hover:bg-green-700 text-white shadow-sm"
                   )}
                 >
                   {chest.status === 'unlocking' ? (
-                    <div className="flex items-center justify-center gap-0.5">
-                      <Clock className="w-1.5 h-1.5 stroke-[1.5] text-white/90 shrink-0" />
-                      <span className="text-white">
+                    <div className="flex items-center justify-center gap-0.5 w-full h-full px-0.5">
+                      <svg className="w-2.5 h-2.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      <span className="text-white font-mono text-[7px] font-bold leading-none">
                         {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
                       </span>
                     </div>

@@ -355,7 +355,7 @@ export function Shop() {
   };
 
   return (
-    <div className="space-y-4 pt-10 pb-24 px-1">
+    <div className="space-y-2.5 pt-6 pb-6 px-1">
       {/* Header Title (Clean without subtitle description) */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-2 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">CASTELO</h2>
@@ -391,7 +391,7 @@ export function Shop() {
 
       {castleTab === 'forja' ? (
         /* FORJA VIEW */
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           
           {/* Economy Shards Header Container */}
           <div className="card-dungeon p-2.5 sm:p-3 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-2 shadow-xl">
@@ -637,7 +637,7 @@ export function Shop() {
         </div>
       ) : (
         /* LOJA VIEW - EXACT MATCH TO USER SCREENSHOT */
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           
           {/* Top Gold & Banner Header matching screenshot with full vertical height banner */}
           <div className="card-dungeon p-0 bg-gradient-to-r from-[#0d0d18] via-[#120a20] to-[#0a0a12] border border-[#232338] rounded-2xl flex flex-row items-stretch justify-between shadow-xl overflow-hidden relative min-h-[85px] sm:min-h-[100px]">

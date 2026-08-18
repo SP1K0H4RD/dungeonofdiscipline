@@ -912,13 +912,6 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-[#2d2d44] py-6 px-4">
-        <div className="max-w-7xl mx-auto text-center text-gray-500 text-sm">
-          <p>Dungeon of Discipline - Gamifique sua produtividade</p>
-          <p className="mt-1">Sua disciplina é sua maior arma</p>
-        </div>
-      </footer>
     </div>
   )}
 </>
