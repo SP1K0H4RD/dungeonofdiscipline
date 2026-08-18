@@ -309,6 +309,42 @@ interface QuestsProps {}
 export function Quests({}: QuestsProps) {
   const { gameState, createQuest, addQuest, completeQuest, deleteQuest, updateQuest, toggleQuestCheckpoint, setGameState } = useGame();
   const { playerProfile } = gameState;
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
+  const [showQuestModal, setShowQuestModal] = useState(false);
+  const [showCompletedHabitos, setShowCompletedHabitos] = useState(false);
+  const [showCompletedDiarias, setShowCompletedDiarias] = useState(false);
+  const [showCompletedMetas, setShowCompletedMetas] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Quest | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
+  const [editQuestDraft, setEditQuestDraft] = useState({
+    title: '',
+    description: '',
+    difficulty: 'medium' as Difficulty,
+    scheduledDate: '',
+    habitDays: [] as DayOfWeek[],
+    metaTarget: 100,
+    energyReward: 0,
+    isMultitask: false,
+    checkpointTitles: [] as string[],
+  });
+  const [newQuest, setNewQuest] = useState({
+    title: '',
+    description: '',
+    type: 'diaria' as QuestType,
+    difficulty: 'medium' as Difficulty,
+    scheduledDate: '',
+    habitDays: [] as DayOfWeek[],
+    metaTarget: 100,
+    energyReward: 0,
+    isMultitask: false,
+    checkpointTitles: [] as string[],
+  });
+  const [checkpointText, setCheckpointText] = useState('');
+  const [editCheckpointText, setEditCheckpointText] = useState('');
   const [claimedStreakRewards, setClaimedStreakRewards] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem('dod_claimed_streak_rewards');
@@ -337,7 +373,6 @@ export function Quests({}: QuestsProps) {
     if (currentStreak < reward.days) return;
 
     const rolledRarity = rollStreakChestRarity(reward.days);
-    const imagePath = getChestImagePath(rolledRarity);
 
     const nextClaimed = [...claimedStreakRewards, reward.days];
     saveClaimedStreakRewards(nextClaimed);
@@ -345,8 +380,12 @@ export function Quests({}: QuestsProps) {
     setGameState(prev => {
       const updatedChar = { ...prev.character };
       updatedChar.gold = (updatedChar.gold || 0) + reward.gold;
-      updatedChar.crystals = (updatedChar.crystals || 0) + reward.crystals;
       updatedChar.energy = Math.min(updatedChar.maxEnergy, updatedChar.energy + reward.energy);
+
+      const updatedEconomy = { ...prev.economy };
+      const currentShards = updatedEconomy.shards ? { ...updatedEconomy.shards } : { common: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
+      currentShards[rolledRarity] = (currentShards[rolledRarity] || 0) + 1;
+      updatedEconomy.shards = currentShards;
 
       const nextProfile = { ...prev.playerProfile };
       if (reward.titleUnlocked) {
@@ -363,21 +402,11 @@ export function Quests({}: QuestsProps) {
         }
       }
 
-      const chestItem = {
-        id: `streak_chest_${reward.days}_${Date.now()}`,
-        name: `${reward.title} (${rolledRarity.toUpperCase()})`,
-        type: 'chest' as const,
-        rarity: rolledRarity,
-        description: `Baú do milestone de ${reward.days} dias de streak!`,
-        icon: imagePath,
-        value: reward.gold,
-      };
-
       return {
         ...prev,
         character: updatedChar,
+        economy: updatedEconomy,
         playerProfile: nextProfile,
-        inventory: [...(prev.inventory || []), chestItem],
       };
     });
   };

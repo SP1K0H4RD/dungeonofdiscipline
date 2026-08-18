@@ -1502,6 +1502,8 @@ export interface PlayerProfile {
   }[];
   preferredQuestTypes: string[];
   difficultQuestTypes: string[];
+  unlockedTitles?: string[];
+  activeTitle?: string;
 }
 
 export const DEFAULT_PLAYER_PROFILE: PlayerProfile = {
