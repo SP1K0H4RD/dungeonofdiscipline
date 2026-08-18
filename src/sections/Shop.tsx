@@ -36,11 +36,20 @@ const rarityColors: Record<Rarity, { border: string; bg: string; text: string; s
   mythic: { border: 'border-red-500/60', bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/20', glow: 'shadow-red-500/50' },
 };
 
+// Shard text color mapping matching rarity border colors
+const shardTextColor: Record<Rarity, string> = {
+  common: 'text-gray-400',
+  rare: 'text-blue-400',
+  epic: 'text-purple-400',
+  legendary: 'text-amber-400',
+  mythic: 'text-red-400',
+};
+
 // 3D Crystal Gem Vector Component matching exact screenshot design
 function CrystalIcon({ rarity }: { rarity: Rarity }) {
   if (rarity === 'common') {
     return (
-      <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] shrink-0" viewBox="0 0 100 120" fill="none">
+      <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] shrink-0" viewBox="0 0 100 120" fill="none">
         <defs>
           <linearGradient id="c_common_main" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#ffffff" />
@@ -62,7 +71,7 @@ function CrystalIcon({ rarity }: { rarity: Rarity }) {
 
   if (rarity === 'rare') {
     return (
-      <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_10px_rgba(59,130,246,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
+      <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_10px_rgba(59,130,246,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
         <defs>
           <linearGradient id="c_rare_main" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#60a5fa" />
@@ -84,7 +93,7 @@ function CrystalIcon({ rarity }: { rarity: Rarity }) {
 
   if (rarity === 'epic') {
     return (
-      <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
+      <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
         <defs>
           <linearGradient id="c_epic_main" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#c084fc" />
@@ -106,7 +115,7 @@ function CrystalIcon({ rarity }: { rarity: Rarity }) {
 
   // Legendary (Gold / Amber)
   return (
-    <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_12px_rgba(245,158,11,1)] shrink-0" viewBox="0 0 100 120" fill="none">
+    <svg className="w-7 h-7 sm:w-8 sm:h-8 filter drop-shadow-[0_0_12px_rgba(245,158,11,1)] shrink-0" viewBox="0 0 100 120" fill="none">
       <defs>
         <linearGradient id="c_leg_main" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#fde047" />
@@ -182,7 +191,6 @@ export function Shop() {
   });
 
   const handleSlotBoxClick = () => {
-    // Scroll to equipment list or open modal
     const el = document.getElementById('equipamentos-grid');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -196,7 +204,7 @@ export function Shop() {
       animate={{ opacity: 1 }}
       className="space-y-4 pt-10 pb-24 px-1"
     >
-      {/* Header Title (clean without subtitle description) */}
+      {/* Header Title (Clean without subtitle description) */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-2 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">CASTELO</h2>
       </div>
@@ -230,62 +238,62 @@ export function Shop() {
       </div>
 
       {castleTab === 'forja' ? (
-        /* FORJA VIEW - EXACT MATCH TO USER SCREENSHOT */
+        /* FORJA VIEW */
         <div className="space-y-4">
           
-          {/* Economy Shards Header Container matching screenshot */}
-          <div className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3 shadow-xl">
+          {/* Economy Shards Header Container (SHRUNK COMPACT BOX WITH PORTUGUESE NAMES) */}
+          <div className="card-dungeon p-2.5 sm:p-3 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-2 shadow-xl">
             {/* Top Gold Total Badge */}
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-                <Coins className="w-4 h-4 text-amber-400" />
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                <Coins className="w-3.5 h-3.5 text-amber-400" />
               </div>
               <div>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">OURO TOTAL</p>
-                <p className="text-lg font-black text-amber-400 font-mono leading-tight">{economy.coins}</p>
+                <p className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">OURO TOTAL</p>
+                <p className="text-base sm:text-lg font-black text-amber-400 font-mono leading-tight">{economy.coins}</p>
               </div>
             </div>
 
-            {/* 4 Shards Grid side-by-side (COMMON, RARE, ÉPICO, LEGENDARY) with exact crystal graphics */}
-            <div className="grid grid-cols-4 gap-2">
-              {/* COMMON */}
-              <div className="bg-[#0c0c16] border border-gray-600/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+            {/* 4 Shards Grid side-by-side (COMUM, RARO, ÉPICO, LENDÁRIO) with Portuguese labels */}
+            <div className="grid grid-cols-4 gap-1.5 xs:gap-2">
+              {/* COMUM */}
+              <div className="bg-[#0c0c16] border border-gray-600/50 rounded-xl p-1.5 sm:p-2 flex flex-col items-center justify-center text-center">
                 <CrystalIcon rarity="common" />
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-wider font-cinzel mt-1">COMMON</span>
-                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">{economy?.shards?.common || 0}</span>
+                <span className="text-[8px] font-black uppercase text-gray-400 tracking-wider font-cinzel mt-1">COMUM</span>
+                <span className="text-xs font-bold text-white font-mono mt-0.5">{economy?.shards?.common || 0}</span>
               </div>
-              {/* RARE */}
-              <div className="bg-[#0c0c16] border border-blue-500/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+              {/* RARO */}
+              <div className="bg-[#0c0c16] border border-blue-500/50 rounded-xl p-1.5 sm:p-2 flex flex-col items-center justify-center text-center">
                 <CrystalIcon rarity="rare" />
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-blue-400 tracking-wider font-cinzel mt-1">RARE</span>
-                <span className="text-xs sm:text-sm font-bold text-blue-400 font-mono mt-0.5">{economy?.shards?.rare || 0}</span>
+                <span className="text-[8px] font-black uppercase text-blue-400 tracking-wider font-cinzel mt-1">RARO</span>
+                <span className="text-xs font-bold text-blue-400 font-mono mt-0.5">{economy?.shards?.rare || 0}</span>
               </div>
               {/* ÉPICO */}
-              <div className="bg-[#0c0c16] border border-purple-500/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+              <div className="bg-[#0c0c16] border border-purple-500/50 rounded-xl p-1.5 sm:p-2 flex flex-col items-center justify-center text-center">
                 <CrystalIcon rarity="epic" />
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-purple-400 tracking-wider font-cinzel mt-1">ÉPICO</span>
-                <span className="text-xs sm:text-sm font-bold text-purple-400 font-mono mt-0.5">{economy?.shards?.epic || 0}</span>
+                <span className="text-[8px] font-black uppercase text-purple-400 tracking-wider font-cinzel mt-1">ÉPICO</span>
+                <span className="text-xs font-bold text-purple-400 font-mono mt-0.5">{economy?.shards?.epic || 0}</span>
               </div>
-              {/* LEGENDARY */}
-              <div className="bg-[#0c0c16] border border-amber-500/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+              {/* LENDÁRIO */}
+              <div className="bg-[#0c0c16] border border-amber-500/50 rounded-xl p-1.5 sm:p-2 flex flex-col items-center justify-center text-center">
                 <CrystalIcon rarity="legendary" />
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-amber-400 tracking-wider font-cinzel mt-1">LEGENDARY</span>
-                <span className="text-xs sm:text-sm font-bold text-amber-400 font-mono mt-0.5">{economy?.shards?.legendary || 0}</span>
+                <span className="text-[8px] font-black uppercase text-amber-400 tracking-wider font-cinzel mt-1">LENDÁRIO</span>
+                <span className="text-xs font-bold text-amber-400 font-mono mt-0.5">{economy?.shards?.legendary || 0}</span>
               </div>
             </div>
           </div>
 
-          {/* FORJA ANCESTRAL Main Card matching screenshot */}
+          {/* FORJA ANCESTRAL Main Card with uploaded high-res forge image */}
           <div className="card-dungeon p-3.5 sm:p-5 bg-gradient-to-r from-[#140b08] via-[#0c0c16] to-[#0a0a12] border border-[#232338] rounded-2xl space-y-4 relative overflow-hidden shadow-2xl">
             <div className="flex flex-row items-center justify-between gap-2.5 xs:gap-3 sm:gap-4">
               
-              {/* Left: Glowing Fiery Anvil/Hammer Graphic */}
+              {/* Left: Fiery Anvil Image uploaded by user */}
               <div className="relative shrink-0 w-28 xs:w-36 sm:w-48 aspect-square rounded-2xl overflow-hidden bg-black/60 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-950/40">
                 {!anvilImgError ? (
                   <img 
-                    src="https://img.freepik.com/free-photo/fantasy-blacksmith-anvil-with-fire-sparks_23-2150931168.jpg" 
+                    src="/forja_anvil.png" 
                     alt="Forja Ancestral" 
-                    className="w-full h-full object-cover opacity-90 scale-105"
+                    className="w-full h-full object-cover opacity-95 scale-105"
                     onError={() => setAnvilImgError(true)}
                   />
                 ) : (
@@ -293,7 +301,7 @@ export function Shop() {
                     <Hammer className="w-14 h-14 text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-75" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
               </div>
 
               {/* Right: FORJA ANCESTRAL Title + Quote + Arrow + Slot */}
@@ -359,13 +367,16 @@ export function Shop() {
               </div>
             </div>
 
-            {/* Display Chance de Melhoria & Gasto de Ouro when item selected */}
+            {/* Display Chance de Melhoria & Gasto de Ouro with DYNAMIC CRYSTAL COLOR */}
             {selectedForgeItem && (
               <div className="bg-[#0a0a14] border border-[#2d2d44] rounded-xl p-2.5 flex items-center justify-between text-xs font-bold">
-                <div className="flex items-center gap-1.5 text-amber-400 font-mono">
-                  <Coins className="w-4 h-4" />
-                  <span>Custo: {goldCost} Ouro</span>
-                  <span className="text-purple-400 ml-1">• {shardCost} Cristal</span>
+                <div className="flex items-center gap-1.5 font-mono">
+                  <Coins className="w-4 h-4 text-amber-400" />
+                  <span className="text-amber-400">Custo: {goldCost} Ouro</span>
+                  {/* Dynamic Shard Text Color matching crystal rarity border */}
+                  <span className={cn("ml-1 font-bold", shardTextColor[selectedForgeItem.rarity])}>
+                    • {shardCost} {shardCost === 1 ? 'Cristal' : 'Cristais'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-gray-400 font-medium">Chance:</span>
@@ -644,7 +655,7 @@ export function Shop() {
                 </div>
                 <div className="bg-black/30 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Cristais</p>
-                  <p className="text-sm font-mono text-purple-400">
+                  <p className={cn("text-sm font-mono font-bold", shardTextColor[selectedForgeItem.rarity])}>
                     {shardCost}
                   </p>
                 </div>
