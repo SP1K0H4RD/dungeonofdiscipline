@@ -136,10 +136,10 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
   const nodePositions = useMemo(() => {
     return [
       { nodeId: currentMap.nodes[0]?.id || 'node1', x: 18, y: 55 },
-      { nodeId: currentMap.nodes[1]?.id || 'node2', x: 36, y: 48 },
-      { nodeId: currentMap.nodes[2]?.id || 'node3', x: 53, y: 42 },
-      { nodeId: currentMap.nodes[3]?.id || 'node4', x: 69, y: 35 },
-      { nodeId: currentMap.nodes[4]?.id || 'node5', x: 85, y: 28 }, // Boss Final node
+      { nodeId: currentMap.nodes[1]?.id || 'node2', x: 36, y: 54 },
+      { nodeId: currentMap.nodes[2]?.id || 'node3', x: 53, y: 48 },
+      { nodeId: currentMap.nodes[3]?.id || 'node4', x: 69, y: 42 },
+      { nodeId: currentMap.nodes[4]?.id || 'node5', x: 85, y: 35 }, // Boss Final node
     ];
   }, [currentMap.nodes]);
 
@@ -297,7 +297,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
               {/* Background dark stroke for contrast */}
               <path
-                d="M 18 55 C 24 53, 30 50, 36 48 C 42 46, 47 44, 53 42 C 59 39, 64 37, 69 35 C 75 32, 80 30, 85 28"
+                d="M 18 55 C 24 55, 30 55, 36 54 C 42 52, 47 50, 53 48 C 59 45, 64 43, 69 42 C 75 39, 80 37, 85 35"
                 fill="none"
                 stroke="rgba(0, 0, 0, 0.5)"
                 strokeWidth="1.5"
@@ -305,7 +305,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
               />
               {/* Very fine & regular dashed line */}
               <path
-                d="M 18 55 C 24 53, 30 50, 36 48 C 42 46, 47 44, 53 42 C 59 39, 64 37, 69 35 C 75 32, 80 30, 85 28"
+                d="M 18 55 C 24 55, 30 55, 36 54 C 42 52, 47 50, 53 48 C 59 45, 64 43, 69 42 C 75 39, 80 37, 85 35"
                 fill="none"
                 stroke="rgba(245, 158, 11, 0.85)"
                 strokeWidth="0.7"
@@ -365,15 +365,17 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                         ) : null}
                       </div>
 
-                      {/* Selection Arrow Below Boss Node - Perfectly Centered */}
+                      {/* Selection Arrow Below Boss Node - Strictly Centered */}
                       {isSelected && (
-                        <motion.div
-                          animate={{ y: [0, 3, 0] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 text-blue-400 flex items-center justify-center z-30 pointer-events-none w-5 h-5"
-                        >
-                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
-                        </motion.div>
+                        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-5 h-5 flex items-center justify-center z-30 pointer-events-none">
+                          <motion.div
+                            animate={{ y: [0, 3, 0] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="text-blue-400 flex items-center justify-center"
+                          >
+                            <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
+                          </motion.div>
+                        </div>
                       )}
                     </button>
                   ) : (
@@ -406,15 +408,17 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                           <span>{node.stage}</span>
                         )}
 
-                        {/* Selection Arrow Below Circle Node - Exactly Centered to Circle */}
+                        {/* Selection Arrow Below Circle Node - Strictly Centered */}
                         {isSelected && (
-                          <motion.div
-                            animate={{ y: [0, 3, 0] }}
-                            transition={{ duration: 1, repeat: Infinity }}
-                            className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 text-blue-400 flex items-center justify-center z-30 pointer-events-none w-5 h-5"
-                          >
-                            <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
-                          </motion.div>
+                          <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-5 h-5 flex items-center justify-center z-30 pointer-events-none">
+                            <motion.div
+                              animate={{ y: [0, 3, 0] }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                              className="text-blue-400 flex items-center justify-center"
+                            >
+                              <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
+                            </motion.div>
+                          </div>
                         )}
                       </button>
 
