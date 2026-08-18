@@ -281,16 +281,16 @@ export function Inventory() {
         </p>
       </div>
 
-      {/* Hero Showcase & Attributes Section - MOBILE-FIRST 3-COLUMN ROW MATCHING SCREENSHOT */}
+      {/* Hero Showcase & Attributes Section - COMPACT ATRIBUTOS & EXPANDED CHARACTER */}
       <motion.div 
         className="card-dungeon p-2.5 xs:p-3 sm:p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl shadow-xl overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex flex-row items-center justify-between gap-1.5 xs:gap-2 sm:gap-4">
+        <div className="flex flex-row items-stretch justify-between gap-2 sm:gap-3">
           
           {/* Column 1: Vertical Equipment Slots (Capacete -> Armadura -> Bota -> Arma -> Acessório) */}
-          <div className="flex flex-col gap-1.5 shrink-0">
+          <div className="flex flex-col justify-between gap-1.5 shrink-0 py-0.5">
             {VERTICAL_SLOTS.map(({ type, label, defaultIcon }) => {
               const item = equippedItems[type];
               const rarity = item ? rarityColors[item.rarity] : null;
@@ -301,7 +301,7 @@ export function Inventory() {
                   onClick={() => item && setSelectedSlot(type)}
                   title={item ? `${item.name} (${label})` : `Slot de ${label} (Vazio)`}
                   className={cn(
-                    "w-9 h-9 xs:w-10 xs:h-10 sm:w-12 sm:h-12 rounded-xl border flex flex-col items-center justify-center relative transition-all duration-200 group",
+                    "w-9 h-9 xs:w-10 xs:h-10 sm:w-11 sm:h-11 rounded-xl border flex flex-col items-center justify-center relative transition-all duration-200 group",
                     item 
                       ? `${rarity?.border} ${rarity?.bg} shadow-md border-2 hover:scale-105` 
                       : "border-[#252538] bg-[#12121c]/80 hover:border-purple-500/50"
@@ -309,7 +309,7 @@ export function Inventory() {
                 >
                   {item ? (
                     <>
-                      <span className="text-lg xs:text-xl sm:text-2xl drop-shadow-md">{item.icon}</span>
+                      <span className="text-lg xs:text-xl drop-shadow-md">{item.icon}</span>
                       {item.upgradeLevel > 0 && (
                         <div className="absolute -top-1 -left-1 bg-yellow-500 text-black text-[8px] font-black px-0.5 rounded shadow border border-black/40">
                           +{item.upgradeLevel}
@@ -317,7 +317,7 @@ export function Inventory() {
                       )}
                     </>
                   ) : (
-                    <span className="text-sm xs:text-base opacity-35 group-hover:opacity-60 transition-opacity">
+                    <span className="text-xs xs:text-sm opacity-35 group-hover:opacity-60 transition-opacity">
                       {defaultIcon}
                     </span>
                   )}
@@ -326,8 +326,8 @@ export function Inventory() {
             })}
           </div>
 
-          {/* Column 2: Character Avatar Showcase (Center Gnome/Wizard artwork) */}
-          <div className="relative shrink-0 w-24 xs:w-28 sm:w-36 md:w-44 aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-purple-900/20 via-black/40 to-black/80 border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.15)] flex items-center justify-center">
+          {/* Column 2: Character Avatar Showcase (EXPANDED TO FULL CARD HEIGHT) */}
+          <div className="relative flex-1 self-stretch rounded-2xl overflow-hidden bg-gradient-to-b from-purple-900/20 via-black/40 to-black/80 border border-purple-500/20 shadow-[0_0_25px_rgba(168,85,247,0.2)] flex items-center justify-center min-h-[220px] sm:min-h-[260px]">
             <img 
               src={
                 playerProfile?.avatarUrl && avatarOk
@@ -335,73 +335,73 @@ export function Inventory() {
                   : "https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg"
               }
               alt="Avatar do Personagem" 
-              className="w-full h-full object-cover opacity-95"
+              className="w-full h-full object-cover opacity-95 scale-105"
               onError={() => setAvatarOk(false)}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c14] via-transparent to-transparent opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c14] via-transparent to-transparent opacity-75" />
 
             {/* Pedestal Circle outline */}
-            <div className="absolute bottom-1 w-16 xs:w-20 sm:w-28 h-4 rounded-full bg-purple-500/20 border border-purple-400/30 blur-[2px]" />
+            <div className="absolute bottom-1 w-24 xs:w-32 sm:w-40 h-5 rounded-full bg-purple-500/20 border border-purple-400/30 blur-[2px]" />
           </div>
 
-          {/* Column 3: ATRIBUTOS Box (Right Column matching exact screenshot UI) */}
-          <div className="flex-1 min-w-[125px] xs:min-w-[135px] sm:min-w-[160px] bg-[#0c0c16] border border-[#1e1e2e] rounded-xl p-2 sm:p-3 flex flex-col justify-between self-stretch">
-            <div className="flex items-center gap-1 border-b border-white/5 pb-1 mb-1">
-              <span className="text-[10px] sm:text-xs font-black tracking-wider text-gray-300 uppercase font-cinzel">ATRIBUTOS</span>
-              <Info className="w-3 h-3 text-gray-500 cursor-pointer" />
+          {/* Column 3: ATRIBUTOS Box (SHRUNK & COMPACT SLIM COLUMN) */}
+          <div className="w-[110px] xs:w-[120px] sm:w-[140px] shrink-0 bg-[#0c0c16] border border-[#1e1e2e] rounded-xl p-1.5 xs:p-2 flex flex-col justify-between self-stretch shadow-inner">
+            <div className="flex items-center justify-between border-b border-white/5 pb-1 mb-1">
+              <span className="text-[9px] sm:text-[10px] font-black tracking-wider text-gray-300 uppercase font-cinzel">ATRIBUTOS</span>
+              <Info className="w-2.5 h-2.5 text-gray-500 cursor-pointer" />
             </div>
 
             {/* ATK */}
             <div className="space-y-0.5">
-              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
-                <span className="flex items-center gap-1 text-red-400 font-bold"><Swords className="w-3 h-3" /> ATK</span>
+              <div className="flex justify-between items-center text-[9px] xs:text-[10px]">
+                <span className="flex items-center gap-0.5 text-red-400 font-bold"><Swords className="w-2.5 h-2.5" /> ATK</span>
                 <span className="font-mono font-bold text-white">{(character.totalStats?.attack || character.stats.totalAttack).toFixed(1).replace(/\.0$/, '')}</span>
               </div>
-              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+              <div className="h-1 bg-[#181826] rounded-full overflow-hidden border border-white/5">
                 <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.min(100, ((character.totalStats?.attack || character.stats.totalAttack) / 100) * 100)}%` }} />
               </div>
             </div>
 
             {/* DEF */}
             <div className="space-y-0.5">
-              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
-                <span className="flex items-center gap-1 text-blue-400 font-bold"><Shield className="w-3 h-3" /> DEF</span>
+              <div className="flex justify-between items-center text-[9px] xs:text-[10px]">
+                <span className="flex items-center gap-0.5 text-blue-400 font-bold"><Shield className="w-2.5 h-2.5" /> DEF</span>
                 <span className="font-mono font-bold text-white">{(character.totalStats?.defense || character.stats.totalDefense).toFixed(1).replace(/\.0$/, '')}</span>
               </div>
-              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+              <div className="h-1 bg-[#181826] rounded-full overflow-hidden border border-white/5">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, ((character.totalStats?.defense || character.stats.totalDefense) / 100) * 100)}%` }} />
               </div>
             </div>
 
             {/* HP */}
             <div className="space-y-0.5">
-              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
-                <span className="flex items-center gap-1 text-green-400 font-bold"><Heart className="w-3 h-3" /> HP</span>
+              <div className="flex justify-between items-center text-[9px] xs:text-[10px]">
+                <span className="flex items-center gap-0.5 text-green-400 font-bold"><Heart className="w-2.5 h-2.5" /> HP</span>
                 <span className="font-mono font-bold text-white">{character.totalStats?.maxHp || character.maxHp}</span>
               </div>
-              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+              <div className="h-1 bg-[#181826] rounded-full overflow-hidden border border-white/5">
                 <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(100, ((character.totalStats?.maxHp || character.maxHp) / 500) * 100)}%` }} />
               </div>
             </div>
 
             {/* CRIT */}
             <div className="space-y-0.5">
-              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
-                <span className="flex items-center gap-1 text-amber-400 font-bold"><StarIcon className="w-3 h-3" /> CRIT</span>
+              <div className="flex justify-between items-center text-[9px] xs:text-[10px]">
+                <span className="flex items-center gap-0.5 text-amber-400 font-bold"><StarIcon className="w-2.5 h-2.5" /> CRIT</span>
                 <span className="font-mono font-bold text-white">{Math.round((character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%</span>
               </div>
-              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+              <div className="h-1 bg-[#181826] rounded-full overflow-hidden border border-white/5">
                 <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%` }} />
               </div>
             </div>
 
             {/* ESQ */}
             <div className="space-y-0.5">
-              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
-                <span className="flex items-center gap-1 text-cyan-400 font-bold"><Wind className="w-3 h-3" /> ESQ</span>
+              <div className="flex justify-between items-center text-[9px] xs:text-[10px]">
+                <span className="flex items-center gap-0.5 text-cyan-400 font-bold"><Wind className="w-2.5 h-2.5" /> ESQ</span>
                 <span className="font-mono font-bold text-white">{Math.round((character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%</span>
               </div>
-              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+              <div className="h-1 bg-[#181826] rounded-full overflow-hidden border border-white/5">
                 <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${Math.min(100, (character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%` }} />
               </div>
             </div>
