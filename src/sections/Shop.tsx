@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { 
+  FORGE_SUCCESS_CHANCES,
   FORGE_BASE_COSTS, 
   FORGE_RARITY_MULTIPLIERS 
 } from '@/types/game';
@@ -35,6 +36,96 @@ const rarityColors: Record<Rarity, { border: string; bg: string; text: string; s
   mythic: { border: 'border-red-500/60', bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/20', glow: 'shadow-red-500/50' },
 };
 
+// 3D Crystal Gem Vector Component matching exact screenshot design
+function CrystalIcon({ rarity }: { rarity: Rarity }) {
+  if (rarity === 'common') {
+    return (
+      <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] shrink-0" viewBox="0 0 100 120" fill="none">
+        <defs>
+          <linearGradient id="c_common_main" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="50%" stopColor="#d1d5db" />
+            <stop offset="100%" stopColor="#6b7280" />
+          </linearGradient>
+          <linearGradient id="c_common_light" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#e5e7eb" stopOpacity="0.3" />
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 82,35 50,115 18,35" fill="url(#c_common_main)" />
+        <polygon points="50,5 82,35 50,48 18,35" fill="url(#c_common_light)" />
+        <polygon points="50,5 18,35 50,115" fill="#f3f4f6" fillOpacity="0.4" />
+        <line x1="50" y1="5" x2="50" y2="115" stroke="#ffffff" strokeWidth="1.5" strokeOpacity="0.6" />
+      </svg>
+    );
+  }
+
+  if (rarity === 'rare') {
+    return (
+      <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_10px_rgba(59,130,246,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
+        <defs>
+          <linearGradient id="c_rare_main" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#60a5fa" />
+            <stop offset="50%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#1e3a8a" />
+          </linearGradient>
+          <linearGradient id="c_rare_light" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 82,35 50,115 18,35" fill="url(#c_rare_main)" />
+        <polygon points="50,5 82,35 50,48 18,35" fill="url(#c_rare_light)" />
+        <polygon points="50,5 18,35 50,115" fill="#bfdbfe" fillOpacity="0.35" />
+        <line x1="50" y1="5" x2="50" y2="115" stroke="#93c5fd" strokeWidth="1.5" strokeOpacity="0.7" />
+      </svg>
+    );
+  }
+
+  if (rarity === 'epic') {
+    return (
+      <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.9)] shrink-0" viewBox="0 0 100 120" fill="none">
+        <defs>
+          <linearGradient id="c_epic_main" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#c084fc" />
+            <stop offset="50%" stopColor="#9333ea" />
+            <stop offset="100%" stopColor="#581c87" />
+          </linearGradient>
+          <linearGradient id="c_epic_light" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#e9d5ff" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#a855f7" stopOpacity="0.3" />
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 82,35 50,115 18,35" fill="url(#c_epic_main)" />
+        <polygon points="50,5 82,35 50,48 18,35" fill="url(#c_epic_light)" />
+        <polygon points="50,5 18,35 50,115" fill="#f5d0fe" fillOpacity="0.35" />
+        <line x1="50" y1="5" x2="50" y2="115" stroke="#e9d5ff" strokeWidth="1.5" strokeOpacity="0.7" />
+      </svg>
+    );
+  }
+
+  // Legendary (Gold / Amber)
+  return (
+    <svg className="w-8 h-8 sm:w-9 sm:h-9 filter drop-shadow-[0_0_12px_rgba(245,158,11,1)] shrink-0" viewBox="0 0 100 120" fill="none">
+      <defs>
+        <linearGradient id="c_leg_main" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fde047" />
+          <stop offset="50%" stopColor="#d97706" />
+          <stop offset="100%" stopColor="#78350f" />
+        </linearGradient>
+        <linearGradient id="c_leg_light" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#fef08a" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.3" />
+        </linearGradient>
+      </defs>
+      <polygon points="50,5 82,35 50,115 18,35" fill="url(#c_leg_main)" />
+      <polygon points="50,5 82,35 50,48 18,35" fill="url(#c_leg_light)" />
+      <polygon points="50,5 18,35 50,115" fill="#fef9c3" fillOpacity="0.4" />
+      <line x1="50" y1="5" x2="50" y2="115" stroke="#fef08a" strokeWidth="1.5" strokeOpacity="0.8" />
+    </svg>
+  );
+}
+
 export function Shop() {
   const { gameState, upgradeItem } = useGame();
   const { economy, inventory, character } = gameState;
@@ -43,6 +134,7 @@ export function Shop() {
   const [equipmentFilter, setEquipmentFilter] = useState<string>('todos');
   const [confirmUpgrade, setConfirmUpgrade] = useState(false);
   const [anvilImgError, setAnvilImgError] = useState(false);
+  const [showItemPickerModal, setShowItemPickerModal] = useState(false);
 
   // Shop item purchase feedback
   const [purchaseMsg, setPurchaseMsg] = useState<string | null>(null);
@@ -57,6 +149,18 @@ export function Shop() {
   ].filter((item, idx, self) => self.findIndex(i => i.id === item.id) === idx);
 
   const selectedForgeItem = allAvailableItems.find(i => i.id === selectedForgeItemId) || null;
+
+  // Calculate costs and success chance
+  const nextLevel = selectedForgeItem ? selectedForgeItem.upgradeLevel + 1 : 1;
+  const goldCost = selectedForgeItem 
+    ? (FORGE_BASE_COSTS[nextLevel]?.gold || 25) * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]
+    : 0;
+  const shardCost = selectedForgeItem 
+    ? (FORGE_BASE_COSTS[nextLevel]?.shards || 1)
+    : 0;
+  const successChance = selectedForgeItem 
+    ? (FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel] ?? 100)
+    : 0;
 
   const handleUpgrade = () => {
     if (!selectedForgeItemId) return;
@@ -77,44 +181,50 @@ export function Shop() {
     return true;
   });
 
+  const handleSlotBoxClick = () => {
+    // Scroll to equipment list or open modal
+    const el = document.getElementById('equipamentos-grid');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+    setShowItemPickerModal(true);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="space-y-4 pt-10 pb-24 px-1"
     >
-      {/* Header Mobile Matching Inventário & Tarefas */}
-      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
-        <h2 className="text-2xl font-bold text-white font-cinzel mb-1">CASTELO</h2>
-        <p className="text-xs text-gray-400">
-          Refine seus equipamentos na Forja ou visite a Loja
-        </p>
+      {/* Header Title (clean without subtitle description) */}
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-2 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
+        <h2 className="text-2xl font-bold text-white font-cinzel">CASTELO</h2>
       </div>
 
-      {/* Switcher Tab Buttons matching screenshot: [ 🔨 Forja ] | [ 🏪 Loja ] */}
-      <div className="grid grid-cols-2 gap-2 bg-[#0c0c16] border border-[#232338] rounded-2xl p-1.5 shadow-lg">
+      {/* COMPACT Switcher Tab Buttons: [ 🔨 Forja ] | [ 🏪 Loja ] */}
+      <div className="max-w-[260px] mx-auto grid grid-cols-2 gap-1 bg-[#0c0c16] border border-[#232338] rounded-xl p-1 shadow-md">
         <button
           onClick={() => setCastleTab('forja')}
           className={cn(
-            "py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200",
+            "py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200",
             castleTab === 'forja'
-              ? "bg-[#25133d] border border-purple-500/50 text-white shadow-lg shadow-purple-900/40"
+              ? "bg-[#25133d] border border-purple-500/50 text-white shadow-md shadow-purple-900/30"
               : "text-gray-400 hover:text-white bg-transparent"
           )}
         >
-          <Hammer className="w-4 h-4 text-purple-400" />
+          <Hammer className="w-3.5 h-3.5 text-purple-400" />
           <span>Forja</span>
         </button>
         <button
           onClick={() => setCastleTab('loja')}
           className={cn(
-            "py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200",
+            "py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200",
             castleTab === 'loja'
-              ? "bg-[#25133d] border border-purple-500/50 text-white shadow-lg shadow-purple-900/40"
+              ? "bg-[#25133d] border border-purple-500/50 text-white shadow-md shadow-purple-900/30"
               : "text-gray-400 hover:text-white bg-transparent"
           )}
         >
-          <Store className="w-4 h-4 text-purple-400" />
+          <Store className="w-3.5 h-3.5 text-purple-400" />
           <span>Loja</span>
         </button>
       </div>
@@ -136,30 +246,30 @@ export function Shop() {
               </div>
             </div>
 
-            {/* 4 Shards Grid side-by-side (COMMON, RARE, ÉPICO, LEGENDARY) */}
+            {/* 4 Shards Grid side-by-side (COMMON, RARE, ÉPICO, LEGENDARY) with exact crystal graphics */}
             <div className="grid grid-cols-4 gap-2">
               {/* COMMON */}
-              <div className="bg-[#0c0c16] border border-gray-600/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
-                <span className="text-xl sm:text-2xl drop-shadow mb-1">💎</span>
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-wider font-cinzel">COMMON</span>
+              <div className="bg-[#0c0c16] border border-gray-600/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+                <CrystalIcon rarity="common" />
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-wider font-cinzel mt-1">COMMON</span>
                 <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">{economy?.shards?.common || 0}</span>
               </div>
               {/* RARE */}
-              <div className="bg-[#0c0c16] border border-blue-500/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
-                <span className="text-xl sm:text-2xl drop-shadow mb-1">🔷</span>
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-blue-400 tracking-wider font-cinzel">RARE</span>
+              <div className="bg-[#0c0c16] border border-blue-500/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+                <CrystalIcon rarity="rare" />
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-blue-400 tracking-wider font-cinzel mt-1">RARE</span>
                 <span className="text-xs sm:text-sm font-bold text-blue-400 font-mono mt-0.5">{economy?.shards?.rare || 0}</span>
               </div>
               {/* ÉPICO */}
-              <div className="bg-[#0c0c16] border border-purple-500/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
-                <span className="text-xl sm:text-2xl drop-shadow mb-1">🔮</span>
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-purple-400 tracking-wider font-cinzel">ÉPICO</span>
+              <div className="bg-[#0c0c16] border border-purple-500/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+                <CrystalIcon rarity="epic" />
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-purple-400 tracking-wider font-cinzel mt-1">ÉPICO</span>
                 <span className="text-xs sm:text-sm font-bold text-purple-400 font-mono mt-0.5">{economy?.shards?.epic || 0}</span>
               </div>
               {/* LEGENDARY */}
-              <div className="bg-[#0c0c16] border border-amber-500/50 rounded-xl p-2 sm:p-3 flex flex-col items-center justify-center text-center">
-                <span className="text-xl sm:text-2xl drop-shadow mb-1">🔶</span>
-                <span className="text-[8px] sm:text-[9px] font-black uppercase text-amber-400 tracking-wider font-cinzel">LEGENDARY</span>
+              <div className="bg-[#0c0c16] border border-amber-500/50 rounded-xl p-2 sm:p-2.5 flex flex-col items-center justify-center text-center">
+                <CrystalIcon rarity="legendary" />
+                <span className="text-[8px] sm:text-[9px] font-black uppercase text-amber-400 tracking-wider font-cinzel mt-1">LEGENDARY</span>
                 <span className="text-xs sm:text-sm font-bold text-amber-400 font-mono mt-0.5">{economy?.shards?.legendary || 0}</span>
               </div>
             </div>
@@ -203,14 +313,15 @@ export function Shop() {
                     ›››
                   </div>
 
-                  {/* Empty / Selected Equipment Box */}
+                  {/* CLICKABLE Equipment Slot Box */}
                   <button
-                    onClick={() => {}}
+                    onClick={handleSlotBoxClick}
+                    title="Clique para escolher um equipamento para refinar"
                     className={cn(
-                      "w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center relative transition-all p-1.5 text-center shrink-0",
+                      "w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center relative transition-all p-1.5 text-center shrink-0 cursor-pointer group/slot",
                       selectedForgeItem
-                        ? `${rarityColors[selectedForgeItem.rarity].border} ${rarityColors[selectedForgeItem.rarity].bg} border-solid shadow-lg`
-                        : "border-amber-500/50 bg-black/40 hover:border-amber-500/80"
+                        ? `${rarityColors[selectedForgeItem.rarity].border} ${rarityColors[selectedForgeItem.rarity].bg} border-solid shadow-lg hover:scale-105`
+                        : "border-amber-500/50 bg-black/40 hover:border-amber-500/80 hover:bg-amber-500/10 hover:scale-105"
                     )}
                   >
                     {selectedForgeItem ? (
@@ -224,10 +335,20 @@ export function Shop() {
                         <span className="text-[9px] xs:text-[10px] font-bold text-white truncate max-w-full mt-1">
                           {selectedForgeItem.name}
                         </span>
+                        {/* Clear selection button */}
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedForgeItemId(null);
+                          }}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-700"
+                        >
+                          ✕
+                        </div>
                       </>
                     ) : (
                       <>
-                        <Plus className="w-5 h-5 xs:w-6 xs:h-6 text-amber-400 mb-1" />
+                        <Plus className="w-5 h-5 xs:w-6 xs:h-6 text-amber-400 mb-1 group-hover/slot:scale-110 transition-transform" />
                         <span className="text-[8px] xs:text-[9px] font-bold text-amber-400 font-cinzel leading-tight uppercase">
                           INSIRA UM EQUIPAMENTO
                         </span>
@@ -238,15 +359,32 @@ export function Shop() {
               </div>
             </div>
 
-            {/* Upgrade Action Button matching screenshot */}
+            {/* Display Chance de Melhoria & Gasto de Ouro when item selected */}
+            {selectedForgeItem && (
+              <div className="bg-[#0a0a14] border border-[#2d2d44] rounded-xl p-2.5 flex items-center justify-between text-xs font-bold">
+                <div className="flex items-center gap-1.5 text-amber-400 font-mono">
+                  <Coins className="w-4 h-4" />
+                  <span>Custo: {goldCost} Ouro</span>
+                  <span className="text-purple-400 ml-1">• {shardCost} Cristal</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-400 font-medium">Chance:</span>
+                  <span className={cn("font-mono font-black", successChance > 50 ? "text-green-400" : "text-yellow-400")}>
+                    {successChance}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* ORANGE Action Button matching requested styling */}
             <Button
               onClick={handleUpgrade}
               disabled={!selectedForgeItem}
               className={cn(
-                "w-full py-3 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-lg font-cinzel tracking-wider",
+                "w-full py-3.5 text-xs sm:text-sm font-black rounded-xl transition-all shadow-lg font-cinzel tracking-wider uppercase border-b-4",
                 selectedForgeItem
-                  ? "bg-gradient-to-r from-purple-700 via-amber-600 to-purple-800 hover:brightness-110 text-white shadow-purple-900/40"
-                  : "bg-[#161626] text-gray-400 border border-[#2d2d44] cursor-not-allowed opacity-90"
+                  ? "bg-orange-600 hover:bg-orange-500 text-white border-orange-800 shadow-orange-600/30 active:scale-98 cursor-pointer"
+                  : "bg-[#181826] text-gray-500 border-gray-800 cursor-not-allowed opacity-80"
               )}
             >
               {selectedForgeItem 
@@ -256,7 +394,7 @@ export function Shop() {
           </div>
 
           {/* EQUIPAMENTOS Selection Section matching screenshot */}
-          <div className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3">
+          <div id="equipamentos-grid" className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel">
                 EQUIPAMENTOS
@@ -438,6 +576,46 @@ export function Shop() {
         </div>
       )}
 
+      {/* Item Picker Modal when clicking INSIRA UM EQUIPAMENTO */}
+      <Dialog open={showItemPickerModal} onOpenChange={setShowItemPickerModal}>
+        <DialogContent className="bg-[#10101c] border-[#2d2d44] text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-cinzel text-lg flex items-center gap-2">
+              <Hammer className="w-5 h-5 text-amber-400" />
+              Escolha um Equipamento
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-xs text-gray-400">
+              Selecione o item que deseja refinar na Forja Ancestral:
+            </p>
+            <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+              {allAvailableItems.map((item) => {
+                const colors = rarityColors[item.rarity as Rarity] || rarityColors.common;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setSelectedForgeItemId(item.id);
+                      setShowItemPickerModal(false);
+                    }}
+                    className={cn(
+                      "p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-center transition-all hover:scale-102",
+                      colors.border,
+                      colors.bg
+                    )}
+                  >
+                    <span className="text-3xl">{item.icon}</span>
+                    <span className="text-xs font-bold text-white truncate max-w-full">{item.name}</span>
+                    <span className="text-[10px] text-yellow-500 font-mono">+{item.upgradeLevel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Confirm Upgrade Dialog */}
       <Dialog open={confirmUpgrade} onOpenChange={(open) => { if (!open) setConfirmUpgrade(false); }}>
         <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-sm">
@@ -461,13 +639,13 @@ export function Shop() {
                 <div className="bg-black/30 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Ouro</p>
                   <p className="text-sm font-mono text-yellow-400">
-                    {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]}
+                    {goldCost}
                   </p>
                 </div>
                 <div className="bg-black/30 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Cristais</p>
                   <p className="text-sm font-mono text-purple-400">
-                    {FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards}
+                    {shardCost}
                   </p>
                 </div>
               </div>
@@ -476,10 +654,10 @@ export function Shop() {
                   onClick={executeUpgrade}
                   disabled={
                     selectedForgeItem.upgradeLevel >= 10 || 
-                    economy.coins < (FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.gold * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]) || 
-                    (economy?.shards?.[selectedForgeItem.rarity] || 0) < FORGE_BASE_COSTS[selectedForgeItem.upgradeLevel + 1]?.shards
+                    economy.coins < goldCost || 
+                    (economy?.shards?.[selectedForgeItem.rarity] || 0) < shardCost
                   }
-                  className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
+                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold"
                 >
                   Confirmar
                 </Button>
