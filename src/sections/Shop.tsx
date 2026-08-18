@@ -355,7 +355,7 @@ export function Shop() {
   };
 
   return (
-    <div className="space-y-2.5 pt-6 pb-6 px-1">
+    <div className="space-y-2.5 pt-10 pb-6 px-1">
       {/* Header Title (Clean without subtitle description) */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-2 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">CASTELO</h2>
