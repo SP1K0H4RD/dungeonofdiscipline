@@ -271,12 +271,12 @@ export function Inventory() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-4 pt-6 pb-24 px-1"
+      className="space-y-6 pt-10 pb-24 px-1"
     >
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-3 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
-        <h2 className="text-xl sm:text-2xl font-bold text-white font-cinzel tracking-wide">INVENTÁRIO</h2>
-        <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
+        <h2 className="text-2xl font-bold text-white font-cinzel mb-1">INVENTÁRIO</h2>
+        <p className="text-xs text-gray-400">
           Gerencie seus equipamentos e ataques especiais
         </p>
       </div>
