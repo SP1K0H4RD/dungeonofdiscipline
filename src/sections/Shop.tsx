@@ -808,7 +808,7 @@ export function Shop() {
             </div>
             <div className="flex items-center gap-1 font-mono font-bold text-white bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
               <span>05:27:14</span>
-              <Hourglass className="w-3 h-3 text-amber-400" />
+              <Hourglass className="w-2 h-2 text-amber-400" />
             </div>
           </div>
 
