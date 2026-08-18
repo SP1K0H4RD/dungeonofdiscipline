@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Coins, 
+import {
+  Coins,
   Hammer,
   Lock,
   X,
@@ -22,10 +21,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
+import {
   FORGE_SUCCESS_CHANCES,
-  FORGE_BASE_COSTS, 
-  FORGE_RARITY_MULTIPLIERS 
+  FORGE_BASE_COSTS,
+  FORGE_RARITY_MULTIPLIERS
 } from '@/types/game';
 
 const rarityColors: Record<Rarity, { border: string; bg: string; text: string; shadow: string; glow: string }> = {
@@ -161,13 +160,13 @@ export function Shop() {
 
   // Calculate costs and success chance
   const nextLevel = selectedForgeItem ? selectedForgeItem.upgradeLevel + 1 : 1;
-  const goldCost = selectedForgeItem 
+  const goldCost = selectedForgeItem
     ? (FORGE_BASE_COSTS[nextLevel]?.gold || 25) * FORGE_RARITY_MULTIPLIERS[selectedForgeItem.rarity]
     : 0;
-  const shardCost = selectedForgeItem 
+  const shardCost = selectedForgeItem
     ? (FORGE_BASE_COSTS[nextLevel]?.shards || 1)
     : 0;
-  const successChance = selectedForgeItem 
+  const successChance = selectedForgeItem
     ? (FORGE_SUCCESS_CHANCES[selectedForgeItem.upgradeLevel] ?? 100)
     : 0;
 
@@ -199,11 +198,7 @@ export function Shop() {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-4 pt-10 pb-24 px-1"
-    >
+    <div className="space-y-4 pt-10 pb-24 px-1">
       {/* Header Title (Clean without subtitle description) */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-2 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel">CASTELO</h2>
@@ -240,7 +235,7 @@ export function Shop() {
       {castleTab === 'forja' ? (
         /* FORJA VIEW */
         <div className="space-y-4">
-          
+
           {/* Economy Shards Header Container (SHRUNK COMPACT BOX WITH PORTUGUESE NAMES) */}
           <div className="card-dungeon p-2.5 sm:p-3 bg-[#0a0a12] border border-[#232338] rounded-2xl space-y-2 shadow-xl">
             {/* Top Gold Total Badge */}
@@ -286,13 +281,13 @@ export function Shop() {
           {/* FORJA ANCESTRAL Main Card with uploaded high-res forge image */}
           <div className="card-dungeon p-3.5 sm:p-5 bg-gradient-to-r from-[#140b08] via-[#0c0c16] to-[#0a0a12] border border-[#232338] rounded-2xl space-y-4 relative overflow-hidden shadow-2xl">
             <div className="flex flex-row items-center justify-between gap-2.5 xs:gap-3 sm:gap-4">
-              
+
               {/* Left: Fiery Anvil Image uploaded by user */}
               <div className="relative shrink-0 w-28 xs:w-36 sm:w-48 aspect-square rounded-2xl overflow-hidden bg-black/60 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-950/40">
                 {!anvilImgError ? (
-                  <img 
-                    src="/forja_anvil.png?v=2" 
-                    alt="Forja Ancestral" 
+                  <img
+                    src="/forja_anvil.png?v=2"
+                    alt="Forja Ancestral"
                     className="w-full h-full object-cover opacity-95 scale-105"
                     onError={() => setAnvilImgError(true)}
                   />
@@ -344,7 +339,7 @@ export function Shop() {
                           {selectedForgeItem.name}
                         </span>
                         {/* Clear selection button */}
-                        <div 
+                        <div
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedForgeItemId(null);
@@ -398,8 +393,8 @@ export function Shop() {
                   : "bg-[#181826] text-gray-500 border-gray-800 cursor-not-allowed opacity-80"
               )}
             >
-              {selectedForgeItem 
-                ? `Refinar Equipamento (+${selectedForgeItem.upgradeLevel} → +${selectedForgeItem.upgradeLevel + 1})` 
+              {selectedForgeItem
+                ? `Refinar Equipamento (+${selectedForgeItem.upgradeLevel} → +${selectedForgeItem.upgradeLevel + 1})`
                 : 'Selecione um equipamento para começar'}
             </Button>
           </div>
@@ -446,7 +441,7 @@ export function Shop() {
                     onClick={() => setSelectedForgeItemId(isSelected ? null : item.id)}
                     className={cn(
                       "min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 relative transition-all duration-200 shrink-0",
-                      isSelected 
+                      isSelected
                         ? "border-amber-500 bg-amber-500/20 ring-2 ring-amber-500/30 scale-102"
                         : `${rarity.border} ${rarity.bg} hover:scale-102`
                     )}
@@ -515,7 +510,7 @@ export function Shop() {
                   <p className="text-[10px] text-gray-400">+50 de Energia imediata</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => setPurchaseMsg('Poção comprada com sucesso!')}
                 className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
               >
@@ -532,7 +527,7 @@ export function Shop() {
                   <p className="text-[10px] text-gray-400">Restaura 100% do HP</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => setPurchaseMsg('Elixir comprado com sucesso!')}
                 className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
               >
@@ -549,7 +544,7 @@ export function Shop() {
                   <p className="text-[10px] text-gray-400">Evita perda na forja</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => setPurchaseMsg('Pedra de Proteção adquirida!')}
                 className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3"
               >
@@ -566,7 +561,7 @@ export function Shop() {
                   <p className="text-[10px] text-gray-400">Contém 1 item aleatório</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => setPurchaseMsg('Baú aberto com sucesso!')}
                 className="h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white font-bold px-3"
               >
@@ -664,8 +659,8 @@ export function Shop() {
                 <Button
                   onClick={executeUpgrade}
                   disabled={
-                    selectedForgeItem.upgradeLevel >= 10 || 
-                    economy.coins < goldCost || 
+                    selectedForgeItem.upgradeLevel >= 10 ||
+                    economy.coins < goldCost ||
                     (economy?.shards?.[selectedForgeItem.rarity] || 0) < shardCost
                   }
                   className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold"
@@ -684,6 +679,6 @@ export function Shop() {
           )}
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </div>
   );
 }

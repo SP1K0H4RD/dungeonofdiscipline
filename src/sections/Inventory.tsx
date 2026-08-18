@@ -268,11 +268,7 @@ export function Inventory() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6 pt-10 pb-24 px-1"
-    >
+    <div className="space-y-6 pt-10 pb-24 px-1">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
         <h2 className="text-2xl font-bold text-white font-cinzel mb-1">INVENTÁRIO</h2>
@@ -282,11 +278,7 @@ export function Inventory() {
       </div>
 
       {/* Hero Showcase & Attributes Section - COMPACT ATRIBUTOS & EXPANDED CHARACTER */}
-      <motion.div 
-        className="card-dungeon p-2.5 xs:p-3 sm:p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl shadow-xl overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <div className="card-dungeon p-2.5 xs:p-3 sm:p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl shadow-xl overflow-hidden">
         <div className="flex flex-row items-stretch justify-between gap-2 sm:gap-3">
           
           {/* Column 1: Vertical Equipment Slots (Capacete -> Armadura -> Bota -> Arma -> Acessório) */}
@@ -408,7 +400,7 @@ export function Inventory() {
           </div>
 
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Tabs (Equipamentos vs Ataques Especiais) */}
       <Tabs defaultValue="equipment" className="w-full">
@@ -425,12 +417,7 @@ export function Inventory() {
 
         <TabsContent value="equipment" className="mt-3 space-y-4">
           {/* INVENTÁRIO Grid Section matching screenshot */}
-          <motion.div 
-            className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl"
-            initial={{ y: 20 }}
-            animate={{ y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
                 <Package className="w-4 h-4 text-cyan-400" />
@@ -473,7 +460,7 @@ export function Inventory() {
                 ))}
               </div>
             )}
-          </motion.div>
+          </div>
 
           {/* Bottom Category Filter Buttons matching screenshot */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
@@ -868,6 +855,6 @@ export function Inventory() {
         </DialogContent>
       </Dialog>
 
-    </motion.div>
+    </div>
   );
 }
