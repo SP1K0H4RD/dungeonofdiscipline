@@ -8,6 +8,7 @@ import { Dashboard } from '@/sections/Dashboard';
 import { Quests } from '@/sections/Quests';
 import { Dungeon } from '@/sections/Dungeon';
 import { MapSystem } from '@/sections/MapSystem';
+import { WorldMap } from '@/sections/WorldMap';
 import { Inventory } from '@/sections/Inventory';
 import { Shop } from '@/sections/Shop';
 // ProfileSetup removed - onboarding simplified to just name input
@@ -413,6 +414,7 @@ function AppContent() {
     };
   }, [currentView]);
   const [showDeath, setShowDeath] = useState(false);
+  const [activeBiomeMapId, setActiveBiomeMapId] = useState<MapId | null>(null);
 
   // Check for death
   if (character.hp <= 0 && !showDeath && character.name) {
@@ -429,6 +431,7 @@ function AppContent() {
   };
 
   const handleExitMapSystem = () => {
+    setActiveBiomeMapId(null);
     exitMapSystem();
   };
 
@@ -627,12 +630,32 @@ function AppContent() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[60] overflow-hidden"
+                        className="fixed inset-0 z-[60] overflow-hidden bg-black"
                       >
-                        <MapSystem 
-                          onEnterCombat={handleEnterCombat} 
-                          onExit={handleExitMapSystem}
-                        />
+                        {activeBiomeMapId ? (
+                          <MapSystem 
+                            initialMapId={activeBiomeMapId}
+                            onEnterCombat={handleEnterCombat} 
+                            onExit={() => {
+                              setActiveBiomeMapId(null);
+                              handleExitMapSystem();
+                            }}
+                            onBackToWorldMap={() => setActiveBiomeMapId(null)}
+                          />
+                        ) : (
+                          <WorldMap
+                            onSelectMap={(mapId) => setActiveBiomeMapId(mapId)}
+                            onNavigateToCastle={() => {
+                              setActiveBiomeMapId(null);
+                              handleExitMapSystem();
+                              setCurrentView('shop');
+                            }}
+                            onClose={() => {
+                              setActiveBiomeMapId(null);
+                              handleExitMapSystem();
+                            }}
+                          />
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>

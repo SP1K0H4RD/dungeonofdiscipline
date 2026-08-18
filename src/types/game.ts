@@ -934,11 +934,11 @@ export function calculateMonsterDrop(enemy: SpawnedEnemy): Item | null {
 // Generate a complete map with nodes
 export function generateMap(mapId: MapId): GameMap {
   const mapNames: Record<MapId, { name: string; description: string; theme: string }> = {
-    map1: { name: 'Floresta Sombria', description: 'Uma floresta infestada de criaturas.', theme: 'green' },
-    map2: { name: 'Cripta Antiga', description: 'Tumbas de antigos guerreiros.', theme: 'gray' },
-    map3: { name: 'Vulcão Ardente', description: 'Terras devastadas por elementais.', theme: 'red' },
-    map4: { name: 'Abismo Infernal', description: 'O reino dos demônios.', theme: 'purple' },
-    map5: { name: 'Ninho do Dragão', description: 'O covil do dragão ancião.', theme: 'gold' },
+    map1: { name: 'Floresta Sombria', description: 'Uma floresta infestada de criaturas sombrias.', theme: 'green' },
+    map2: { name: 'Deserto das Cinzas', description: 'Vastos desertos escaldantes e ruínas antigas.', theme: 'amber' },
+    map3: { name: 'Tundra Congelada', description: 'Montanhas gélidas cobertas por neve e gelo.', theme: 'blue' },
+    map4: { name: 'Terras Vulcânicas', description: 'Fendas incandescentes e rios de lava escaldante.', theme: 'red' },
+    map5: { name: 'Abismo', description: 'O vórtex abissal das sombras profundas.', theme: 'purple' },
   };
   
   const stages = MAP_STAGES[mapId];

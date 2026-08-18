@@ -540,7 +540,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               <div className="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors" />
               <div className="flex items-center gap-2.5 relative z-10">
                 <Sword className="w-4 h-4 text-yellow-500 group-hover:rotate-12 transition-transform" />
-                <span className="text-base font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400 uppercase">ENTRAR NA DUNGEON</span>
+                <span className="text-base font-black text-white font-cinzel tracking-widest group-hover:text-yellow-400 uppercase">EXPLORAR MAPA</span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5 relative z-10">
                 <Zap className="w-3 h-3 text-yellow-500/70" />

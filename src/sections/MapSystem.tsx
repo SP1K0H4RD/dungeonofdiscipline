@@ -29,6 +29,8 @@ import {
 interface MapSystemProps {
   onEnterCombat: (mapId: MapId, nodeId: string) => void;
   onExit: () => void;
+  initialMapId?: MapId;
+  onBackToWorldMap?: () => void;
 }
 
 const mapThemes: Record<MapId, {
@@ -48,35 +50,35 @@ const mapThemes: Record<MapId, {
     bgImage: '/dark_forest_bg.jpg',
   },
   map2: {
-    name: 'Cripta Antiga',
-    line1: 'CRIPTA',
-    line2: 'ANTIGA',
-    color: '#94a3b8',
-    borderColor: 'border-slate-500/40',
+    name: 'Deserto das Cinzas',
+    line1: 'DESERTO DAS',
+    line2: 'CINZAS',
+    color: '#d97706',
+    borderColor: 'border-amber-500/40',
     bgImage: '/ancient_crypt_bg.jpg',
   },
   map3: {
-    name: 'Vulcão Ardente',
-    line1: 'VULCÃO',
-    line2: 'ARDENTE',
-    color: '#ef4444',
-    borderColor: 'border-red-500/40',
+    name: 'Tundra Congelada',
+    line1: 'TUNDRA',
+    line2: 'CONGELADA',
+    color: '#38bdf8',
+    borderColor: 'border-sky-500/40',
     bgImage: '/lava_volcano_bg.jpg',
   },
   map4: {
-    name: 'Abismo Infernal',
-    line1: 'ABISMO',
-    line2: 'INFERNAL',
-    color: '#a855f7',
-    borderColor: 'border-purple-500/40',
+    name: 'Terras Vulcânicas',
+    line1: 'TERRAS',
+    line2: 'VULCÂNICAS',
+    color: '#ef4444',
+    borderColor: 'border-red-500/40',
     bgImage: '/void_abyss_bg.jpg',
   },
   map5: {
-    name: 'Ninho do Dragão',
-    line1: 'NINHO DO',
-    line2: 'DRAGÃO',
-    color: '#f59e0b',
-    borderColor: 'border-amber-500/40',
+    name: 'Abismo',
+    line1: 'ABISMO',
+    line2: 'MORTAL',
+    color: '#a855f7',
+    borderColor: 'border-purple-500/40',
     bgImage: '/dragon_nest_bg.jpg',
   },
 };
@@ -89,10 +91,10 @@ const difficultyLabels: Record<string, string> = {
   boss: 'BOSS',
 };
 
-export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
+export function MapSystem({ onEnterCombat, onExit, initialMapId = 'map1', onBackToWorldMap }: MapSystemProps) {
   const { gameState } = useGame();
   const { maps, character } = gameState;
-  const [selectedMapId, setSelectedMapId] = useState<MapId>('map1');
+  const [selectedMapId, setSelectedMapId] = useState<MapId>(initialMapId);
   const [showEnergyWarning, setShowEnergyWarning] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showMissions, setShowMissions] = useState(false);
@@ -168,11 +170,11 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
         <div className="flex items-center justify-between pt-1 pb-1">
           {/* Voltar */}
           <button
-            onClick={onExit}
-            className="flex items-center gap-0.5 text-gray-300 hover:text-white transition-colors text-sm font-medium"
+            onClick={onBackToWorldMap || onExit}
+            className="flex items-center gap-0.5 text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-medium font-cinzel"
           >
             <ChevronLeft className="w-5 h-5" />
-            <span>Voltar</span>
+            <span>Mapa Mundo</span>
           </button>
 
           {/* Title Stacked with Map Switcher Arrows (< Title >) */}
