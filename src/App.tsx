@@ -383,11 +383,34 @@ function AppContent() {
   // Local state for non-gameplay UI
   const [currentView, setCurrentView] = useState<'dashboard' | 'quests' | 'inventory' | 'shop'>('dashboard');
 
-  // Reset scroll when view changes
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+  const forceScrollToTop = () => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+    } catch {
+      window.scrollTo(0, 0);
     }
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+      try {
+        scrollContainerRef.current.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+      } catch {}
+    }
+  };
+
+  // Reset scroll instantly when view changes
+  useEffect(() => {
+    forceScrollToTop();
+    const t1 = setTimeout(forceScrollToTop, 30);
+    const t2 = setTimeout(forceScrollToTop, 100);
+    const t3 = setTimeout(forceScrollToTop, 250);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [currentView]);
   const [showDeath, setShowDeath] = useState(false);
 
@@ -559,6 +582,7 @@ function AppContent() {
             currentView={currentView} 
             onViewChange={(view) => {
               setCurrentView(view as any);
+              forceScrollToTop();
               // Auto-exit dungeon systems when navigating elsewhere
               if (currentMapId || currentNodeId) {
                 exitMapSystem();
