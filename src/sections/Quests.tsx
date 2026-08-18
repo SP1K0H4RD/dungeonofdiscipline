@@ -21,6 +21,41 @@ import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
 import type { Quest, Difficulty, QuestType, DayOfWeek } from '@/types/game';
 import { getBrazilDate, getBrazilDateStringFromDate } from '@/types/game';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 function rollStreakChestRarity(days: number): 'common' | 'rare' | 'epic' | 'legendary' {
   if (days === 7) return 'common';
@@ -72,41 +107,6 @@ const STREAK_REWARDS = [
   { days: 325, title: 'Baú Mítico (325d)', defaultRarity: 'epic' as const, gold: 11000, crystals: 1200, energy: 30, chanceInfo: '80% Épico / 20% Lendário' },
   { days: 365, title: 'Baú Lendário (365d)', titleUnlocked: 'Ascendido', defaultRarity: 'legendary' as const, gold: 15000, crystals: 2000, energy: 50, chanceInfo: '100% Lendário' },
 ];
-import {
-    Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 const difficultyConfig: Record<Difficulty, { color: string; bg: string; label: string; border: string; emoji: string }> = {
   easy: { color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Fácil', border: 'border-emerald-500', emoji: '🟢' },
