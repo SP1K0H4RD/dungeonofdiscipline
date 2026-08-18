@@ -15,7 +15,6 @@ import {
   Shield,
   Gem,
   FlaskConical,
-  Scroll,
   RotateCw,
   Hourglass,
   History
@@ -73,96 +72,7 @@ interface ShopCatalogItem {
   color: string;
 }
 
-const SHOP_CATALOG: ShopCatalogItem[] = [
-  {
-    id: 'espada-longa',
-    name: 'Espada Longa',
-    rarity: 'epic',
-    type: 'weapon',
-    statsLabel: 'ATK +18',
-    price: 120,
-    icon: '🗡️',
-    typeIcon: Sword,
-    color: 'text-purple-400'
-  },
-  {
-    id: 'escudo-guardiao',
-    name: 'Escudo do Guardião',
-    rarity: 'rare',
-    type: 'armor',
-    statsLabel: 'DEF +15',
-    price: 95,
-    icon: '🛡️',
-    typeIcon: Shield,
-    color: 'text-blue-400'
-  },
-  {
-    id: 'armadura-valente',
-    name: 'Armadura do Valente',
-    rarity: 'epic',
-    type: 'armor',
-    statsLabel: 'DEF +25  HP +40',
-    price: 180,
-    icon: '🥋',
-    typeIcon: Shield,
-    color: 'text-purple-400'
-  },
-  {
-    id: 'anel-precisao',
-    name: 'Anel da Precisão',
-    rarity: 'rare',
-    type: 'accessory',
-    statsLabel: 'CRIT +8%',
-    price: 90,
-    icon: '💍',
-    typeIcon: Gem,
-    color: 'text-blue-400'
-  },
-  {
-    id: 'adaga-sombria',
-    name: 'Adaga Sombria',
-    rarity: 'common',
-    type: 'weapon',
-    statsLabel: 'ATK +6',
-    price: 30,
-    icon: '🗡️',
-    typeIcon: Sword,
-    color: 'text-gray-400'
-  },
-  {
-    id: 'colete-couro',
-    name: 'Colete de Couro',
-    rarity: 'common',
-    type: 'armor',
-    statsLabel: 'DEF +5',
-    price: 25,
-    icon: '🦺',
-    typeIcon: Shield,
-    color: 'text-gray-400'
-  },
-  {
-    id: 'pocao-cura',
-    name: 'Poção de Cura',
-    rarity: 'common',
-    type: 'item',
-    statsLabel: 'Restaura 50 HP',
-    price: 20,
-    icon: '🧪',
-    typeIcon: FlaskConical,
-    color: 'text-emerald-400'
-  },
-  {
-    id: 'pergaminho-teleporte',
-    name: 'Pergaminho de Teleporte',
-    rarity: 'epic',
-    type: 'item',
-    statsLabel: 'Teleporta para a base',
-    price: 150,
-    icon: '📜',
-    typeIcon: Scroll,
-    color: 'text-purple-400'
-  },
-];
+const SHOP_CATALOG: ShopCatalogItem[] = [];
 
 // 3D Crystal Gem Vector Component matching exact screenshot design
 function CrystalIcon({ rarity }: { rarity: Rarity }) {
@@ -699,57 +609,71 @@ export function Shop() {
 
           {/* LOJA Sub-Tab Content: [Comprar] / [Vender] / [Histórico] */}
           {lojaSubTab === 'comprar' && (
-            /* Catalog Grid (Compact Shrunk Items) */
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {filteredShopItems.map((item) => {
-                const rarity = rarityColors[item.rarity];
-                const TypeIcon = item.typeIcon;
+            filteredShopItems.length === 0 ? (
+              <div className="card-dungeon p-8 bg-[#0a0a14] border border-[#232338] rounded-2xl text-center space-y-3 flex flex-col items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-3xl">
+                  🏪
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white font-cinzel">Nenhum item à venda no momento</h3>
+                  <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                    A loja do castelo ainda não possui mercadorias disponíveis. Novos equipamentos serão adicionados em breve!
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* Catalog Grid (Compact Shrunk Items) */
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {filteredShopItems.map((item) => {
+                  const rarity = rarityColors[item.rarity];
+                  const TypeIcon = item.typeIcon;
 
-                return (
-                  <div 
-                    key={item.id}
-                    className={cn(
-                      "card-dungeon p-2 xs:p-2.5 bg-[#0a0a14] border-2 rounded-xl flex flex-col justify-between relative overflow-hidden transition-all hover:scale-102 shadow-md group",
-                      rarity.border
-                    )}
-                  >
-                    {/* Top Left Circular Type Badge */}
-                    <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/70 border border-white/20 flex items-center justify-center z-10">
-                      <TypeIcon className={cn("w-2.5 h-2.5", item.color)} />
-                    </div>
-
-                    {/* Center Artwork / Icon (Shrunk from 5xl/6xl to 3xl/4xl) */}
-                    <div className="w-full h-16 sm:h-20 flex items-center justify-center my-1 relative">
-                      <div className="text-3xl sm:text-4xl drop-shadow-md group-hover:scale-110 transition-transform">
-                        {item.icon}
-                      </div>
-                    </div>
-
-                    {/* Info Section */}
-                    <div className="text-center space-y-0.5 mb-1.5">
-                      <h4 className="text-[11px] font-bold text-white truncate max-w-full font-cinzel leading-tight">
-                        {item.name}
-                      </h4>
-                      <p className={cn("text-[8px] font-semibold capitalize", rarity.text)}>
-                        {rarityPt[item.rarity]}
-                      </p>
-                      <p className="text-[9px] font-mono font-bold text-gray-300">
-                        {item.statsLabel}
-                      </p>
-                    </div>
-
-                    {/* Buy Button Badge (Compact) */}
-                    <button
-                      onClick={() => handleBuyShopItem(item)}
-                      className="w-full py-1 bg-[#141424] hover:bg-[#1f1f36] border border-amber-500/40 rounded-lg flex items-center justify-center gap-1 text-amber-400 font-mono font-bold text-[11px] transition-colors shadow-inner"
+                  return (
+                    <div 
+                      key={item.id}
+                      className={cn(
+                        "card-dungeon p-2 xs:p-2.5 bg-[#0a0a14] border-2 rounded-xl flex flex-col justify-between relative overflow-hidden transition-all hover:scale-102 shadow-md group",
+                        rarity.border
+                      )}
                     >
-                      <Coins className="w-3 h-3 text-amber-400" />
-                      <span>{item.price}</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                      {/* Top Left Circular Type Badge */}
+                      <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/70 border border-white/20 flex items-center justify-center z-10">
+                        <TypeIcon className={cn("w-2.5 h-2.5", item.color)} />
+                      </div>
+
+                      {/* Center Artwork / Icon */}
+                      <div className="w-full h-16 sm:h-20 flex items-center justify-center my-1 relative">
+                        <div className="text-3xl sm:text-4xl drop-shadow-md group-hover:scale-110 transition-transform">
+                          {item.icon}
+                        </div>
+                      </div>
+
+                      {/* Info Section */}
+                      <div className="text-center space-y-0.5 mb-1.5">
+                        <h4 className="text-[11px] font-bold text-white truncate max-w-full font-cinzel leading-tight">
+                          {item.name}
+                        </h4>
+                        <p className={cn("text-[8px] font-semibold capitalize", rarity.text)}>
+                          {rarityPt[item.rarity]}
+                        </p>
+                        <p className="text-[9px] font-mono font-bold text-gray-300">
+                          {item.statsLabel}
+                        </p>
+                      </div>
+
+                      {/* Buy Button Badge (Compact) */}
+                      <button
+                        onClick={() => handleBuyShopItem(item)}
+                        className="w-full py-1 bg-[#141424] hover:bg-[#1f1f36] border border-amber-500/40 rounded-lg flex items-center justify-center gap-1 text-amber-400 font-mono font-bold text-[11px] transition-colors shadow-inner"
+                      >
+                        <Coins className="w-3 h-3 text-amber-400" />
+                        <span>{item.price}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           )}
 
           {lojaSubTab === 'vender' && (
