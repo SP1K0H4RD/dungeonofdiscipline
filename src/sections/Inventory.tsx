@@ -15,7 +15,8 @@ import {
   Wind,
   Star as StarIcon,
   User,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -102,7 +103,7 @@ function ItemCard({ item, onClick, isEquipped }: ItemCardProps) {
     <motion.button
       onClick={onClick}
       className={cn(
-        'relative aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 p-2',
+        'relative aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 p-2',
         'transition-all duration-200 bg-[#12121c]',
         rarity.border,
         isEquipped && 'ring-2 ring-green-500 ring-offset-2 ring-offset-[#1a1a2e]',
@@ -111,19 +112,19 @@ function ItemCard({ item, onClick, isEquipped }: ItemCardProps) {
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-      <span className="text-3xl drop-shadow">{item.icon}</span>
+      <span className="text-2xl sm:text-3xl drop-shadow">{item.icon}</span>
       {item.upgradeLevel > 0 && (
-        <div className="absolute top-1 left-1 bg-yellow-500 text-black text-[10px] font-black px-1 rounded shadow-md z-10">
+        <div className="absolute top-1 left-1 bg-yellow-500 text-black text-[9px] font-black px-1 rounded shadow-md z-10">
           +{item.upgradeLevel}
         </div>
       )}
       {isEquipped && (
-        <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full z-10" />
+        <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-green-500 rounded-full z-10" />
       )}
-      <span className="text-[11px] font-bold text-white truncate max-w-full">
+      <span className="text-[10px] font-bold text-white truncate max-w-full">
         {item.name}
       </span>
-      <span className={cn('text-[10px] font-medium capitalize', rarity.text)}>
+      <span className={cn('text-[9px] font-medium capitalize', rarity.text)}>
         {item.rarity}
       </span>
     </motion.button>
@@ -143,7 +144,7 @@ function SpecialAttackCard({ attack, onClick, isEquipped }: SpecialAttackCardPro
     <motion.button
       onClick={onClick}
       className={cn(
-        'relative aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 p-2',
+        'relative aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 p-2',
         'transition-all duration-200 bg-[#12121c]',
         rarity.border,
         isEquipped && 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#1a1a2e]',
@@ -152,12 +153,12 @@ function SpecialAttackCard({ attack, onClick, isEquipped }: SpecialAttackCardPro
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-      <span className="text-3xl">{elementIcons[attack.element]}</span>
-      <span className="text-xs text-gray-400 font-mono font-bold">×{attack.damageMultiplier}</span>
+      <span className="text-2xl sm:text-3xl">{elementIcons[attack.element]}</span>
+      <span className="text-[10px] text-gray-400 font-mono font-bold">×{attack.damageMultiplier}</span>
       {isEquipped && (
-        <div className="absolute top-1 right-1 w-3 h-3 bg-orange-500 rounded-full" />
+        <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-orange-500 rounded-full" />
       )}
-      <div className={cn('text-[10px] font-medium capitalize', rarity.text)}>
+      <div className={cn('text-[9px] font-medium capitalize', rarity.text)}>
         {attack.rarity}
       </div>
     </motion.button>
@@ -180,6 +181,7 @@ export function Inventory() {
   const [selectedSpecialSlot, setSelectedSpecialSlot] = useState(false);
   const [equipBlocked, setEquipBlocked] = useState<{ itemName: string; requiredLevel: number } | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'armaduras' | 'acessorios' | 'itens' | 'materiais'>('all');
+  const [equipmentTypeFilter, setEquipmentTypeFilter] = useState<string>('todos');
 
   const equippedItems = character.equipped;
 
@@ -200,17 +202,17 @@ export function Inventory() {
     if (!stat) return null;
 
     return (
-      <div className={cn("flex items-center justify-between p-2 rounded-lg bg-black/20", color)}>
-        <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4" />
-          <span className="text-xs font-medium">{label}</span>
+      <div className={cn("flex items-center justify-between p-1.5 rounded-lg bg-black/20", color)}>
+        <div className="flex items-center gap-1.5">
+          <Icon className="w-3.5 h-3.5" />
+          <span className="text-[11px] font-medium">{label}</span>
         </div>
-        <div className="flex items-center gap-1.5 font-mono">
-          <span className="text-gray-400 text-xs">{base.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}</span>
+        <div className="flex items-center gap-1 font-mono">
+          <span className="text-gray-400 text-[10px]">{base.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}</span>
           {stat.diff > 0 && (
-            <span className="text-[10px] text-green-400 font-bold">+{stat.diff.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}</span>
+            <span className="text-[9px] text-green-400 font-bold">+{stat.diff.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}</span>
           )}
-          <span className="text-sm font-bold ml-1">
+          <span className="text-xs font-bold ml-1">
             {stat.total.toFixed(1).replace(/\.0$/, '')}{isPercent ? '%' : ''}
           </span>
         </div>
@@ -271,148 +273,138 @@ export function Inventory() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 pt-10 pb-24"
+      className="space-y-4 pt-6 pb-24 px-1"
     >
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-4 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
-        <h2 className="text-2xl font-bold text-white font-cinzel">INVENTÁRIO</h2>
-        <p className="text-xs text-gray-400 mt-1">
+      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md pt-2 pb-3 border-b border-white/5 md:relative md:top-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:pt-0 md:pb-0 md:px-0 md:border-none">
+        <h2 className="text-xl sm:text-2xl font-bold text-white font-cinzel tracking-wide">INVENTÁRIO</h2>
+        <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
           Gerencie seus equipamentos e ataques especiais
         </p>
       </div>
 
-      {/* Hero Showcase & Stats Section */}
+      {/* Hero Showcase & Attributes Section - MOBILE-FIRST 3-COLUMN ROW MATCHING SCREENSHOT */}
       <motion.div 
-        className="card-dungeon p-4 sm:p-5 bg-[#0c0c14] border border-[#232338] rounded-2xl shadow-xl"
+        className="card-dungeon p-2.5 xs:p-3 sm:p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl shadow-xl overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+        <div className="flex flex-row items-center justify-between gap-1.5 xs:gap-2 sm:gap-4">
           
-          {/* Left + Center: 5 Vertical Slots + Character Avatar */}
-          <div className="md:col-span-7 flex items-center justify-center gap-4 sm:gap-6">
-            
-            {/* Vertical Equipment Slots: Capacete -> Armadura -> Bota -> Arma -> Acessório */}
-            <div className="flex flex-col gap-2.5 shrink-0">
-              {VERTICAL_SLOTS.map(({ type, label, defaultIcon }) => {
-                const item = equippedItems[type];
-                const rarity = item ? rarityColors[item.rarity] : null;
+          {/* Column 1: Vertical Equipment Slots (Capacete -> Armadura -> Bota -> Arma -> Acessório) */}
+          <div className="flex flex-col gap-1.5 shrink-0">
+            {VERTICAL_SLOTS.map(({ type, label, defaultIcon }) => {
+              const item = equippedItems[type];
+              const rarity = item ? rarityColors[item.rarity] : null;
 
-                return (
-                  <button
-                    key={type}
-                    onClick={() => item && setSelectedSlot(type)}
-                    title={item ? `${item.name} (${label})` : `Slot de ${label} (Vazio)`}
-                    className={cn(
-                      "w-11 h-11 sm:w-13 sm:h-13 rounded-xl border-2 flex flex-col items-center justify-center relative transition-all duration-200 group",
-                      item 
-                        ? `${rarity?.border} ${rarity?.bg} shadow-md shadow-black/50 hover:scale-105` 
-                        : "border-[#252538] bg-[#12121c]/80 hover:border-purple-500/50"
-                    )}
-                  >
-                    {item ? (
-                      <>
-                        <span className="text-xl sm:text-2xl drop-shadow-md">{item.icon}</span>
-                        {item.upgradeLevel > 0 && (
-                          <div className="absolute -top-1.5 -left-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-[9px] font-black px-1 rounded-md shadow border border-black/40">
-                            +{item.upgradeLevel}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-base sm:text-lg opacity-35 group-hover:opacity-60 transition-opacity">
-                        {defaultIcon}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Character Avatar Showcase (Same Gnome/Wizard artwork as Dashboard) */}
-            <div className="relative flex-1 max-w-[240px] sm:max-w-[260px] aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-purple-900/20 via-black/40 to-black/80 border border-purple-500/20 shadow-[0_0_30px_rgba(168,85,247,0.15)] flex items-center justify-center">
-              <img 
-                src={
-                  playerProfile?.avatarUrl && avatarOk
-                    ? playerProfile.avatarUrl
-                    : "https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg"
-                }
-                alt="Avatar do Personagem" 
-                className="w-full h-full object-cover opacity-95"
-                onError={() => setAvatarOk(false)}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c14] via-transparent to-transparent opacity-75" />
-
-              {/* Character Name & Level Tag */}
-              <div className="absolute bottom-2 left-2 right-2 text-center bg-black/60 backdrop-blur-md rounded-xl py-1 px-2 border border-white/10 shadow-lg">
-                <p className="text-xs font-bold text-white font-cinzel truncate">{character.name || 'Aventureiro'}</p>
-                <p className="text-[10px] text-purple-400 font-mono font-bold -mt-0.5">Nível {character.level}</p>
-              </div>
-            </div>
-
+              return (
+                <button
+                  key={type}
+                  onClick={() => item && setSelectedSlot(type)}
+                  title={item ? `${item.name} (${label})` : `Slot de ${label} (Vazio)`}
+                  className={cn(
+                    "w-9 h-9 xs:w-10 xs:h-10 sm:w-12 sm:h-12 rounded-xl border flex flex-col items-center justify-center relative transition-all duration-200 group",
+                    item 
+                      ? `${rarity?.border} ${rarity?.bg} shadow-md border-2 hover:scale-105` 
+                      : "border-[#252538] bg-[#12121c]/80 hover:border-purple-500/50"
+                  )}
+                >
+                  {item ? (
+                    <>
+                      <span className="text-lg xs:text-xl sm:text-2xl drop-shadow-md">{item.icon}</span>
+                      {item.upgradeLevel > 0 && (
+                        <div className="absolute -top-1 -left-1 bg-yellow-500 text-black text-[8px] font-black px-0.5 rounded shadow border border-black/40">
+                          +{item.upgradeLevel}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm xs:text-base opacity-35 group-hover:opacity-60 transition-opacity">
+                      {defaultIcon}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Right Column: ATRIBUTOS Box */}
-          <div className="md:col-span-5 bg-[#0c0c14]/90 border border-[#232338] rounded-2xl p-4 space-y-3 shadow-inner">
-            <div className="flex items-center justify-between border-b border-white/5 pb-2">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black tracking-wider text-gray-200 uppercase font-cinzel">ATRIBUTOS</span>
-                <Info className="w-3.5 h-3.5 text-gray-500" />
-              </div>
+          {/* Column 2: Character Avatar Showcase (Center Gnome/Wizard artwork) */}
+          <div className="relative shrink-0 w-24 xs:w-28 sm:w-36 md:w-44 aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-purple-900/20 via-black/40 to-black/80 border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.15)] flex items-center justify-center">
+            <img 
+              src={
+                playerProfile?.avatarUrl && avatarOk
+                  ? playerProfile.avatarUrl
+                  : "https://img.freepik.com/free-photo/view-gnome-creature-nature_23-2150756358.jpg"
+              }
+              alt="Avatar do Personagem" 
+              className="w-full h-full object-cover opacity-95"
+              onError={() => setAvatarOk(false)}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c14] via-transparent to-transparent opacity-80" />
+
+            {/* Pedestal Circle outline */}
+            <div className="absolute bottom-1 w-16 xs:w-20 sm:w-28 h-4 rounded-full bg-purple-500/20 border border-purple-400/30 blur-[2px]" />
+          </div>
+
+          {/* Column 3: ATRIBUTOS Box (Right Column matching exact screenshot UI) */}
+          <div className="flex-1 min-w-[125px] xs:min-w-[135px] sm:min-w-[160px] bg-[#0c0c16] border border-[#1e1e2e] rounded-xl p-2 sm:p-3 flex flex-col justify-between self-stretch">
+            <div className="flex items-center gap-1 border-b border-white/5 pb-1 mb-1">
+              <span className="text-[10px] sm:text-xs font-black tracking-wider text-gray-300 uppercase font-cinzel">ATRIBUTOS</span>
+              <Info className="w-3 h-3 text-gray-500 cursor-pointer" />
             </div>
 
             {/* ATK */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1.5 text-red-400 font-bold"><Swords className="w-3.5 h-3.5" /> ATK</span>
+            <div className="space-y-0.5">
+              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
+                <span className="flex items-center gap-1 text-red-400 font-bold"><Swords className="w-3 h-3" /> ATK</span>
                 <span className="font-mono font-bold text-white">{(character.totalStats?.attack || character.stats.totalAttack).toFixed(1).replace(/\.0$/, '')}</span>
               </div>
-              <div className="h-2 bg-[#181826] rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-gradient-to-r from-red-600 to-red-500 rounded-full transition-all duration-300" style={{ width: `${Math.min(100, ((character.totalStats?.attack || character.stats.totalAttack) / 100) * 100)}%` }} />
+              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+                <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.min(100, ((character.totalStats?.attack || character.stats.totalAttack) / 100) * 100)}%` }} />
               </div>
             </div>
 
             {/* DEF */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1.5 text-blue-400 font-bold"><Shield className="w-3.5 h-3.5" /> DEF</span>
+            <div className="space-y-0.5">
+              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
+                <span className="flex items-center gap-1 text-blue-400 font-bold"><Shield className="w-3 h-3" /> DEF</span>
                 <span className="font-mono font-bold text-white">{(character.totalStats?.defense || character.stats.totalDefense).toFixed(1).replace(/\.0$/, '')}</span>
               </div>
-              <div className="h-2 bg-[#181826] rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.min(100, ((character.totalStats?.defense || character.stats.totalDefense) / 100) * 100)}%` }} />
+              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, ((character.totalStats?.defense || character.stats.totalDefense) / 100) * 100)}%` }} />
               </div>
             </div>
 
             {/* HP */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1.5 text-green-400 font-bold"><Heart className="w-3.5 h-3.5" /> HP</span>
+            <div className="space-y-0.5">
+              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
+                <span className="flex items-center gap-1 text-green-400 font-bold"><Heart className="w-3 h-3" /> HP</span>
                 <span className="font-mono font-bold text-white">{character.totalStats?.maxHp || character.maxHp}</span>
               </div>
-              <div className="h-2 bg-[#181826] rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-gradient-to-r from-green-600 to-emerald-400 rounded-full transition-all duration-300" style={{ width: `${Math.min(100, ((character.totalStats?.maxHp || character.maxHp) / 500) * 100)}%` }} />
+              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+                <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(100, ((character.totalStats?.maxHp || character.maxHp) / 500) * 100)}%` }} />
               </div>
             </div>
 
             {/* CRIT */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1.5 text-amber-400 font-bold"><StarIcon className="w-3.5 h-3.5" /> CRIT</span>
+            <div className="space-y-0.5">
+              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
+                <span className="flex items-center gap-1 text-amber-400 font-bold"><StarIcon className="w-3 h-3" /> CRIT</span>
                 <span className="font-mono font-bold text-white">{Math.round((character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%</span>
               </div>
-              <div className="h-2 bg-[#181826] rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 rounded-full transition-all duration-300" style={{ width: `${Math.min(100, (character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%` }} />
+              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (character.totalStats?.critChance || character.stats.totalCritChance) * 100)}%` }} />
               </div>
             </div>
 
             {/* ESQ */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-1.5 text-cyan-400 font-bold"><Wind className="w-3.5 h-3.5" /> ESQ</span>
+            <div className="space-y-0.5">
+              <div className="flex justify-between items-center text-[10px] xs:text-[11px]">
+                <span className="flex items-center gap-1 text-cyan-400 font-bold"><Wind className="w-3 h-3" /> ESQ</span>
                 <span className="font-mono font-bold text-white">{Math.round((character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%</span>
               </div>
-              <div className="h-2 bg-[#181826] rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full transition-all duration-300" style={{ width: `${Math.min(100, (character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%` }} />
+              <div className="h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+                <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${Math.min(100, (character.totalStats?.dodgeChance || character.stats.totalDodgeChance) * 100)}%` }} />
               </div>
             </div>
           </div>
@@ -422,32 +414,47 @@ export function Inventory() {
 
       {/* Main Tabs (Equipamentos vs Ataques Especiais) */}
       <Tabs defaultValue="equipment" className="w-full">
-        <TabsList className="bg-[#1a1a2e] border border-[#2d2d44] h-11 w-full flex rounded-xl p-1">
-          <TabsTrigger value="equipment" className="flex-1 data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
-            <Sword className="w-4 h-4 mr-1.5" />
+        <TabsList className="bg-[#12121e] border border-[#232338] h-10 w-full flex rounded-xl p-1">
+          <TabsTrigger value="equipment" className="flex-1 data-[state=active]:bg-[#2c1a4d] data-[state=active]:border data-[state=active]:border-purple-500/40 data-[state=active]:text-white text-xs font-bold px-2 py-1 rounded-lg transition-all">
+            <Sword className="w-3.5 h-3.5 mr-1 text-purple-400" />
             Equipamentos
           </TabsTrigger>
-          <TabsTrigger value="special" className="flex-1 data-[state=active]:bg-orange-600 data-[state=active]:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
-            <Zap className="w-4 h-4 mr-1.5" />
+          <TabsTrigger value="special" className="flex-1 data-[state=active]:bg-[#361c18] data-[state=active]:border data-[state=active]:border-orange-500/40 data-[state=active]:text-white text-xs font-bold px-2 py-1 rounded-lg transition-all">
+            <Zap className="w-3.5 h-3.5 mr-1 text-orange-400" />
             Ataques Especiais ({inventory.specialAttacks.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="equipment" className="mt-4 space-y-6">
-          {/* Equipped Row View */}
+        <TabsContent value="equipment" className="mt-3 space-y-4">
+          {/* EQUIPAMENTOS Row Section */}
           <motion.div 
-            className="card-dungeon p-4 sm:p-5 bg-[#0c0c14] border border-[#232338] rounded-2xl"
+            className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl"
             initial={{ y: 20 }}
             animate={{ y: 0 }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-black tracking-wider text-white uppercase font-cinzel flex items-center gap-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel flex items-center gap-1.5">
                 <Shield className="w-4 h-4 text-purple-400" />
                 EQUIPAMENTOS
               </h3>
+              
+              {/* Dropdown Filter matching screenshot */}
+              <div className="relative">
+                <select
+                  value={equipmentTypeFilter}
+                  onChange={(e) => setEquipmentTypeFilter(e.target.value)}
+                  className="bg-[#12121c] border border-[#232338] text-xs font-bold text-gray-300 rounded-lg px-2.5 py-1 pr-6 appearance-none focus:outline-none focus:border-purple-500"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="armas">Armas</option>
+                  <option value="armaduras">Armaduras</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {/* Horizontal Scroll Row of Equipped Cards */}
+            <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-purple-600/40">
               {VERTICAL_SLOTS.map(({ type, label }) => {
                 const item = equippedItems[type];
                 const rarity = item ? rarityColors[item.rarity] : null;
@@ -457,44 +464,44 @@ export function Inventory() {
                     key={type}
                     onClick={() => item && setSelectedSlot(type)}
                     className={cn(
-                      "p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 relative transition-all duration-200 min-h-[105px]",
+                      "min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 relative transition-all duration-200 shrink-0",
                       item 
                         ? `${rarity?.border} ${rarity?.bg} hover:scale-102` 
-                        : "border-dashed border-[#232338] bg-[#12121c]/50"
+                        : "border-dashed border-[#232338] bg-[#12121c]/50 opacity-60"
                     )}
                   >
                     {item ? (
                       <>
                         <div className="relative">
-                          <span className="text-3xl">{item.icon}</span>
+                          <span className="text-2xl sm:text-3xl drop-shadow">{item.icon}</span>
                           {item.upgradeLevel > 0 && (
-                            <div className="absolute -top-2 -left-3 bg-yellow-500 text-black text-[9px] font-black px-1 rounded shadow">
+                            <div className="absolute -top-1.5 -left-2 bg-yellow-500 text-black text-[8px] font-black px-1 rounded shadow">
                               +{item.upgradeLevel}
                             </div>
                           )}
                         </div>
-                        <span className="text-xs font-bold text-white truncate max-w-full text-center">
+                        <span className="text-[11px] font-bold text-white truncate max-w-full text-center mt-0.5">
                           {item.name}
                         </span>
-                        <span className={cn('text-[10px] font-medium capitalize', rarity?.text)}>
+                        <span className={cn('text-[9px] font-medium capitalize', rarity?.text)}>
                           {item.rarity}
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-xs font-semibold text-gray-500">{label}</span>
-                        <span className="text-[10px] text-gray-600">Vazio</span>
+                        <span className="text-[11px] font-semibold text-gray-400">{label}</span>
+                        <span className="text-[9px] text-gray-600">Vazio</span>
                       </>
                     )}
                   </button>
                 );
               })}
 
-              {/* Special Attack Slot */}
+              {/* Special Attack Card */}
               <button
                 onClick={() => equippedItems.specialAttack && setSelectedSpecialSlot(true)}
                 className={cn(
-                  "p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 relative transition-all duration-200 min-h-[105px]",
+                  "min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 relative transition-all duration-200 shrink-0",
                   equippedItems.specialAttack
                     ? `${rarityColors[equippedItems.specialAttack.rarity].border} ${rarityColors[equippedItems.specialAttack.rarity].bg}`
                     : "border-dashed border-[#232338] bg-[#12121c]/50 opacity-60"
@@ -502,58 +509,64 @@ export function Inventory() {
               >
                 {equippedItems.specialAttack ? (
                   <>
-                    <span className="text-3xl">{elementIcons[equippedItems.specialAttack.element]}</span>
-                    <span className="text-xs font-bold text-white truncate max-w-full text-center">
+                    <span className="text-2xl sm:text-3xl">{elementIcons[equippedItems.specialAttack.element]}</span>
+                    <span className="text-[11px] font-bold text-white truncate max-w-full text-center mt-0.5">
                       {equippedItems.specialAttack.name}
                     </span>
-                    <span className={cn('text-[10px] font-medium capitalize', rarityColors[equippedItems.specialAttack.rarity].text)}>
+                    <span className={cn('text-[9px] font-medium capitalize', rarityColors[equippedItems.specialAttack.rarity].text)}>
                       {equippedItems.specialAttack.rarity}
                     </span>
                   </>
                 ) : (
                   <>
                     <Zap className="w-5 h-5 text-gray-600 opacity-60" />
-                    <span className="text-[10px] text-gray-500 font-bold">Especial Bloqueado</span>
+                    <span className="text-[10px] text-gray-500 font-bold mt-0.5">Especial Bloqueado</span>
                   </>
                 )}
               </button>
             </div>
           </motion.div>
 
-          {/* Inventory Grid Section */}
+          {/* INVENTÁRIO Grid Section matching screenshot */}
           <motion.div 
-            className="card-dungeon p-4 sm:p-5 bg-[#0c0c14] border border-[#232338] rounded-2xl"
+            className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl"
             initial={{ y: 20 }}
             animate={{ y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
                 <Package className="w-4 h-4 text-cyan-400" />
-                <h3 className="text-sm font-black tracking-wider text-white uppercase font-cinzel">
+                <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel">
                   INVENTÁRIO ({allUnequippedItems.length}/30)
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-mono">0 / 30</span>
-                <button className="w-6 h-6 rounded-md bg-[#1a1a2e] border border-[#2d2d44] flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+                <span className="text-xs text-gray-500 font-mono font-bold">0 / 30</span>
+                <button className="w-6 h-6 rounded-md bg-[#161626] border border-[#2d2d44] flex items-center justify-center text-gray-400 hover:text-white transition-colors">
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             {filteredInventoryItems.length === 0 ? (
-              <div className="text-center py-12 bg-[#0c0c14]/50 border border-dashed border-[#232338] rounded-2xl space-y-3">
-                <div className="w-16 h-16 mx-auto bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center">
-                  <Package className="w-8 h-8 text-purple-400 opacity-60" />
+              <div className="text-center py-10 px-4 bg-[#080810] border border-dashed border-[#1e1e2e] rounded-xl flex flex-col items-center justify-center space-y-2">
+                {/* Pixel/Vector Chest Graphic */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 opacity-80 flex items-center justify-center">
+                  <svg viewBox="0 0 64 64" fill="none" className="w-full h-full drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
+                    <rect x="8" y="24" width="48" height="32" rx="4" fill="#1e1e2e" stroke="#3b3b54" strokeWidth="3"/>
+                    <rect x="8" y="16" width="48" height="12" rx="3" fill="#2d2d44" stroke="#4a4a68" strokeWidth="3"/>
+                    <rect x="28" y="28" width="8" height="10" rx="2" fill="#eab308" stroke="#713f12" strokeWidth="2"/>
+                    <circle cx="32" cy="33" r="1.5" fill="#000"/>
+                  </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-300">Seu inventário está vazio</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Complete tarefas para ganhar itens!</p>
+                  <p className="text-xs sm:text-sm font-bold text-gray-300">Seu inventário está vazio</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">Complete tarefas para ganhar itens!</p>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5 sm:gap-3 w-full">
                 {filteredInventoryItems.map((item) => (
                   <ItemCard
                     key={item.id}
@@ -565,8 +578,8 @@ export function Inventory() {
             )}
           </motion.div>
 
-          {/* Bottom Category Filter Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {/* Bottom Category Filter Buttons matching screenshot */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
             {[
               { id: 'all', label: 'Personagem', icon: User },
               { id: 'armaduras', label: 'Armaduras', icon: Shield },
@@ -582,9 +595,9 @@ export function Inventory() {
                   key={cat.id}
                   onClick={() => setCategoryFilter(cat.id as any)}
                   className={cn(
-                    "px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 shrink-0 transition-all",
+                    "px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 shrink-0 transition-all shadow-sm",
                     isActive
-                      ? "bg-purple-600 border-purple-500 text-white shadow-md shadow-purple-600/20"
+                      ? "bg-purple-600 border-purple-500 text-white shadow-purple-600/30"
                       : "bg-[#12121c] border-[#232338] text-gray-400 hover:bg-[#1a1a2e] hover:text-white"
                   )}
                 >
@@ -597,28 +610,28 @@ export function Inventory() {
 
         </TabsContent>
 
-        <TabsContent value="special" className="mt-4 space-y-6">
+        <TabsContent value="special" className="mt-3 space-y-4">
           {/* Equipped Special Attack */}
           <motion.div 
-            className="card-dungeon p-5 bg-[#0c0c14] border border-[#232338] rounded-2xl"
+            className="card-dungeon p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl"
             initial={{ y: 20 }}
             animate={{ y: 0 }}
           >
-            <h3 className="text-sm font-black tracking-wider text-white uppercase font-cinzel mb-4 flex items-center gap-2">
+            <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel mb-3 flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-orange-400" />
               Ataque Especial Equipado
             </h3>
             
             {equippedItems.specialAttack ? (
-              <div className="bg-gradient-to-r from-orange-900/30 via-[#161625] to-transparent rounded-xl p-4 border border-orange-500/30">
-                <div className="flex items-center gap-4">
-                  <div className="text-5xl drop-shadow-md">{elementIcons[equippedItems.specialAttack.element]}</div>
+              <div className="bg-gradient-to-r from-orange-900/30 via-[#161625] to-transparent rounded-xl p-3.5 border border-orange-500/30">
+                <div className="flex items-center gap-3">
+                  <div className="text-4xl drop-shadow-md">{elementIcons[equippedItems.specialAttack.element]}</div>
                   <div>
-                    <h4 className={cn('text-xl font-bold font-cinzel', rarityColors[equippedItems.specialAttack.rarity].text)}>
+                    <h4 className={cn('text-lg font-bold font-cinzel', rarityColors[equippedItems.specialAttack.rarity].text)}>
                       {equippedItems.specialAttack.name}
                     </h4>
                     <p className="text-xs text-gray-400 mt-0.5">{equippedItems.specialAttack.description}</p>
-                    <div className="flex gap-4 mt-2 text-xs font-mono font-bold">
+                    <div className="flex gap-3 mt-1.5 text-xs font-mono font-bold">
                       <span className="text-orange-400">Dano: ×{equippedItems.specialAttack.damageMultiplier}</span>
                       <span className="text-cyan-400">Cooldown: {equippedItems.specialAttack.maxCooldown} turnos</span>
                     </div>
@@ -626,34 +639,34 @@ export function Inventory() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 bg-[#12121c]/50 rounded-xl border border-dashed border-[#232338] text-gray-500 space-y-2">
-                <Zap className="w-10 h-10 mx-auto opacity-50 text-orange-400" />
-                <p className="text-sm font-bold text-gray-300">Nenhum ataque especial equipado</p>
-                <p className="text-xs text-gray-500">Abra lootboxes para conseguir ataques especiais!</p>
+              <div className="text-center py-8 bg-[#080810] rounded-xl border border-dashed border-[#1e1e2e] text-gray-500 space-y-1.5">
+                <Zap className="w-9 h-9 mx-auto opacity-50 text-orange-400" />
+                <p className="text-xs font-bold text-gray-300">Nenhum ataque especial equipado</p>
+                <p className="text-[11px] text-gray-500">Abra lootboxes para conseguir ataques especiais!</p>
               </div>
             )}
           </motion.div>
 
           {/* Special Attacks Inventory */}
           <motion.div 
-            className="card-dungeon p-5 bg-[#0c0c14] border border-[#232338] rounded-2xl"
+            className="card-dungeon p-4 bg-[#0a0a12] border border-[#232338] rounded-2xl"
             initial={{ y: 20 }}
             animate={{ y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h3 className="text-sm font-black tracking-wider text-white uppercase font-cinzel mb-4 flex items-center gap-2">
+            <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel mb-3 flex items-center gap-1.5">
               <Flame className="w-4 h-4 text-red-400" />
               Ataques Especiais Disponíveis
             </h3>
             
             {inventory.specialAttacks.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Você não tem ataques especiais</p>
-                <p className="text-sm">Abra lootboxes para conseguir!</p>
+              <div className="text-center py-10 text-gray-500">
+                <Zap className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                <p className="text-xs font-bold text-gray-300">Você não tem ataques especiais</p>
+                <p className="text-[11px] text-gray-500">Abra lootboxes para conseguir!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5">
                 {inventory.specialAttacks.map((attack) => (
                   <SpecialAttackCard
                     key={attack.id}
@@ -674,7 +687,7 @@ export function Inventory() {
           {selectedItem && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
+                <DialogTitle className="font-cinzel text-lg flex items-center gap-3">
                   <span className="text-3xl">{selectedItem.icon}</span>
                   <div>
                     <span className={rarityColors[selectedItem.rarity].text}>
@@ -687,17 +700,17 @@ export function Inventory() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-4 mt-4">
+              <div className="space-y-3 mt-3 text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className={cn(
-                    'inline-block px-3 py-1 rounded-full text-xs font-medium capitalize',
+                    'inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                     rarityColors[selectedItem.rarity].bg,
                     rarityColors[selectedItem.rarity].text
                   )}>
                     {selectedItem.rarity}
                   </div>
                   <div className={cn(
-                    "inline-block px-3 py-1 rounded-full text-xs font-medium",
+                    "inline-block px-2.5 py-0.5 rounded-full text-xs font-medium",
                     (Number(character.level) || 0) >= getEffectiveItemLevelRequirement(selectedItem)
                       ? "bg-green-500/10 text-green-400"
                       : "bg-red-500/10 text-red-400"
@@ -706,11 +719,11 @@ export function Inventory() {
                   </div>
                 </div>
                 
-                <p className="text-xs text-gray-400 leading-relaxed">{selectedItem.description}</p>
+                <p className="text-gray-400 leading-relaxed">{selectedItem.description}</p>
                 
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-gray-300">Status:</h4>
-                  <div className="flex flex-col gap-1.5">
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-gray-300">Status:</h4>
+                  <div className="flex flex-col gap-1">
                     <StatRow 
                       icon={Sword} 
                       label="Ataque" 
@@ -735,33 +748,15 @@ export function Inventory() {
                       statKey="hpBonus"
                       color="text-green-400" 
                     />
-                    <StatRow 
-                      icon={Zap} 
-                      label="XP" 
-                      base={selectedItem.stats.xpBonus} 
-                      level={selectedItem.upgradeLevel} 
-                      statKey="xpBonus"
-                      color="text-purple-400" 
-                      isPercent 
-                    />
-                    <StatRow 
-                      icon={Info} 
-                      label="Moedas" 
-                      base={selectedItem.stats.coinBonus} 
-                      level={selectedItem.upgradeLevel} 
-                      statKey="coinBonus"
-                      color="text-yellow-400" 
-                      isPercent 
-                    />
                   </div>
                 </div>
                 
                 <div className="pt-2 flex gap-2">
                   <Button
                     onClick={() => handleEquip(selectedItem)}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 font-bold"
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 font-bold h-9 text-xs"
                   >
-                    <ChevronUp className="w-4 h-4 mr-2" />
+                    <ChevronUp className="w-4 h-4 mr-1.5" />
                     Equipar
                   </Button>
                 </div>
@@ -777,13 +772,13 @@ export function Inventory() {
           {equipBlocked && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
+                <DialogTitle className="font-cinzel text-lg flex items-center gap-2">
                   <X className="w-5 h-5 text-red-400" />
                   Não é possível equipar
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-3 mt-3 text-xs">
+              <div className="space-y-3 mt-2 text-xs">
                 <p className="text-gray-300 font-bold">{equipBlocked.itemName}</p>
                 <p className="text-gray-400">
                   Seu nível: <span className="text-white font-bold">{character.level}</span> · Requerido:{' '}
@@ -812,7 +807,7 @@ export function Inventory() {
                 return (
                   <>
                     <DialogHeader>
-                      <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
+                      <DialogTitle className="font-cinzel text-lg flex items-center gap-3">
                         <span className="text-3xl">{item.icon}</span>
                         <div>
                           <span className={rarityColors[item.rarity].text}>
@@ -821,36 +816,36 @@ export function Inventory() {
                           {item.upgradeLevel > 0 && (
                             <span className="ml-2 text-yellow-500 font-black">+{item.upgradeLevel}</span>
                           )}
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1.5 mt-0.5">
                             <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <span className="text-xs text-green-400">Equipado</span>
+                            <span className="text-[11px] text-green-400 font-bold">Equipado</span>
                           </div>
                         </div>
                       </DialogTitle>
                     </DialogHeader>
                     
-                    <div className="space-y-4 mt-4 text-xs">
+                    <div className="space-y-3 mt-3 text-xs">
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className={cn(
-                          'inline-block px-3 py-1 rounded-full text-xs font-medium capitalize',
+                          'inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                           rarityColors[item.rarity].bg,
                           rarityColors[item.rarity].text
                         )}>
                           {item.rarity}
                         </div>
-                        <div className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-white/5 text-gray-300">
+                        <div className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/5 text-gray-300">
                           Requer nível {getEffectiveItemLevelRequirement(item)}
                         </div>
                       </div>
                       
                       <p className="text-gray-400">{item.description}</p>
                       
-                      <div className="bg-[#181826] rounded-xl p-3 space-y-2">
-                        <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                      <div className="bg-[#181826] rounded-xl p-2.5 space-y-1.5">
+                        <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1">
                           <Sword className="w-3.5 h-3.5" />
                           Atributos do Item
                         </h4>
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1">
                           <StatRow 
                             icon={Sword} 
                             label="Ataque" 
@@ -882,9 +877,9 @@ export function Inventory() {
                         <Button
                           onClick={() => handleUnequip(selectedSlot as Item['type'])}
                           variant="outline"
-                          className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold h-9"
+                          className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold h-9 text-xs"
                         >
-                          <X className="w-4 h-4 mr-2" />
+                          <X className="w-3.5 h-3.5 mr-1.5" />
                           Desequipar
                         </Button>
                       </div>
@@ -903,7 +898,7 @@ export function Inventory() {
           {selectedSpecialAttack && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
+                <DialogTitle className="font-cinzel text-lg flex items-center gap-3">
                   <span className="text-3xl">{elementIcons[selectedSpecialAttack.element]}</span>
                   <span className={rarityColors[selectedSpecialAttack.rarity].text}>
                     {selectedSpecialAttack.name}
@@ -911,9 +906,9 @@ export function Inventory() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-4 mt-4 text-xs">
+              <div className="space-y-3 mt-3 text-xs">
                 <div className={cn(
-                  'inline-block px-3 py-1 rounded-full text-xs font-medium capitalize',
+                  'inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                   rarityColors[selectedSpecialAttack.rarity].bg,
                   rarityColors[selectedSpecialAttack.rarity].text
                 )}>
@@ -926,9 +921,9 @@ export function Inventory() {
                   <Button
                     onClick={() => handleEquipSpecial(selectedSpecialAttack)}
                     disabled={selectedSpecialAttack.equipped}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 font-bold h-9"
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 font-bold h-9 text-xs"
                   >
-                    <Zap className="w-4 h-4 mr-2" />
+                    <Zap className="w-3.5 h-3.5 mr-1.5" />
                     {selectedSpecialAttack.equipped ? 'Equipado' : 'Equipar'}
                   </Button>
                 </div>
@@ -944,7 +939,7 @@ export function Inventory() {
           {equippedItems.specialAttack && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-cinzel text-xl flex items-center gap-3">
+                <DialogTitle className="font-cinzel text-lg flex items-center gap-3">
                   <span className="text-3xl">{elementIcons[equippedItems.specialAttack.element]}</span>
                   <span className={rarityColors[equippedItems.specialAttack.rarity].text}>
                     {equippedItems.specialAttack.name}
@@ -952,9 +947,9 @@ export function Inventory() {
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-4 mt-4 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full" />
+              <div className="space-y-3 mt-3 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 bg-orange-500 rounded-full" />
                   <span className="text-orange-400 font-bold">Equipado</span>
                 </div>
                 
@@ -964,9 +959,9 @@ export function Inventory() {
                   <Button
                     onClick={handleUnequipSpecial}
                     variant="outline"
-                    className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold h-9"
+                    className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold h-9 text-xs"
                   >
-                    <X className="w-4 h-4 mr-2" />
+                    <X className="w-3.5 h-3.5 mr-1.5" />
                     Desequipar
                   </Button>
                 </div>
