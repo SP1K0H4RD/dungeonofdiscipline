@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Lock, 
-  Crown, 
-  ChevronLeft, 
+import {
+  Lock,
+  Crown,
+  ChevronLeft,
   ChevronRight,
-  Skull, 
-  Swords, 
-  AlertTriangle, 
-  Zap, 
-  Heart, 
-  ScrollText, 
-  Check, 
-  ChevronUp, 
+  Skull,
+  Swords,
+  AlertTriangle,
+  Zap,
+  Heart,
+  ScrollText,
+  Check,
+  ChevronUp,
   Package
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
@@ -43,8 +43,8 @@ const mapThemes: Record<MapId, {
     name: 'Floresta Sombria',
     line1: 'FLORESTA',
     line2: 'SOMBRIA',
-    color: '#22c55e',
-    borderColor: 'border-green-500/40',
+    color: '#15803d',
+    borderColor: 'border-emerald-700/50',
     bgImage: '/dark_forest_bg.jpg',
   },
   map2: {
@@ -163,7 +163,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
       className="fixed inset-0 z-50 bg-[#0a0a0f] overflow-y-auto"
     >
       <div className="max-w-md mx-auto min-h-screen px-3 py-3 flex flex-col space-y-3 pb-8">
-        
+
         {/* ═══════ HEADER ═══════ */}
         <div className="flex items-center justify-between pt-1 pb-1">
           {/* Voltar */}
@@ -190,7 +190,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
 
             <div className="text-center">
               <h1
-                className="text-xl sm:text-2xl font-black font-cinzel tracking-wider uppercase leading-tight drop-shadow-[0_0_12px_rgba(34,197,94,0.4)]"
+                className="text-xl sm:text-2xl font-black font-cinzel tracking-wider uppercase leading-tight drop-shadow-[0_0_12px_rgba(21,128,61,0.5)]"
                 style={{ color: theme.color }}
               >
                 {theme.line1}<br />{theme.line2}
@@ -242,7 +242,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
               </span>
             </div>
             <div className="h-2 bg-black/80 rounded-full overflow-hidden border border-white/5">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-lime-500 to-green-400 rounded-full"
                 style={{ width: `${Math.min(100, Math.max(0, (character.hp / character.maxHp) * 100))}%` }}
               />
@@ -261,7 +261,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
               </span>
             </div>
             <div className="h-2 bg-black/80 rounded-full overflow-hidden border border-white/5 mb-1">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-purple-600 to-violet-400 rounded-full"
                 style={{ width: `${Math.min(100, Math.max(0, (character.energy / character.maxEnergy) * 100))}%` }}
               />
@@ -293,14 +293,23 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
           <div className="relative h-[290px] sm:h-[320px] rounded-xl overflow-hidden bg-cover bg-center" style={{ backgroundImage: `url(${theme.bgImage})` }}>
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/50 pointer-events-none" />
 
-            {/* Smooth Winding Dashed Trail SVG */}
+            {/* Organic Irregular Thin Dashed Trail SVG */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {/* Background dark stroke for contrast */}
               <path
-                d="M 18 64 Q 28 60, 36 54 T 53 46 T 69 38 T 85 28"
+                d="M 18 64 C 23 68, 30 48, 36 54 C 41 58, 47 41, 53 46 C 58 41, 64 42, 69 38 C 74 42, 80 23, 85 28"
                 fill="none"
-                stroke="rgba(234, 179, 8, 0.75)"
-                strokeWidth="2.5"
-                strokeDasharray="5 3"
+                stroke="rgba(0, 0, 0, 0.6)"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+              {/* Thin irregular dashed line */}
+              <path
+                d="M 18 64 C 23 68, 30 48, 36 54 C 41 58, 47 41, 53 46 C 58 41, 64 42, 69 38 C 74 42, 80 23, 85 28"
+                fill="none"
+                stroke="rgba(245, 158, 11, 0.85)"
+                strokeWidth="1.2"
+                strokeDasharray="4 2.5 1.5 2.5"
                 strokeLinecap="round"
               />
             </svg>
@@ -330,27 +339,20 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                         isSelected && "scale-110 z-30"
                       )}
                     >
-                      {/* Selection Arrow for Boss */}
-                      {isSelected && (
-                        <motion.div
-                          animate={{ y: [0, -4, 0] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="absolute -top-6 text-cyan-400 flex flex-col items-center"
-                        >
-                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
-                        </motion.div>
-                      )}
-
                       <div
                         className={cn(
                           "w-14 h-18 rounded-xl border-2 flex flex-col items-center justify-center p-1 relative overflow-hidden backdrop-blur-md transition-all shadow-xl",
-                          isSelected && "border-cyan-300 bg-cyan-950/90 ring-4 ring-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.9)] text-cyan-100",
-                          !isSelected && isCompleted && "border-emerald-400 bg-emerald-950/80 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.5)]",
+                          /* Selected State (Darker Blue) */
+                          isSelected && "border-blue-400 bg-blue-950/95 ring-4 ring-blue-500/60 shadow-[0_0_25px_rgba(37,99,235,0.8)] text-blue-100",
+                          /* Completed State (Darker Forest Green) */
+                          !isSelected && isCompleted && "border-emerald-600 bg-emerald-950/90 text-emerald-200 shadow-[0_0_15px_rgba(6,95,70,0.6)]",
+                          /* Unlocked & Uncompleted State */
                           !isSelected && !isCompleted && !isLocked && "border-purple-400 bg-purple-950/80 text-purple-200 ring-2 ring-purple-400/40",
+                          /* Locked State */
                           isLocked && "border-purple-900/60 bg-[#120a1c]/90 text-purple-400/60"
                         )}
                       >
-                        <Crown className={cn("w-4 h-4 mb-0.5", isSelected ? "text-cyan-200" : isLocked ? "text-purple-500/50" : "text-purple-300")} />
+                        <Crown className={cn("w-4 h-4 mb-0.5", isSelected ? "text-blue-300" : isLocked ? "text-purple-500/50" : "text-purple-300")} />
                         <span className="text-[7.5px] font-black uppercase font-cinzel text-center leading-tight">
                           BOSS<br />FINAL
                         </span>
@@ -362,35 +364,35 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                           <Check className="w-3 h-3 text-emerald-400 mt-0.5" />
                         ) : null}
                       </div>
+
+                      {/* Selection Arrow Below Boss Node */}
+                      {isSelected && (
+                        <motion.div
+                          animate={{ y: [0, 4, 0] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-blue-400 flex flex-col items-center z-30 pointer-events-none"
+                        >
+                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
+                        </motion.div>
+                      )}
                     </button>
                   ) : (
                     /* REGULAR COMPACT STAGE NODE (1, 2, 3, 4) */
                     <div className="flex flex-col items-center relative">
-                      {/* Selection Arrow directly pointing to active node */}
-                      {isSelected && (
-                        <motion.div
-                          animate={{ y: [0, -4, 0] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="absolute -top-6 text-cyan-400 flex flex-col items-center"
-                        >
-                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
-                        </motion.div>
-                      )}
-
                       <button
                         onClick={() => handleSelectStage(node)}
                         disabled={isLocked}
                         className={cn(
                           "w-10 h-10 rounded-full border-2 flex items-center justify-center font-black text-base transition-all duration-200 shadow-lg",
-                          
-                          /* Selected State (Highlighted in Electric Cyan) */
-                          isSelected && "border-cyan-300 bg-cyan-500 text-black font-black ring-4 ring-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.9)] scale-110 z-30",
 
-                          /* Completed State (Green) */
-                          !isSelected && isCompleted && "border-emerald-400 bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]",
+                          /* Selected State (Darker Blue) */
+                          isSelected && "border-blue-300 bg-blue-700 text-white font-black ring-4 ring-blue-600/60 shadow-[0_0_22px_rgba(29,78,216,0.95)] scale-110 z-30",
+
+                          /* Completed State (Darker Forest Green) */
+                          !isSelected && isCompleted && "border-emerald-600 bg-emerald-900 text-emerald-100 shadow-[0_0_12px_rgba(6,95,70,0.6)]",
 
                           /* Unlocked & Uncompleted State */
-                          !isSelected && !isCompleted && !isLocked && "border-cyan-500/70 bg-gray-900/90 text-cyan-200 hover:scale-105",
+                          !isSelected && !isCompleted && !isLocked && "border-slate-500/70 bg-gray-900/90 text-slate-200 hover:scale-105",
 
                           /* Locked State */
                           isLocked && "border-gray-700 bg-gray-900/90 text-gray-500 cursor-not-allowed opacity-75"
@@ -410,6 +412,17 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
                         <div className="mt-1">
                           <Lock className="w-3 h-3 text-gray-500" />
                         </div>
+                      )}
+
+                      {/* Selection Arrow Below Regular Node */}
+                      {isSelected && (
+                        <motion.div
+                          animate={{ y: [0, 4, 0] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-blue-400 flex flex-col items-center z-30 pointer-events-none"
+                        >
+                          <ChevronUp className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
+                        </motion.div>
                       )}
                     </div>
                   )}
@@ -431,7 +444,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
         {/* ═══════ STAGE DETAILS CARD (NO INIMIGOS ROW) ═══════ */}
         <div className="bg-[#101018] border border-[#202030] rounded-2xl p-3.5 shadow-xl">
           <div className="grid grid-cols-2 gap-3">
-            
+
             {/* LEFT COLUMN: Title, Difficulty, Description */}
             <div className="space-y-1.5">
               <h3 className="text-base font-black font-cinzel text-white uppercase tracking-wide">
@@ -447,7 +460,7 @@ export function MapSystem({ onEnterCombat, onExit }: MapSystemProps) {
 
             {/* RIGHT COLUMN: Rewards, Energy Cost & Start Button */}
             <div className="space-y-2 flex flex-col justify-between">
-              
+
               {/* RECOMPENSAS POSSÍVEIS */}
               <div>
                 <div className="text-[9px] font-black text-green-400 uppercase tracking-widest font-cinzel mb-1">

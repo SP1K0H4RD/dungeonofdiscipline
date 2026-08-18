@@ -50,11 +50,9 @@
     --rarity-legendary: #fbbf24;
     --rarity-mythic: #ef4444;
   }
-}
 
-@layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   
   html {
@@ -62,7 +60,10 @@
   }
   
   body {
-    @apply bg-black text-white antialiased;
+    background-color: #000000;
+    color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', sans-serif;
   }
   
@@ -70,7 +71,12 @@
     font-family: 'Cinzel', serif;
     font-weight: 600;
   }
-  
+}
+
+@layer utilities {
+  .font-cinzel {
+    font-family: 'Cinzel', serif;
+  }
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
