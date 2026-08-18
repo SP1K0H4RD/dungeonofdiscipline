@@ -357,6 +357,7 @@ export function Quests({}: QuestsProps) {
   const [showChestModal, setShowChestModal] = useState(false);
   const [showStreakInfoModal, setShowStreakInfoModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showStreakRewards, setShowStreakRewards] = useState(false);
 
   const saveClaimedStreakRewards = (newClaimed: number[]) => {
     setClaimedStreakRewards(newClaimed);
@@ -999,23 +1000,23 @@ export function Quests({}: QuestsProps) {
         </motion.div>
       )}
 
-      {/* Streak & Chest Rewards Card matching user screenshot design */}
+      {/* Streak & Collapsible Chest Rewards Card */}
       <motion.div 
-        className="card-dungeon p-4 relative overflow-hidden bg-[#0c0c14] border border-[#232338] rounded-2xl shadow-xl"
+        className="card-dungeon p-4 relative overflow-hidden bg-[#0c0c14] border border-[#232338] rounded-2xl shadow-xl transition-all"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-          
-          {/* Left Column: Streak Stats */}
-          <div className="md:col-span-5 flex items-center gap-3.5 pr-0 md:pr-4 md:border-r border-[#222234]">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(249,115,22,0.25)]">
-              <Flame className="w-7 h-7 text-orange-500 fill-orange-500/20" />
+        {/* Main Bar */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {/* Streak Info */}
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(249,115,22,0.25)]">
+              <Flame className="w-6 h-6 sm:w-7 sm:h-7 text-orange-500 fill-orange-500/20" />
             </div>
             <div>
               <p className="text-xs text-gray-400 font-medium">Streak Atual</p>
-              <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                {gameState.character.stats.streak} <span className="text-sm font-normal text-gray-300">dias</span>
+              <p className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {gameState.character.stats.streak} <span className="text-xs font-normal text-gray-300">dias</span>
               </p>
               <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
                 Melhor streak: <span className="text-orange-400 font-bold">{gameState.character.stats.maxStreak} dias</span>
@@ -1023,113 +1024,146 @@ export function Quests({}: QuestsProps) {
             </div>
           </div>
 
-          {/* Right Column: Chest Rewards Track */}
-          <div className="md:col-span-7 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-black tracking-wider text-purple-400 uppercase font-cinzel">
-                  RECOMPENSAS DE STREAK
-                </span>
-                <button
-                  onClick={() => setShowStreakInfoModal(true)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                  title="Informações sobre recompensas"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <span className="text-[9px] text-gray-500 font-mono hidden sm:inline">
-                ← Deslize para ver todos os 17 marcos →
-              </span>
-            </div>
+          {/* Toggle Recompensas Button */}
+          <div className="flex items-center gap-2">
+            <motion.button
+              onClick={() => setShowStreakRewards(prev => !prev)}
+              className={cn(
+                "px-3.5 py-2 text-xs font-bold rounded-xl border transition-all flex items-center gap-2 shadow-md relative",
+                showStreakRewards
+                  ? "bg-purple-600 border-purple-500 text-white shadow-purple-600/30"
+                  : "bg-[#181826] border-[#2d2d44] text-purple-300 hover:bg-[#232338] hover:text-white"
+              )}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              <Gift className="w-4 h-4 text-amber-400" />
+              <span>Recompensas</span>
 
-            {/* Scrollable Chest Track Container */}
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-purple-600/40 scrollbar-track-black/40 pt-3 pb-2 px-1 rounded-xl bg-black/30 border border-white/5">
-              <div className="min-w-[1280px] relative px-4 pb-1">
-                {/* Progress Line */}
-                <div className="absolute left-6 right-6 top-[2.75rem] h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
-                  <div 
-                    className="h-full bg-gradient-to-r from-purple-600 via-purple-500 via-amber-400 to-yellow-300 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, ((gameState.character.stats.streak || 0) / 365) * 100)}%` }}
-                  />
+              {/* Unclaimed Reward Indicator Dot */}
+              {STREAK_REWARDS.some(r => (gameState.character.stats.streak || 0) >= r.days && !claimedStreakRewards.includes(r.days)) && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              )}
+
+              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", showStreakRewards && "rotate-180")} />
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Collapsible Chest Rewards Track */}
+        <AnimatePresence>
+          {showStreakRewards && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              className="overflow-hidden space-y-2 pt-2 border-t border-[#222234]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-black tracking-wider text-purple-400 uppercase font-cinzel">
+                    TRILHA DE BAÚS E TÍTULOS
+                  </span>
+                  <button
+                    onClick={() => setShowStreakInfoModal(true)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                    title="Informações sobre recompensas"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+                <span className="text-[9px] text-gray-500 font-mono hidden sm:inline">
+                  ← Deslize para ver todos os 17 marcos →
+                </span>
+              </div>
 
-                {/* Chest Items (17 Milestones) */}
-                <div className="flex justify-between items-end relative z-10">
-                  {STREAK_REWARDS.map((reward) => {
-                    const isClaimed = claimedStreakRewards.includes(reward.days);
-                    const isUnlocked = (gameState.character.stats.streak || 0) >= reward.days;
-                    const imageSrc = getChestImagePath(reward.defaultRarity);
+              {/* Scrollable Track */}
+              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-purple-600/40 scrollbar-track-black/40 pt-3 pb-2 px-1 rounded-xl bg-black/30 border border-white/5">
+                <div className="min-w-[1280px] relative px-4 pb-1">
+                  {/* Progress Line */}
+                  <div className="absolute left-6 right-6 top-[2.75rem] h-1.5 bg-[#181826] rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="h-full bg-gradient-to-r from-purple-600 via-purple-500 via-amber-400 to-yellow-300 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, ((gameState.character.stats.streak || 0) / 365) * 100)}%` }}
+                    />
+                  </div>
 
-                    return (
-                      <div key={reward.days} className="flex flex-col items-center group relative min-w-[55px]">
-                        <button
-                          onClick={() => {
-                            setSelectedChestReward(reward);
-                            setShowChestModal(true);
-                          }}
-                          className={cn(
-                            "relative transition-all duration-300 flex flex-col items-center",
-                            isUnlocked && !isClaimed && "hover:scale-110 cursor-pointer animate-bounce",
-                            isClaimed && "opacity-85 cursor-pointer",
-                            !isUnlocked && "opacity-60 grayscale-[30%] hover:scale-105 cursor-pointer"
-                          )}
-                        >
-                          {/* Glowing ring for available */}
-                          {isUnlocked && !isClaimed && (
-                            <div className="absolute inset-0 bg-amber-400/40 rounded-full blur-md animate-ping" />
-                          )}
+                  {/* Chest Items */}
+                  <div className="flex justify-between items-end relative z-10">
+                    {STREAK_REWARDS.map((reward) => {
+                      const isClaimed = claimedStreakRewards.includes(reward.days);
+                      const isUnlocked = (gameState.character.stats.streak || 0) >= reward.days;
+                      const imageSrc = getChestImagePath(reward.defaultRarity);
 
-                          <img
-                            src={imageSrc}
-                            alt={reward.title}
-                            className="w-11 h-11 sm:w-13 sm:h-13 object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] relative z-10"
+                      return (
+                        <div key={reward.days} className="flex flex-col items-center group relative min-w-[55px]">
+                          <button
+                            onClick={() => {
+                              setSelectedChestReward(reward);
+                              setShowChestModal(true);
+                            }}
+                            className={cn(
+                              "relative transition-all duration-300 flex flex-col items-center",
+                              isUnlocked && !isClaimed && "hover:scale-110 cursor-pointer animate-bounce",
+                              isClaimed && "opacity-85 cursor-pointer",
+                              !isUnlocked && "opacity-60 grayscale-[30%] hover:scale-105 cursor-pointer"
+                            )}
+                          >
+                            {/* Glowing ring for available */}
+                            {isUnlocked && !isClaimed && (
+                              <div className="absolute inset-0 bg-amber-400/40 rounded-full blur-md animate-ping" />
+                            )}
+
+                            <img
+                              src={imageSrc}
+                              alt={reward.title}
+                              className="w-11 h-11 sm:w-13 sm:h-13 object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] relative z-10"
+                            />
+
+                            {/* Claimed Checkmark Badge */}
+                            {isClaimed && (
+                              <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border border-black shadow-md z-20">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </div>
+                            )}
+
+                            {/* Title badge indicator */}
+                            {reward.titleUnlocked && (
+                              <div className="absolute -bottom-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-[8px] text-black font-black px-1 rounded-full z-20 uppercase tracking-tighter shadow-sm border border-black/40">
+                                Título
+                              </div>
+                            )}
+                          </button>
+
+                          {/* Node Dot */}
+                          <div 
+                            className={cn(
+                              "w-3 h-3 rounded-full border-2 mt-1.5 relative z-10 transition-colors",
+                              isClaimed ? "bg-green-500 border-green-300" : isUnlocked ? "bg-amber-400 border-amber-200 shadow-[0_0_8px_rgba(251,191,36,0.8)]" : "bg-[#141420] border-gray-600"
+                            )}
                           />
 
-                          {/* Claimed Checkmark Badge */}
-                          {isClaimed && (
-                            <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border border-black shadow-md z-20">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </div>
-                          )}
-
-                          {/* Title badge indicator */}
-                          {reward.titleUnlocked && (
-                            <div className="absolute -bottom-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-[8px] text-black font-black px-1 rounded-full z-20 uppercase tracking-tighter shadow-sm border border-black/40">
-                              Título
-                            </div>
-                          )}
-                        </button>
-
-                        {/* Node Dot */}
-                        <div 
-                          className={cn(
-                            "w-3 h-3 rounded-full border-2 mt-1.5 relative z-10 transition-colors",
-                            isClaimed ? "bg-green-500 border-green-300" : isUnlocked ? "bg-amber-400 border-amber-200 shadow-[0_0_8px_rgba(251,191,36,0.8)]" : "bg-[#141420] border-gray-600"
-                          )}
-                        />
-
-                        {/* Days Label */}
-                        <span className={cn(
-                          "text-[10px] font-mono font-bold mt-0.5",
-                          isClaimed ? "text-green-400" : isUnlocked ? "text-amber-300" : "text-gray-400"
-                        )}>
-                          {reward.days}d
-                        </span>
-                      </div>
-                    );
-                  })}
+                          {/* Days Label */}
+                          <span className={cn(
+                            "text-[10px] font-mono font-bold mt-0.5",
+                            isClaimed ? "text-green-400" : isUnlocked ? "text-amber-300" : "text-gray-400"
+                          )}>
+                            {reward.days}d
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Subtitle */}
-            <p className="text-[10px] text-gray-400 text-center italic tracking-wide pt-1">
-              Mantenha seu streak para conquistar títulos lendários e baús épicos!
-            </p>
-          </div>
-
-        </div>
+              {/* Subtitle */}
+              <p className="text-[10px] text-gray-400 text-center italic tracking-wide pt-1">
+                Mantenha seu streak para conquistar títulos lendários e baús épicos!
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Quest Tabs */}
