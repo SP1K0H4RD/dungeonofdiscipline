@@ -15,8 +15,7 @@ import {
   Wind,
   Star as StarIcon,
   User,
-  Plus,
-  ChevronDown
+  Plus
 } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import { cn } from '@/lib/utils';
@@ -181,7 +180,6 @@ export function Inventory() {
   const [selectedSpecialSlot, setSelectedSpecialSlot] = useState(false);
   const [equipBlocked, setEquipBlocked] = useState<{ itemName: string; requiredLevel: number } | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'armaduras' | 'acessorios' | 'itens' | 'materiais'>('all');
-  const [equipmentTypeFilter, setEquipmentTypeFilter] = useState<string>('todos');
 
   const equippedItems = character.equipped;
 
@@ -426,107 +424,6 @@ export function Inventory() {
         </TabsList>
 
         <TabsContent value="equipment" className="mt-3 space-y-4">
-          {/* EQUIPAMENTOS Row Section */}
-          <motion.div 
-            className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl"
-            initial={{ y: 20 }}
-            animate={{ y: 0 }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-black tracking-wider text-white uppercase font-cinzel flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-purple-400" />
-                EQUIPAMENTOS
-              </h3>
-              
-              {/* Dropdown Filter matching screenshot */}
-              <div className="relative">
-                <select
-                  value={equipmentTypeFilter}
-                  onChange={(e) => setEquipmentTypeFilter(e.target.value)}
-                  className="bg-[#12121c] border border-[#232338] text-xs font-bold text-gray-300 rounded-lg px-2.5 py-1 pr-6 appearance-none focus:outline-none focus:border-purple-500"
-                >
-                  <option value="todos">Todos</option>
-                  <option value="armas">Armas</option>
-                  <option value="armaduras">Armaduras</option>
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
-            
-            {/* Horizontal Scroll Row of Equipped Cards */}
-            <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-purple-600/40">
-              {VERTICAL_SLOTS.map(({ type, label }) => {
-                const item = equippedItems[type];
-                const rarity = item ? rarityColors[item.rarity] : null;
-
-                return (
-                  <button
-                    key={type}
-                    onClick={() => item && setSelectedSlot(type)}
-                    className={cn(
-                      "min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 relative transition-all duration-200 shrink-0",
-                      item 
-                        ? `${rarity?.border} ${rarity?.bg} hover:scale-102` 
-                        : "border-dashed border-[#232338] bg-[#12121c]/50 opacity-60"
-                    )}
-                  >
-                    {item ? (
-                      <>
-                        <div className="relative">
-                          <span className="text-2xl sm:text-3xl drop-shadow">{item.icon}</span>
-                          {item.upgradeLevel > 0 && (
-                            <div className="absolute -top-1.5 -left-2 bg-yellow-500 text-black text-[8px] font-black px-1 rounded shadow">
-                              +{item.upgradeLevel}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-[11px] font-bold text-white truncate max-w-full text-center mt-0.5">
-                          {item.name}
-                        </span>
-                        <span className={cn('text-[9px] font-medium capitalize', rarity?.text)}>
-                          {item.rarity}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[11px] font-semibold text-gray-400">{label}</span>
-                        <span className="text-[9px] text-gray-600">Vazio</span>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* Special Attack Card */}
-              <button
-                onClick={() => equippedItems.specialAttack && setSelectedSpecialSlot(true)}
-                className={cn(
-                  "min-w-[105px] xs:min-w-[115px] p-2.5 rounded-xl border-2 flex flex-col items-center justify-center gap-1 relative transition-all duration-200 shrink-0",
-                  equippedItems.specialAttack
-                    ? `${rarityColors[equippedItems.specialAttack.rarity].border} ${rarityColors[equippedItems.specialAttack.rarity].bg}`
-                    : "border-dashed border-[#232338] bg-[#12121c]/50 opacity-60"
-                )}
-              >
-                {equippedItems.specialAttack ? (
-                  <>
-                    <span className="text-2xl sm:text-3xl">{elementIcons[equippedItems.specialAttack.element]}</span>
-                    <span className="text-[11px] font-bold text-white truncate max-w-full text-center mt-0.5">
-                      {equippedItems.specialAttack.name}
-                    </span>
-                    <span className={cn('text-[9px] font-medium capitalize', rarityColors[equippedItems.specialAttack.rarity].text)}>
-                      {equippedItems.specialAttack.rarity}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-5 h-5 text-gray-600 opacity-60" />
-                    <span className="text-[10px] text-gray-500 font-bold mt-0.5">Especial Bloqueado</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </motion.div>
-
           {/* INVENTÁRIO Grid Section matching screenshot */}
           <motion.div 
             className="card-dungeon p-3.5 bg-[#0a0a12] border border-[#232338] rounded-2xl"
