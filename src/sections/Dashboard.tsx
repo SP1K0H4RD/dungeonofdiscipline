@@ -284,8 +284,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest font-cinzel">ENERGIA</span>
               </div>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-xl font-black text-white font-cinzel leading-none">{character.energy}</span>
-                <span className="text-xl font-black text-white font-cinzel leading-none">/ {character.maxEnergy}</span>
+                <span className="text-xl font-black text-white tracking-tight leading-none">{character.energy}</span>
+                <span className="text-xl font-black text-white tracking-tight leading-none">/ {character.maxEnergy}</span>
               </div>
               <div className="mt-3 px-0.5">
                 <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/5">
@@ -305,8 +305,8 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                 <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest font-cinzel">FRAGMENTOS</span>
               </div>
               <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-xl font-black text-white font-cinzel leading-none">{Math.floor(character.energyFragments)}</span>
-                <span className="text-xl font-black text-white font-cinzel leading-none">/ 5</span>
+                <span className="text-xl font-black text-white tracking-tight leading-none">{Math.floor(character.energyFragments)}</span>
+                <span className="text-xl font-black text-white tracking-tight leading-none">/ 5</span>
               </div>
               <div className="flex gap-2.5 mb-1.5 px-1">
                 {[...Array(5)].map((_, i) => {
@@ -328,7 +328,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   );
                 })}
               </div>
-              <p className="text-[5.5px] text-gray-600 font-bold uppercase tracking-widest leading-none font-cinzel">a cada 5 fragmentos vocÊ ganha +1 energia</p>
+              <p className="text-[6px] text-gray-400 font-bold tracking-tight leading-none">a cada 5 fragmentos você ganha +1 energia</p>
             </motion.div>
 
             {/* Rest Card - Fixed height to align with bottom of profile */}
@@ -355,7 +355,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   <div className="w-full flex flex-col items-center gap-1">
                     <div className="flex items-center justify-center gap-1.5">
                       <Zap className="w-3 h-3 text-yellow-500/70" />
-                      <span className="text-[5px] text-gray-400 font-bold uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
+                      <span className="text-[5px] text-gray-400 font-bold tracking-tight">Custo: 1 Energia</span>
                     </div>
                     <Button
                       onClick={handleRest}
@@ -542,7 +542,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               </div>
               <div className="flex items-center gap-1.5 mt-0.5 relative z-10">
                 <Zap className="w-3 h-3 text-yellow-500/70" />
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest font-cinzel">Custo: 1 Energia</span>
+                <span className="text-[9px] font-bold text-gray-500 tracking-tight">Custo: 1 Energia</span>
               </div>
             </div>
           </motion.button>
