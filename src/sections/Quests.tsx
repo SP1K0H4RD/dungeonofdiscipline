@@ -664,38 +664,38 @@ export function Quests({}: QuestsProps) {
                 <span>Nova Tarefa</span>
               </motion.button>
             </DialogTrigger>
-            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-1.5rem)] sm:max-w-lg md:max-w-xl max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] focus:outline-none">
-              <DialogHeader>
-                <DialogTitle className="font-cinzel text-xl">
+            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 sm:p-4 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] focus:outline-none">
+              <DialogHeader className="pb-1">
+                <DialogTitle className="font-cinzel text-lg">
                   Criar Nova Tarefa
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-4 mt-4">
+              <div className="space-y-3 mt-2 w-full min-w-0">
                 <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Título da Tarefa</label>
+                  <label className="text-xs text-gray-400 mb-1 block font-medium">Título da Tarefa</label>
                   <Input
                     placeholder="Ex: Treino de perna, Estudar React..."
                     value={newQuest.title}
                     onChange={(e) => setNewQuest(prev => ({ ...prev, title: e.target.value }))}
-                    className="bg-black/40 border-gray-700"
+                    className="bg-black/40 border-gray-700 h-9 text-xs sm:text-sm px-3"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Descrição (opcional)</label>
+                  <label className="text-xs text-gray-400 mb-1 block font-medium">Descrição (opcional)</label>
                   <Textarea
                     placeholder="Detalhes sobre a tarefa..."
                     value={newQuest.description}
                     onChange={(e) => setNewQuest(prev => ({ ...prev, description: e.target.value }))}
-                    className="bg-black/40 border-gray-700 resize-none h-20"
+                    className="bg-black/40 border-gray-700 resize-none h-16 text-xs sm:text-sm p-2.5"
                   />
                 </div>
 
-                <div className="flex items-center justify-between gap-4 bg-black/30 border border-white/10 rounded-lg p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-white truncate">Multitarefa</p>
-                    <p className="text-[10px] text-gray-500 truncate">Complete todos os checkpoints para receber a recompensa.</p>
+                <div className="flex items-center justify-between gap-2 bg-black/30 border border-white/10 rounded-lg p-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-white truncate">Multitarefa</p>
+                    <p className="text-[10px] text-gray-500 truncate">Checkpoints múltiplos</p>
                   </div>
                   <Switch
                     checked={newQuest.isMultitask}
@@ -711,17 +711,17 @@ export function Quests({}: QuestsProps) {
                 </div>
 
                 {newQuest.isMultitask && (
-                  <div className="bg-black/30 border border-white/10 rounded-lg p-3 space-y-2">
+                  <div className="bg-black/30 border border-white/10 rounded-lg p-2.5 space-y-2">
                     <div className="flex gap-2">
                       <Input
                         placeholder="Novo checkpoint..."
                         value={checkpointText}
                         onChange={(e) => setCheckpointText(e.target.value)}
-                        className="bg-black/40 border-gray-700"
+                        className="bg-black/40 border-gray-700 h-8 text-xs px-2"
                       />
                       <Button
                         type="button"
-                        className="bg-purple-600 hover:bg-purple-700"
+                        className="bg-purple-600 hover:bg-purple-700 h-8 px-3 text-xs"
                         onClick={() => {
                           const title = checkpointText.trim();
                           if (!title) return;
@@ -736,10 +736,10 @@ export function Quests({}: QuestsProps) {
                     <div className="space-y-1">
                       {newQuest.checkpointTitles.map((t, idx) => (
                         <div key={`${t}-${idx}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded px-2 py-1">
-                          <span className="text-xs text-gray-300">{t}</span>
+                          <span className="text-[11px] text-gray-300 truncate">{t}</span>
                           <button
                             type="button"
-                            className="text-red-400 hover:text-red-300 text-xs font-bold"
+                            className="text-red-400 hover:text-red-300 text-[10px] font-bold shrink-0"
                             onClick={() => setNewQuest(prev => ({ ...prev, checkpointTitles: prev.checkpointTitles.filter((_, i) => i !== idx) }))}
                           >
                             Remover
@@ -750,9 +750,10 @@ export function Quests({}: QuestsProps) {
                   </div>
                 )}
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
+                {/* Tipo e Dificuldade lado a lado */}
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  <div className="min-w-0">
+                    <label className="text-xs text-gray-400 mb-1 block font-medium">Tipo</label>
                     <Select
                       value={newQuest.type}
                       onValueChange={(v) => {
@@ -765,25 +766,25 @@ export function Quests({}: QuestsProps) {
                         }));
                       }}
                     >
-                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white h-8 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                        <SelectItem value="habito" className="text-white">
-                          <div className="flex items-center gap-2">
-                            <Flame className="w-4 h-4 text-orange-400" />
+                        <SelectItem value="habito" className="text-white text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Flame className="w-3.5 h-3.5 text-orange-400" />
                             Hábito
                           </div>
                         </SelectItem>
-                        <SelectItem value="diaria" className="text-white">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-cyan-400" />
+                        <SelectItem value="diaria" className="text-white text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-cyan-400" />
                             Diária
                           </div>
                         </SelectItem>
-                        <SelectItem value="meta" className="text-white">
-                          <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-purple-400" />
+                        <SelectItem value="meta" className="text-white text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-purple-400" />
                             Meta
                           </div>
                         </SelectItem>
@@ -791,19 +792,19 @@ export function Quests({}: QuestsProps) {
                     </Select>
                   </div>
                   
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+                  <div className="min-w-0">
+                    <label className="text-xs text-gray-400 mb-1 block font-medium">Dificuldade</label>
                     <Select
                       value={newQuest.difficulty}
                       onValueChange={(v) => setNewQuest(prev => ({ ...prev, difficulty: v as Difficulty }))}
                     >
-                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white h-8 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
                         {Object.entries(difficultyConfig).map(([key, config]) => (
-                          <SelectItem key={key} value={key} className="text-white">
-                            <div className="flex items-center gap-2">
+                          <SelectItem key={key} value={key} className="text-white text-xs">
+                            <div className="flex items-center gap-1.5">
                               <span>{config.emoji}</span>
                               {config.label}
                             </div>
@@ -815,15 +816,16 @@ export function Quests({}: QuestsProps) {
                 </div>
 
                 {newQuest.type === 'habito' && (
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-400 block">Dias da Semana</label>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-gray-400 block font-medium">Dias da Semana</label>
+                    <div className="flex flex-wrap gap-1.5">
                       {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
                         const dayVal = idx as DayOfWeek;
                         const isSelected = newQuest.habitDays.includes(dayVal);
                         return (
                           <button
                             key={day}
+                            type="button"
                             onClick={() => {
                               setNewQuest(prev => ({
                                 ...prev,
@@ -833,9 +835,9 @@ export function Quests({}: QuestsProps) {
                               }));
                             }}
                             className={cn(
-                              "px-3 py-1 rounded-full text-xs font-bold transition-all border",
+                              "px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all border",
                               isSelected 
-                                ? "bg-orange-500 border-orange-400 text-white shadow-lg" 
+                                ? "bg-orange-500 border-orange-400 text-white shadow-sm" 
                                 : "bg-black/40 border-gray-700 text-gray-400"
                             )}
                           >
@@ -853,59 +855,53 @@ export function Quests({}: QuestsProps) {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4"
+                    className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-2.5"
                   >
-                    <label className="text-sm text-purple-400 mb-2 block flex items-center gap-2">
-                      <Target className="w-4 h-4" />
+                    <label className="text-xs text-purple-400 mb-1 block flex items-center gap-1.5 font-medium">
+                      <Target className="w-3.5 h-3.5" />
                       Meta (quantidade)
                     </label>
                     <Input
                       type="number"
                       value={newQuest.metaTarget}
                       onChange={(e) => setNewQuest({ ...newQuest, metaTarget: parseInt(e.target.value) || 100 })}
-                      className="bg-[#16213e] border-purple-500/50 text-white"
+                      className="bg-[#16213e] border-purple-500/50 text-white h-8 text-xs"
                       min={1}
                     />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Defina um valor para acompanhar o progresso da meta
-                    </p>
                   </motion.div>
                 )}
 
-                {/* Agendamento de Data e Horário */}
-                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Agendamento de Data e Horário lado a lado */}
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-2.5 space-y-2 w-full">
+                  <div className="grid grid-cols-2 gap-2 w-full">
                     {newQuest.type !== 'habito' && (
-                      <div>
-                        <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
-                          <Calendar className="w-4 h-4" />
+                      <div className="min-w-0">
+                        <label className="text-xs text-cyan-400 mb-1 block flex items-center gap-1 font-medium truncate">
+                          <Calendar className="w-3.5 h-3.5 shrink-0" />
                           Dia (opcional)
                         </label>
                         <Input
                           type="date"
                           value={newQuest.scheduledDate}
                           onChange={(e) => setNewQuest(prev => ({ ...prev, scheduledDate: e.target.value }))}
-                          className="bg-[#16213e] border-cyan-500/50 text-white"
+                          className="bg-[#16213e] border-cyan-500/50 text-white h-8 text-xs px-1.5"
                         />
                       </div>
                     )}
 
-                    <div className={newQuest.type === 'habito' ? 'col-span-2' : ''}>
-                      <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
-                        <Clock className="w-4 h-4" />
+                    <div className={newQuest.type === 'habito' ? 'col-span-2 min-w-0' : 'min-w-0'}>
+                      <label className="text-xs text-cyan-400 mb-1 block flex items-center gap-1 font-medium truncate">
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
                         Horário (opcional)
                       </label>
                       <Input
                         type="time"
                         value={newQuest.scheduledTime}
                         onChange={(e) => setNewQuest(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                        className="bg-[#16213e] border-cyan-500/50 text-white"
+                        className="bg-[#16213e] border-cyan-500/50 text-white h-8 text-xs px-1.5"
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    Defina uma data ou horário específico para organizar melhor sua rotina.
-                  </p>
                 </div>
 
                 {(!autoRewardsEnabled || newQuest.type === 'meta') && (
@@ -1520,33 +1516,33 @@ export function Quests({}: QuestsProps) {
           if (!open) setEditingQuest(null);
         }}
       >
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-1.5rem)] sm:max-w-lg md:max-w-xl max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] focus:outline-none">
-          <DialogHeader>
-            <DialogTitle className="font-cinzel text-xl">Editar</DialogTitle>
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 sm:p-4 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] focus:outline-none">
+          <DialogHeader className="pb-1">
+            <DialogTitle className="font-cinzel text-lg">Editar Tarefa</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
+          <div className="space-y-3 mt-2 w-full min-w-0">
             <div>
-              <label className="text-sm text-gray-400 mb-2 block">Nome</label>
+              <label className="text-xs text-gray-400 mb-1 block font-medium">Nome</label>
               <Input
                 value={editQuestDraft.title}
                 onChange={(e) => setEditQuestDraft(prev => ({ ...prev, title: e.target.value }))}
-                className="bg-black/40 border-gray-700"
+                className="bg-black/40 border-gray-700 h-9 text-xs sm:text-sm px-3"
               />
             </div>
 
             <div>
-              <label className="text-sm text-gray-400 mb-2 block">Descrição (opcional)</label>
+              <label className="text-xs text-gray-400 mb-1 block font-medium">Descrição (opcional)</label>
               <Textarea
                 value={editQuestDraft.description}
                 onChange={(e) => setEditQuestDraft(prev => ({ ...prev, description: e.target.value }))}
-                className="bg-black/40 border-gray-700 resize-none h-20"
+                className="bg-black/40 border-gray-700 resize-none h-16 text-xs sm:text-sm p-2.5"
               />
             </div>
 
-            <div className="flex items-center justify-between gap-4 bg-black/30 border border-white/10 rounded-lg p-3">
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate">Multitarefa</p>
-                <p className="text-[10px] text-gray-500 truncate">Complete todos os checkpoints para receber a recompensa.</p>
+            <div className="flex items-center justify-between gap-2 bg-black/30 border border-white/10 rounded-lg p-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-white truncate">Multitarefa</p>
+                <p className="text-[10px] text-gray-500 truncate">Checkpoints múltiplos</p>
               </div>
               <Switch
                 checked={editQuestDraft.isMultitask}
@@ -1562,17 +1558,17 @@ export function Quests({}: QuestsProps) {
             </div>
 
             {editQuestDraft.isMultitask && (
-              <div className="bg-black/30 border border-white/10 rounded-lg p-3 space-y-2">
+              <div className="bg-black/30 border border-white/10 rounded-lg p-2.5 space-y-2">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Novo checkpoint..."
                     value={editCheckpointText}
                     onChange={(e) => setEditCheckpointText(e.target.value)}
-                    className="bg-black/40 border-gray-700"
+                    className="bg-black/40 border-gray-700 h-8 text-xs px-2"
                   />
                   <Button
                     type="button"
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-purple-600 hover:bg-purple-700 h-8 px-3 text-xs"
                     onClick={() => {
                       const title = editCheckpointText.trim();
                       if (!title) return;
@@ -1587,10 +1583,10 @@ export function Quests({}: QuestsProps) {
                 <div className="space-y-1">
                   {editQuestDraft.checkpointTitles.map((t, idx) => (
                     <div key={`${t}-${idx}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded px-2 py-1">
-                      <span className="text-xs text-gray-300">{t}</span>
+                      <span className="text-[11px] text-gray-300 truncate">{t}</span>
                       <button
                         type="button"
-                        className="text-red-400 hover:text-red-300 text-xs font-bold"
+                        className="text-red-400 hover:text-red-300 text-[10px] font-bold shrink-0"
                         onClick={() => setEditQuestDraft(prev => ({ ...prev, checkpointTitles: prev.checkpointTitles.filter((_, i) => i !== idx) }))}
                       >
                         Remover
@@ -1602,18 +1598,18 @@ export function Quests({}: QuestsProps) {
             )}
 
             <div>
-              <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+              <label className="text-xs text-gray-400 mb-1 block font-medium">Dificuldade</label>
               <Select
                 value={editQuestDraft.difficulty}
                 onValueChange={(v) => setEditQuestDraft(prev => ({ ...prev, difficulty: v as Difficulty }))}
               >
-                <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
                   {Object.entries(difficultyConfig).map(([key, config]) => (
-                    <SelectItem key={key} value={key} className="text-white">
-                      <div className="flex items-center gap-2">
+                    <SelectItem key={key} value={key} className="text-white text-xs">
+                      <div className="flex items-center gap-1.5">
                         <span>{config.emoji}</span>
                         {config.label}
                       </div>
@@ -1624,15 +1620,16 @@ export function Quests({}: QuestsProps) {
             </div>
 
             {editingQuest?.type === 'habito' ? (
-              <div className="space-y-2">
-                <label className="text-sm text-gray-400 block">Dias da Semana</label>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 block font-medium">Dias da Semana</label>
+                <div className="flex flex-wrap gap-1.5">
                   {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
                     const dayVal = idx as DayOfWeek;
                     const isSelected = editQuestDraft.habitDays.includes(dayVal);
                     return (
                       <button
                         key={day}
+                        type="button"
                         onClick={() => {
                           setEditQuestDraft(prev => ({
                             ...prev,
@@ -1642,9 +1639,9 @@ export function Quests({}: QuestsProps) {
                           }));
                         }}
                         className={cn(
-                          "px-3 py-1 rounded-full text-xs font-bold transition-all border",
+                          "px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all border",
                           isSelected
-                            ? "bg-orange-500 border-orange-400 text-white shadow-lg"
+                            ? "bg-orange-500 border-orange-400 text-white shadow-sm"
                             : "bg-black/40 border-gray-700 text-gray-400"
                         )}
                       >
@@ -1656,33 +1653,33 @@ export function Quests({}: QuestsProps) {
               </div>
             ) : null}
 
-            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-2.5 space-y-2 w-full">
+              <div className="grid grid-cols-2 gap-2 w-full">
                 {editingQuest?.type !== 'habito' && (
-                  <div>
-                    <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
-                      <Calendar className="w-4 h-4" />
+                  <div className="min-w-0">
+                    <label className="text-xs text-cyan-400 mb-1 block flex items-center gap-1 font-medium truncate">
+                      <Calendar className="w-3.5 h-3.5 shrink-0" />
                       Dia (opcional)
                     </label>
                     <Input
                       type="date"
                       value={editQuestDraft.scheduledDate}
                       onChange={(e) => setEditQuestDraft(prev => ({ ...prev, scheduledDate: e.target.value }))}
-                      className="bg-[#16213e] border-cyan-500/50 text-white"
+                      className="bg-[#16213e] border-cyan-500/50 text-white h-8 text-xs px-1.5"
                     />
                   </div>
                 )}
 
-                <div className={editingQuest?.type === 'habito' ? 'col-span-2' : ''}>
-                  <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
-                    <Clock className="w-4 h-4" />
+                <div className={editingQuest?.type === 'habito' ? 'col-span-2 min-w-0' : 'min-w-0'}>
+                  <label className="text-xs text-cyan-400 mb-1 block flex items-center gap-1 font-medium truncate">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
                     Horário (opcional)
                   </label>
                   <Input
                     type="time"
                     value={editQuestDraft.scheduledTime}
                     onChange={(e) => setEditQuestDraft(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                    className="bg-[#16213e] border-cyan-500/50 text-white"
+                    className="bg-[#16213e] border-cyan-500/50 text-white h-8 text-xs px-1.5"
                   />
                 </div>
               </div>
