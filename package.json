@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "git push origin main",
+    "ship": "git add . && git commit -m \"update\" && git push origin main"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
