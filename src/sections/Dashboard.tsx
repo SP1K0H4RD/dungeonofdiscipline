@@ -515,7 +515,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   >
                     {chest.status === 'unlocking' ? (
                       <div className="flex items-center justify-center gap-0.5 w-full h-full px-0.5">
-                        <Clock className="text-white shrink-0" style={{ width: '6px', height: '6px', minWidth: '6px', minHeight: '6px', color: '#ffffff' }} />
+                        <Clock className="text-white shrink-0" style={{ width: '8px', height: '8px', minWidth: '8px', minHeight: '8px', color: '#ffffff' }} />
                         <span className="text-white font-mono text-[7px] font-bold leading-none">
                           {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
                         </span>
