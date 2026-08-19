@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+  Clock,
   Heart,
   Lock,
   RotateCcw,
@@ -514,10 +515,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   >
                     {chest.status === 'unlocking' ? (
                       <div className="flex items-center justify-center gap-0.5 w-full h-full px-0.5">
-                        <svg className="w-2 h-2 text-white shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
-                        </svg>
+                        <Clock className="text-white shrink-0" style={{ width: '6px', height: '6px', minWidth: '6px', minHeight: '6px', color: '#ffffff' }} />
                         <span className="text-white font-mono text-[7px] font-bold leading-none">
                           {chest.unlockStartedAt ? formatTime(Math.max(0, chest.unlockDuration - (now - chest.unlockStartedAt))) : '--:--'}
                         </span>
