@@ -255,7 +255,7 @@ export function MapSystem({ onEnterCombat, onExit, initialMapId = 'map1', onBack
           <div className="bg-[#101018] rounded-xl p-2.5 border border-[#202030]">
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5 text-purple-400 fill-purple-400/20" />
+                <Zap className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500/20" />
                 <span className="text-[10px] font-black text-gray-300 uppercase tracking-wider font-cinzel">ENERGIA</span>
               </div>
               <span className="text-[11px] font-mono font-bold text-gray-300">
@@ -264,27 +264,24 @@ export function MapSystem({ onEnterCombat, onExit, initialMapId = 'map1', onBack
             </div>
             <div className="h-2 bg-black/80 rounded-full overflow-hidden border border-white/5 mb-1">
               <div
-                className="h-full bg-gradient-to-r from-purple-600 to-violet-400 rounded-full"
+                className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 rounded-full"
                 style={{ width: `${Math.min(100, Math.max(0, (character.energy / character.maxEnergy) * 100))}%` }}
               />
             </div>
             <div className="flex items-center gap-1 justify-between">
-              <div className="flex gap-0.5">
-                {[...Array(6)].map((_, i) => (
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "w-1.5 h-1.5 rounded-full",
+                      "w-1.5 h-1.5 rounded-full transition-all duration-300",
                       i < Math.floor(character.energyFragments)
-                        ? "bg-purple-500 shadow-[0_0_4px_rgba(168,85,247,0.8)]"
-                        : "bg-purple-950/40"
+                        ? "bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]"
+                        : "bg-cyan-950/40 border border-cyan-800/30"
                     )}
                   />
                 ))}
               </div>
-              <span className="text-[8px] text-purple-400/80 font-mono">
-                Recupera em 04:32
-              </span>
             </div>
           </div>
         </div>
