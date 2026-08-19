@@ -38,7 +38,7 @@ interface GameContextType {
   unequipSpecialAttack: () => void;
   
   // Quests
-  createQuest: (title: string, description: string, type: QuestType, difficulty: Difficulty, isEmergency?: boolean, suggestedByMaster?: boolean, scheduledDate?: string, focusTag?: FocusTag, habitDays?: DayOfWeek[], metaTarget?: number, energyReward?: number, checkpointTitles?: string[]) => Quest;
+  createQuest: (title: string, description: string, type: QuestType, difficulty: Difficulty, isEmergency?: boolean, suggestedByMaster?: boolean, scheduledDate?: string, focusTag?: FocusTag, habitDays?: DayOfWeek[], metaTarget?: number, energyReward?: number, checkpointTitles?: string[], scheduledTime?: string) => Quest;
   addQuest: (quest: Quest) => void;
   completeQuest: (questId: string, type: QuestType) => void;
   toggleQuestCheckpoint: (questId: string, type: QuestType, checkpointId: string) => void;
@@ -52,6 +52,7 @@ interface GameContextType {
       difficulty?: Difficulty;
       energyReward?: number;
       scheduledDate?: string;
+      scheduledTime?: string;
       habitDays?: DayOfWeek[];
       metaTarget?: number;
       checkpointTitles?: string[];

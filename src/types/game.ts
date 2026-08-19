@@ -1287,6 +1287,7 @@ export interface Quest {
   completedAt?: number;
   expiresAt?: number;
   scheduledDate?: string; // YYYY-MM-DD format
+  scheduledTime?: string; // HH:mm format (optional)
   isEmergency?: boolean;
   suggestedByMaster?: boolean;
   focusTag?: FocusTag;

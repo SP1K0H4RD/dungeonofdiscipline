@@ -8,6 +8,7 @@ import {
   Pencil,
   Zap, 
   Calendar, 
+  Clock,
   Target,
   Flame,
   Sparkles,
@@ -197,6 +198,18 @@ function QuestCard({ quest, onComplete, onEdit, onRequestDelete, rewardFragments
                 Meta
               </span>
             )}
+            {quest.scheduledDate && (
+              <span className="text-xs px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/40 text-cyan-300 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {quest.scheduledDate.split('-').reverse().join('/')}
+              </span>
+            )}
+            {quest.scheduledTime && (
+              <span className="text-xs px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/40 text-amber-300 flex items-center gap-1 font-mono font-bold">
+                <Clock className="w-3 h-3" />
+                {quest.scheduledTime}
+              </span>
+            )}
             {quest.suggestedByMaster && (
               <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
@@ -325,6 +338,7 @@ export function Quests({}: QuestsProps) {
     description: '',
     difficulty: 'medium' as Difficulty,
     scheduledDate: '',
+    scheduledTime: '',
     habitDays: [] as DayOfWeek[],
     metaTarget: 100,
     energyReward: 0,
@@ -337,6 +351,7 @@ export function Quests({}: QuestsProps) {
     type: 'diaria' as QuestType,
     difficulty: 'medium' as Difficulty,
     scheduledDate: '',
+    scheduledTime: '',
     habitDays: [] as DayOfWeek[],
     metaTarget: 100,
     energyReward: 0,
@@ -417,12 +432,6 @@ export function Quests({}: QuestsProps) {
   const autoRewardsEnabled = !!gameState.settings?.autoQuestRewards;
   const dailyCapEnergy = gameState.settings?.doubleTaskEnergyCap ? 10 : 5;
   const weightByDifficulty: Record<Difficulty, number> = { easy: 1.0, medium: 1.3, hard: 1.6 };
-
-  const autoDifficultyForType = (type: QuestType): Difficulty => {
-    if (type === 'habito') return 'easy';
-    if (type === 'diaria') return 'medium';
-    return 'hard';
-  };
 
   const getRewardFragmentsForQuest = (quest: Quest): number => {
     if (quest.completed) return 0;
@@ -505,8 +514,9 @@ export function Quests({}: QuestsProps) {
     setEditQuestDraft({
       title: quest.title,
       description: quest.description,
-      difficulty: autoRewardsEnabled ? autoDifficultyForType(quest.type) : quest.difficulty,
+      difficulty: quest.difficulty || 'medium',
       scheduledDate: quest.scheduledDate || '',
+      scheduledTime: quest.scheduledTime || '',
       habitDays: quest.habitDays || [],
       metaTarget: quest.metaProgress?.target ?? 100,
       energyReward: quest.energyReward || 0,
@@ -525,15 +535,17 @@ export function Quests({}: QuestsProps) {
     if (isHabit && editQuestDraft.habitDays.length === 0) return;
     if (editQuestDraft.isMultitask && editQuestDraft.checkpointTitles.length === 0) return;
     const nextScheduledDate = isHabit ? undefined : (editQuestDraft.scheduledDate || undefined);
+    const nextScheduledTime = editQuestDraft.scheduledTime || undefined;
     const nextHabitDays = isHabit ? editQuestDraft.habitDays : undefined;
     const nextMetaTarget = editingQuest.type === 'meta' ? editQuestDraft.metaTarget : undefined;
 
     updateQuest(editingQuest.id, editingQuest.type, {
       title: editQuestDraft.title.trim(),
       description: editQuestDraft.description,
-      difficulty: autoRewardsEnabled ? autoDifficultyForType(editingQuest.type) : editQuestDraft.difficulty,
+      difficulty: editQuestDraft.difficulty,
       energyReward: autoRewardsEnabled && editingQuest.type !== 'meta' ? 0 : editQuestDraft.energyReward,
       scheduledDate: nextScheduledDate,
+      scheduledTime: nextScheduledTime,
       habitDays: nextHabitDays,
       metaTarget: nextMetaTarget,
       checkpointTitles: editQuestDraft.isMultitask ? editQuestDraft.checkpointTitles : [],
@@ -560,7 +572,7 @@ export function Quests({}: QuestsProps) {
       newQuest.title,
       newQuest.description,
       newQuest.type,
-      autoRewardsEnabled ? autoDifficultyForType(newQuest.type) : newQuest.difficulty,
+      newQuest.difficulty,
       false, // isEmergency
       false, // suggestedByMaster
       newQuest.type === 'habito' ? undefined : (newQuest.scheduledDate || undefined),
@@ -568,7 +580,8 @@ export function Quests({}: QuestsProps) {
       newQuest.type === 'habito' ? newQuest.habitDays : undefined,
       newQuest.type === 'meta' ? newQuest.metaTarget : undefined,
       autoRewardsEnabled && newQuest.type !== 'meta' ? 0 : newQuest.energyReward,
-      newQuest.isMultitask ? newQuest.checkpointTitles : undefined
+      newQuest.isMultitask ? newQuest.checkpointTitles : undefined,
+      newQuest.scheduledTime || undefined
     );
     
     addQuest(quest);
@@ -578,6 +591,7 @@ export function Quests({}: QuestsProps) {
       type: 'diaria', 
       difficulty: 'medium',
       scheduledDate: '',
+      scheduledTime: '',
       habitDays: [],
       metaTarget: 100,
       energyReward: 0,
@@ -650,7 +664,7 @@ export function Quests({}: QuestsProps) {
                 <span>Nova Tarefa</span>
               </motion.button>
             </DialogTrigger>
-            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
+            <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-1.5rem)] sm:max-w-lg md:max-w-xl max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] focus:outline-none">
               <DialogHeader>
                 <DialogTitle className="font-cinzel text-xl">
                   Criar Nova Tarefa
@@ -736,7 +750,7 @@ export function Quests({}: QuestsProps) {
                   </div>
                 )}
                 
-                <div className={cn("grid gap-4", autoRewardsEnabled ? "grid-cols-1" : "grid-cols-2")}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-sm text-gray-400 mb-1 block">Tipo</label>
                     <Select
@@ -748,7 +762,6 @@ export function Quests({}: QuestsProps) {
                           type: nextType,
                           scheduledDate: nextType === 'habito' ? '' : prev.scheduledDate,
                           habitDays: nextType === 'habito' ? prev.habitDays : [],
-                          difficulty: autoRewardsEnabled ? autoDifficultyForType(nextType) : prev.difficulty,
                         }));
                       }}
                     >
@@ -778,29 +791,27 @@ export function Quests({}: QuestsProps) {
                     </Select>
                   </div>
                   
-                  {!autoRewardsEnabled && (
-                    <div>
-                      <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
-                      <Select
-                        value={newQuest.difficulty}
-                        onValueChange={(v) => setNewQuest({ ...newQuest, difficulty: v as Difficulty })}
-                      >
-                        <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                          {Object.entries(difficultyConfig).map(([key, config]) => (
-                            <SelectItem key={key} value={key} className="text-white">
-                              <div className="flex items-center gap-2">
-                                <span>{config.emoji}</span>
-                                {config.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+                    <Select
+                      value={newQuest.difficulty}
+                      onValueChange={(v) => setNewQuest(prev => ({ ...prev, difficulty: v as Difficulty }))}
+                    >
+                      <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                        {Object.entries(difficultyConfig).map(([key, config]) => (
+                          <SelectItem key={key} value={key} className="text-white">
+                            <div className="flex items-center gap-2">
+                              <span>{config.emoji}</span>
+                              {config.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {newQuest.type === 'habito' && (
@@ -861,23 +872,41 @@ export function Quests({}: QuestsProps) {
                   </motion.div>
                 )}
 
-                {newQuest.type !== 'habito' && (
-                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                    <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Dia (opcional)
-                    </label>
-                    <Input
-                      type="date"
-                      value={newQuest.scheduledDate}
-                      onChange={(e) => setNewQuest({ ...newQuest, scheduledDate: e.target.value })}
-                      className="bg-[#16213e] border-cyan-500/50 text-white"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Se definido, a tarefa aparece no calendário nesse dia
-                    </p>
+                {/* Agendamento de Data e Horário */}
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {newQuest.type !== 'habito' && (
+                      <div>
+                        <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
+                          <Calendar className="w-4 h-4" />
+                          Dia (opcional)
+                        </label>
+                        <Input
+                          type="date"
+                          value={newQuest.scheduledDate}
+                          onChange={(e) => setNewQuest(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                          className="bg-[#16213e] border-cyan-500/50 text-white"
+                        />
+                      </div>
+                    )}
+
+                    <div className={newQuest.type === 'habito' ? 'col-span-2' : ''}>
+                      <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
+                        <Clock className="w-4 h-4" />
+                        Horário (opcional)
+                      </label>
+                      <Input
+                        type="time"
+                        value={newQuest.scheduledTime}
+                        onChange={(e) => setNewQuest(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                        className="bg-[#16213e] border-cyan-500/50 text-white"
+                      />
+                    </div>
                   </div>
-                )}
+                  <p className="text-xs text-gray-400">
+                    Defina uma data ou horário específico para organizar melhor sua rotina.
+                  </p>
+                </div>
 
                 {(!autoRewardsEnabled || newQuest.type === 'meta') && (
                   <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
@@ -1491,7 +1520,7 @@ export function Quests({}: QuestsProps) {
           if (!open) setEditingQuest(null);
         }}
       >
-        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-[#1a1a2e] border-[#2d2d44] text-white w-[calc(100vw-1.5rem)] sm:max-w-lg md:max-w-xl max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] focus:outline-none">
           <DialogHeader>
             <DialogTitle className="font-cinzel text-xl">Editar</DialogTitle>
           </DialogHeader>
@@ -1572,29 +1601,27 @@ export function Quests({}: QuestsProps) {
               </div>
             )}
 
-            {!autoRewardsEnabled && (
-              <div>
-                <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
-                <Select
-                  value={editQuestDraft.difficulty}
-                  onValueChange={(v) => setEditQuestDraft(prev => ({ ...prev, difficulty: v as Difficulty }))}
-                >
-                  <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
-                    {Object.entries(difficultyConfig).map(([key, config]) => (
-                      <SelectItem key={key} value={key} className="text-white">
-                        <div className="flex items-center gap-2">
-                          <span>{config.emoji}</span>
-                          {config.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div>
+              <label className="text-sm text-gray-400 mb-1 block">Dificuldade</label>
+              <Select
+                value={editQuestDraft.difficulty}
+                onValueChange={(v) => setEditQuestDraft(prev => ({ ...prev, difficulty: v as Difficulty }))}
+              >
+                <SelectTrigger className="bg-[#16213e] border-[#2d2d44] text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1a2e] border-[#2d2d44]">
+                  {Object.entries(difficultyConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key} className="text-white">
+                      <div className="flex items-center gap-2">
+                        <span>{config.emoji}</span>
+                        {config.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {editingQuest?.type === 'habito' ? (
               <div className="space-y-2">
@@ -1627,20 +1654,39 @@ export function Quests({}: QuestsProps) {
                   })}
                 </div>
               </div>
-            ) : (
-              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                <label className="text-sm text-cyan-400 mb-2 block flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Dia (opcional)
-                </label>
-                <Input
-                  type="date"
-                  value={editQuestDraft.scheduledDate}
-                  onChange={(e) => setEditQuestDraft(prev => ({ ...prev, scheduledDate: e.target.value }))}
-                  className="bg-[#16213e] border-cyan-500/50 text-white"
-                />
+            ) : null}
+
+            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {editingQuest?.type !== 'habito' && (
+                  <div>
+                    <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
+                      <Calendar className="w-4 h-4" />
+                      Dia (opcional)
+                    </label>
+                    <Input
+                      type="date"
+                      value={editQuestDraft.scheduledDate}
+                      onChange={(e) => setEditQuestDraft(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                      className="bg-[#16213e] border-cyan-500/50 text-white"
+                    />
+                  </div>
+                )}
+
+                <div className={editingQuest?.type === 'habito' ? 'col-span-2' : ''}>
+                  <label className="text-sm text-cyan-400 mb-1.5 block flex items-center gap-1.5 font-medium">
+                    <Clock className="w-4 h-4" />
+                    Horário (opcional)
+                  </label>
+                  <Input
+                    type="time"
+                    value={editQuestDraft.scheduledTime}
+                    onChange={(e) => setEditQuestDraft(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                    className="bg-[#16213e] border-cyan-500/50 text-white"
+                  />
+                </div>
               </div>
-            )}
+            </div>
 
             {editingQuest?.type === 'meta' && (
               <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">

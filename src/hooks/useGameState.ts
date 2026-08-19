@@ -2286,7 +2286,8 @@ export function useGameState() {
     habitDays?: DayOfWeek[],
     metaTarget?: number,
     energyReward = 0,
-    checkpointTitles?: string[]
+    checkpointTitles?: string[],
+    scheduledTime?: string
   ): Quest => {
     return {
       id: generateId(),
@@ -2302,6 +2303,7 @@ export function useGameState() {
       createdAt: Date.now(),
       expiresAt: type === 'diaria' ? Date.now() + 24 * 60 * 60 * 1000 : undefined,
       scheduledDate,
+      scheduledTime: scheduledTime || undefined,
       isEmergency,
       suggestedByMaster,
       focusTag,
@@ -2742,7 +2744,7 @@ export function useGameState() {
   const updateQuest = useCallback((
     questId: string,
     type: QuestType,
-    updates: Partial<Pick<Quest, 'title' | 'description' | 'difficulty' | 'energyReward' | 'scheduledDate' | 'habitDays'>> & {
+    updates: Partial<Pick<Quest, 'title' | 'description' | 'difficulty' | 'energyReward' | 'scheduledDate' | 'scheduledTime' | 'habitDays'>> & {
       metaTarget?: number;
       checkpointTitles?: string[];
     }
@@ -2768,6 +2770,7 @@ export function useGameState() {
             energyReward: updates.energyReward ?? existing.energyReward,
             checkpoints: nextCheckpoints,
             scheduledDate: undefined,
+            scheduledTime: updates.scheduledTime !== undefined ? updates.scheduledTime : existing.scheduledTime,
             expiresAt: undefined,
             completed: false,
             completedAt: undefined,
@@ -2788,6 +2791,7 @@ export function useGameState() {
             energyReward: updates.energyReward ?? existing.energyReward,
             checkpoints: nextCheckpoints,
             scheduledDate: updates.scheduledDate ?? existing.scheduledDate,
+            scheduledTime: updates.scheduledTime !== undefined ? updates.scheduledTime : existing.scheduledTime,
             metaProgress: { current: currentProgress, target: nextTarget },
           };
         }
@@ -2800,6 +2804,7 @@ export function useGameState() {
           energyReward: updates.energyReward ?? existing.energyReward,
           checkpoints: nextCheckpoints,
           scheduledDate: updates.scheduledDate ?? existing.scheduledDate,
+          scheduledTime: updates.scheduledTime !== undefined ? updates.scheduledTime : existing.scheduledTime,
         };
       })();
 
