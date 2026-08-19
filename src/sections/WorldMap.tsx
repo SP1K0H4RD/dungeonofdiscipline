@@ -125,10 +125,18 @@ const HOTSPOTS: BiomeHotspot[] = [
     top: '68%',
     left: '52%',
     width: '44%',
-    height: '18%',
+    height: '32%',
     requiredLevel: 21,
   },
 ];
+
+const BIOME_THEME_COLORS: Record<MapId, { text: string; bg: string; border: string }> = {
+  map1: { text: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/40' },
+  map2: { text: 'text-orange-400', bg: 'bg-orange-500/15', border: 'border-orange-500/40' },
+  map3: { text: 'text-cyan-400', bg: 'bg-cyan-500/15', border: 'border-cyan-500/40' },
+  map4: { text: 'text-red-500', bg: 'bg-red-500/15', border: 'border-red-500/40' },
+  map5: { text: 'text-purple-400', bg: 'bg-purple-500/15', border: 'border-purple-500/40' },
+};
 
 export function WorldMap({ onSelectMap, onNavigateToCastle, onClose }: WorldMapProps) {
   const { gameState } = useGame();
@@ -249,54 +257,57 @@ export function WorldMap({ onSelectMap, onNavigateToCastle, onClose }: WorldMapP
             </DialogTitle>
           </DialogHeader>
 
-          {selectedMapData && pendingHotspot && (
-            <div className="space-y-4 py-2">
-              <div className="bg-black/50 border border-yellow-500/30 rounded-xl p-4 flex items-center gap-4">
-                <div className="p-3 rounded-full bg-yellow-500/10 border border-yellow-500/40 text-yellow-400 shrink-0">
-                  <pendingHotspot.icon className="w-7 h-7" />
+          {selectedMapData && pendingHotspot && (() => {
+            const theme = pendingMapId ? BIOME_THEME_COLORS[pendingMapId] : { text: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/40' };
+            return (
+              <div className="space-y-4 py-2">
+                <div className={`bg-black/50 border ${theme.border} rounded-xl p-4 flex items-center gap-4`}>
+                  <div className={`p-3 rounded-full ${theme.bg} border ${theme.border} ${theme.text} shrink-0`}>
+                    <pendingHotspot.icon className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-bold font-cinzel ${theme.text}`}>
+                      {selectedMapData.name}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {selectedMapData.description}
+                    </p>
+                    <p className="text-[11px] font-mono text-yellow-400/90 mt-1">
+                      Requisito: Nível {pendingHotspot.requiredLevel}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold font-cinzel text-white">
-                    {selectedMapData.name}
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {selectedMapData.description}
-                  </p>
-                  <p className="text-[11px] font-mono text-yellow-400/90 mt-1">
-                    Requisito: Nível {pendingHotspot.requiredLevel}
-                  </p>
+
+                {character.level < pendingHotspot.requiredLevel && (
+                  <div className="bg-red-500/10 border border-red-500/40 rounded-lg p-3 text-xs text-red-300 flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 shrink-0 text-red-400" />
+                    <span>Aviso: Seu nível ({character.level}) é inferior ao recomendado ({pendingHotspot.requiredLevel}).</span>
+                  </div>
+                )}
+
+                <p className="text-center text-sm font-cinzel text-gray-300 tracking-wide">
+                  Deseja explorar <span className={`${theme.text} font-bold`}>{selectedMapData.name}</span>?
+                </p>
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={() => setPendingMapId(null)}
+                    variant="outline"
+                    className="flex-1 bg-gray-900 border-gray-700 text-gray-300 hover:bg-gray-800 py-5 font-cinzel"
+                  >
+                    CANCELAR
+                  </Button>
+                  <Button
+                    onClick={handleConfirmExplore}
+                    className="flex-1 btn-primary py-5 font-cinzel bg-gradient-to-r from-yellow-600 to-amber-500 text-black font-bold tracking-wider hover:brightness-110"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    EXPLORAR MAPA
+                  </Button>
                 </div>
               </div>
-
-              {character.level < pendingHotspot.requiredLevel && (
-                <div className="bg-red-500/10 border border-red-500/40 rounded-lg p-3 text-xs text-red-300 flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 shrink-0 text-red-400" />
-                  <span>Aviso: Seu nível ({character.level}) é inferior ao recomendado ({pendingHotspot.requiredLevel}).</span>
-                </div>
-              )}
-
-              <p className="text-center text-sm font-cinzel text-gray-300 tracking-wide">
-                Deseja explorar <span className="text-yellow-400 font-bold">{selectedMapData.name}</span>?
-              </p>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  onClick={() => setPendingMapId(null)}
-                  variant="outline"
-                  className="flex-1 bg-gray-900 border-gray-700 text-gray-300 hover:bg-gray-800 py-5 font-cinzel"
-                >
-                  CANCELAR
-                </Button>
-                <Button
-                  onClick={handleConfirmExplore}
-                  className="flex-1 btn-primary py-5 font-cinzel bg-gradient-to-r from-yellow-600 to-amber-500 text-black font-bold tracking-wider hover:brightness-110"
-                >
-                  <Sparkles className="w-4 h-4 mr-1" />
-                  EXPLORAR MAPA
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
