@@ -328,7 +328,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   );
                 })}
               </div>
-              <p className="text-[6px] text-gray-400 font-bold tracking-tight leading-none">a cada 5 fragmentos você ganha +1 energia</p>
+              <p className="text-[6px] text-gray-400 font-bold tracking-tight leading-none uppercase">a cada 5 fragmentos você ganha +1 energia</p>
             </motion.div>
 
             {/* Rest Card - Fixed height to align with bottom of profile */}
@@ -355,7 +355,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
                   <div className="w-full flex flex-col items-center gap-1">
                     <div className="flex items-center justify-center gap-1.5">
                       <Zap className="w-3 h-3 text-yellow-500/70" />
-                      <span className="text-[5px] text-gray-400 font-bold tracking-tight">Custo: 1 Energia</span>
+                      <span className="text-[5px] text-gray-400 font-bold tracking-tight uppercase">Custo: 1 Energia</span>
                     </div>
                     <Button
                       onClick={handleRest}
@@ -542,7 +542,7 @@ export function Dashboard({ onEnterDungeon }: DashboardProps) {
               </div>
               <div className="flex items-center gap-1.5 mt-0.5 relative z-10">
                 <Zap className="w-3 h-3 text-yellow-500/70" />
-                <span className="text-[9px] font-bold text-gray-500 tracking-tight">Custo: 1 Energia</span>
+                <span className="text-[9px] font-bold text-gray-500 tracking-tight uppercase">Custo: 1 Energia</span>
               </div>
             </div>
           </motion.button>
